@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as DDesignIdRouteImport } from './routes/d.$designId'
 import { Route as DDesignIdIndexRouteImport } from './routes/d.$designId.index'
 import { Route as DDesignIdPainelRouteImport } from './routes/d.$designId.$painel'
+import { Route as DDesignIdEditarPainelRouteImport } from './routes/d.$designId.editar.$painel'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -34,17 +35,24 @@ const DDesignIdPainelRoute = DDesignIdPainelRouteImport.update({
   path: '/$painel',
   getParentRoute: () => DDesignIdRoute,
 } as any)
+const DDesignIdEditarPainelRoute = DDesignIdEditarPainelRouteImport.update({
+  id: '/editar/$painel',
+  path: '/editar/$painel',
+  getParentRoute: () => DDesignIdRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/d/$designId': typeof DDesignIdRouteWithChildren
   '/d/$designId/$painel': typeof DDesignIdPainelRoute
   '/d/$designId/': typeof DDesignIdIndexRoute
+  '/d/$designId/editar/$painel': typeof DDesignIdEditarPainelRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/d/$designId/$painel': typeof DDesignIdPainelRoute
   '/d/$designId': typeof DDesignIdIndexRoute
+  '/d/$designId/editar/$painel': typeof DDesignIdEditarPainelRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -52,14 +60,29 @@ export interface FileRoutesById {
   '/d/$designId': typeof DDesignIdRouteWithChildren
   '/d/$designId/$painel': typeof DDesignIdPainelRoute
   '/d/$designId/': typeof DDesignIdIndexRoute
+  '/d/$designId/editar/$painel': typeof DDesignIdEditarPainelRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/d/$designId' | '/d/$designId/$painel' | '/d/$designId/'
+  fullPaths:
+    | '/'
+    | '/d/$designId'
+    | '/d/$designId/$painel'
+    | '/d/$designId/'
+    | '/d/$designId/editar/$painel'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/d/$designId/$painel' | '/d/$designId'
+  to:
+    | '/'
+    | '/d/$designId/$painel'
+    | '/d/$designId'
+    | '/d/$designId/editar/$painel'
   id:
-    '__root__' | '/' | '/d/$designId' | '/d/$designId/$painel' | '/d/$designId/'
+    | '__root__'
+    | '/'
+    | '/d/$designId'
+    | '/d/$designId/$painel'
+    | '/d/$designId/'
+    | '/d/$designId/editar/$painel'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -97,17 +120,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DDesignIdPainelRouteImport
       parentRoute: typeof DDesignIdRoute
     }
+    '/d/$designId/editar/$painel': {
+      id: '/d/$designId/editar/$painel'
+      path: '/editar/$painel'
+      fullPath: '/d/$designId/editar/$painel'
+      preLoaderRoute: typeof DDesignIdEditarPainelRouteImport
+      parentRoute: typeof DDesignIdRoute
+    }
   }
 }
 
 interface DDesignIdRouteChildren {
   DDesignIdPainelRoute: typeof DDesignIdPainelRoute
   DDesignIdIndexRoute: typeof DDesignIdIndexRoute
+  DDesignIdEditarPainelRoute: typeof DDesignIdEditarPainelRoute
 }
 
 const DDesignIdRouteChildren: DDesignIdRouteChildren = {
   DDesignIdPainelRoute: DDesignIdPainelRoute,
   DDesignIdIndexRoute: DDesignIdIndexRoute,
+  DDesignIdEditarPainelRoute: DDesignIdEditarPainelRoute,
 }
 
 const DDesignIdRouteWithChildren = DDesignIdRoute._addFileChildren(
