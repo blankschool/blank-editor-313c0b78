@@ -29,8 +29,13 @@ import {
   acharCamadaCanvas,
   aplicarVariante,
   camadasDoDoc,
+  adicionarCamadaCanvas,
   camadasDaPaginaCanvas,
   comCamadaCanvas,
+  novaCamadaForma,
+  novaCamadaImagem,
+  novaCamadaTexto,
+  removerCamadaCanvas,
   comEstilo,
   paletaPorSistema,
   paletaProjeto,
@@ -41,8 +46,19 @@ import {
   type ElId,
   type Variante,
 } from "@/lib/estudio-doc";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
+import { enviarImagemCanvas } from "@/lib/estudio-db";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 function Secao({ titulo, children }: { titulo: string; children: React.ReactNode }) {
   return (
@@ -641,6 +657,9 @@ function CamadasCanvasPanel() {
   const paginas = Array.isArray(doc.paginas) ? doc.paginas : [];
   const paginaAtual = paginas.find((p) => p.id === e.paginaCanvas) ?? paginas[0];
   const camadas = camadasDaPaginaCanvas(paginaAtual);
+  const refArquivo = useRef<HTMLInputElement>(null);
+  const [enviando, setEnviando] = useState(false);
+  const [apagar, setApagar] = useState<string | null>(null);
   const icone = (t: string) => (t === "texto" ? Type : t === "imagem" ? Image : Square);
 
   if (!paginaAtual) {
@@ -674,6 +693,63 @@ function CamadasCanvasPanel() {
           </div>
         </Secao>
       )}
+      <Secao titulo="Adicionar">
+        <div className="flex gap-1">
+          <button
+            onClick={() => {
+              const nova = novaCamadaTexto(paginaAtual);
+              e.atualizarDocCanvas((d) => adicionarCamadaCanvas(d, paginaAtual.id ?? null, nova), "Nova camada de texto");
+              e.setPaginaCanvas(paginaAtual.id ?? null);
+              e.setCamadaCanvas(nova.id!);
+            }}
+            className="flex h-6 flex-1 items-center justify-center gap-1 rounded border border-border bg-card text-[10px] hover:bg-secondary"
+          >
+            <Type className="size-3" /> Texto
+          </button>
+          <button
+            onClick={() => {
+              const nova = novaCamadaForma(paginaAtual);
+              e.atualizarDocCanvas((d) => adicionarCamadaCanvas(d, paginaAtual.id ?? null, nova), "Nova forma");
+              e.setPaginaCanvas(paginaAtual.id ?? null);
+              e.setCamadaCanvas(nova.id!);
+            }}
+            className="flex h-6 flex-1 items-center justify-center gap-1 rounded border border-border bg-card text-[10px] hover:bg-secondary"
+          >
+            <Square className="size-3" /> Forma
+          </button>
+          <button
+            onClick={() => refArquivo.current?.click()}
+            disabled={enviando}
+            className="flex h-6 flex-1 items-center justify-center gap-1 rounded border border-border bg-card text-[10px] hover:bg-secondary disabled:opacity-50"
+          >
+            <Image className="size-3" /> {enviando ? "Enviando…" : "Imagem"}
+          </button>
+          <input
+            ref={refArquivo}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={async (ev) => {
+              const file = ev.target.files?.[0];
+              ev.target.value = "";
+              if (!file) return;
+              setEnviando(true);
+              try {
+                const url = await enviarImagemCanvas(file);
+                const nova = novaCamadaImagem(paginaAtual, url, file.name);
+                e.atualizarDocCanvas((d) => adicionarCamadaCanvas(d, paginaAtual.id ?? null, nova), "Nova imagem");
+                e.setPaginaCanvas(paginaAtual.id ?? null);
+                e.setCamadaCanvas(nova.id!);
+                toast.success("Imagem enviada.");
+              } catch (err) {
+                toast.error(`Falha no upload: ${(err as Error).message}`);
+              } finally {
+                setEnviando(false);
+              }
+            }}
+          />
+        </div>
+      </Secao>
       <Secao titulo={`Camadas · ${paginaAtual.nome ?? "página"}`}>
         <div className="space-y-0.5">
           {camadas.map((c) => {
@@ -715,11 +791,38 @@ function CamadasCanvasPanel() {
                     <Eye className="size-3 text-muted-foreground" />
                   )}
                 </button>
+                {e.camadaCanvas === c.id && (
+                  <button title="Apagar camada" onClick={() => setApagar(c.id)}>
+                    <Trash2 className="size-3 text-muted-foreground hover:text-destructive" />
+                  </button>
+                )}
               </div>
             );
           })}
         </div>
       </Secao>
+
+      <AlertDialog open={!!apagar} onOpenChange={(o) => !o && setApagar(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Apagar camada?</AlertDialogTitle>
+            <AlertDialogDescription>A camada sai desta página do canvas.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                const id = apagar!;
+                e.atualizarDocCanvas((d) => removerCamadaCanvas(d, paginaAtual.id ?? null, id), "Apagou camada");
+                if (e.camadaCanvas === id) e.setCamadaCanvas(null);
+                setApagar(null);
+              }}
+            >
+              Apagar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
