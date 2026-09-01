@@ -18,6 +18,8 @@ import {
   RotateCcw,
   ArrowUp,
   ArrowDown,
+  Type,
+  Square,
 } from "lucide-react";
 import { useEstudio } from "./EstudioContext";
 import { Slider } from "@/components/ui/slider";
