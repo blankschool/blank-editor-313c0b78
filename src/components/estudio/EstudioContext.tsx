@@ -460,7 +460,7 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
   const recarregarDoc = useCallback(() => {
     void qc.invalidateQueries({ queryKey: ["design", abaAtiva] });
     void carregarDesign(abaAtiva).then((r) => {
-      if (r) setDocLocal(r.doc && Object.keys(r.doc).length ? r.doc : docPadrao(r.nome));
+      if (r) setDocLocal(r.doc && !ehDocHtml(r.doc) && Object.keys(r.doc).length ? (r.doc as DesignDoc) : docPadrao(r.nome));
     });
   }, [abaAtiva, qc]);
 
