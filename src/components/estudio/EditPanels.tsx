@@ -521,18 +521,31 @@ export function LayersPanel() {
             <Image className="size-3" />
           </button>
           <button
-            title="Excluir camada selecionada"
+            title="Ocultar camada selecionada"
             disabled={!alvo}
             onClick={() => {
               if (!alvo) return;
-              e.atualizarDoc((d) => ({ ...d, ordem: d.ordem.filter((x) => x !== alvo) }), `Excluiu ${rotuloEl[alvo]}`);
-              e.setSelecionado(null);
+              e.atualizarDoc(
+                (d) => ({ ...d, estilos: { ...d.estilos, [alvo]: { ...(d.estilos[alvo] ?? {}), oculto: true } } }),
+                `Ocultou ${rotuloEl[alvo]}`,
+              );
             }}
             className="grid h-6 flex-1 place-items-center rounded border border-border bg-card text-destructive hover:bg-secondary disabled:opacity-40"
           >
             <Trash2 className="size-3" />
           </button>
         </div>
+        <button
+          disabled={!alvo}
+          onClick={() => {
+            if (!alvo) return;
+            e.atualizarDoc((d) => ({ ...d, ordem: d.ordem.filter((x) => x !== alvo) }), `Removeu ${rotuloEl[alvo]}`);
+            e.setSelecionado(null);
+          }}
+          className="mt-1.5 h-7 w-full rounded border border-border bg-card text-[11px] font-medium text-destructive hover:bg-secondary disabled:opacity-40"
+        >
+          Remover bloco
+        </button>
       </Secao>
     </>
   );

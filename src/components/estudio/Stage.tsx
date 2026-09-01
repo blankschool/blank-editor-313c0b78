@@ -659,8 +659,10 @@ function SelecaoOverlay({
         <button
           title="Excluir elemento"
           onClick={() => {
-            e.atualizarDoc((d) => ({ ...d, ordem: d.ordem.filter((x) => x !== alvo) }), `Excluiu ${rotuloEl[alvo]}`);
-            e.setSelecionado(null);
+            e.atualizarDoc(
+              (d) => ({ ...d, estilos: { ...d.estilos, [alvo]: { ...(d.estilos[alvo] ?? {}), oculto: true } } }),
+              `Ocultou ${rotuloEl[alvo]}`,
+            );
           }}
           className="grid size-6 place-items-center rounded-md hover:bg-secondary"
         >
