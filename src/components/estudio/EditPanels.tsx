@@ -980,6 +980,256 @@ function CamadasFluxoPanel() {
 /* painel de ajustes (props) */
 export function PropsPanel() {
   const e = useEstudio();
+  if (e.docCanvas) return <SelecaoCanvasPanel />;
+  if (e.docHtml)
+    return (
+      <Secao titulo="Ajustes">
+        <p className="text-[11px] text-muted-foreground">Preview em HTML, somente leitura.</p>
+      </Secao>
+    );
+  return <PropsPanelFluxo />;
+}
+
+/* inspector simples da camada selecionada (canvas) */
+function SelecaoCanvasPanel() {
+  const e = useEstudio();
+  const achado = acharCamadaCanvas(e.docCanvas, e.paginaCanvas, e.camadaCanvas);
+
+  if (!achado)
+    return (
+      <Secao titulo="Camada">
+        <p className="text-[11px] text-muted-foreground">Selecione uma camada.</p>
+      </Secao>
+    );
+
+  const camada = achado.camada;
+  const id = e.camadaCanvas!;
+  const patch = (fn: (c: CanvasCamada) => void, rotulo: string) =>
+    e.atualizarDocCanvas((d) => comCamadaCanvas(d, e.paginaCanvas, id, (c) => fn(c as CanvasCamada)), rotulo);
+  const num = (v: number | undefined, fn: (c: CanvasCamada, n: number) => void) => (
+    <input
+      type="number"
+      className={inputCls}
+      value={v ?? 0}
+      onChange={(ev) => {
+        const n = Number(ev.target.value);
+        patch((c) => fn(c, n), "");
+      }}
+    />
+  );
+  const sombra = (camada as { sombra?: CanvasSombra }).sombra;
+
+  return (
+    <>
+      <Secao titulo={`Camada · ${camada.nome ?? camada.tipo}`}>
+        <Campo rotulo="Tipo">
+          <span className="text-[11px]">{camada.tipo}</span>
+        </Campo>
+      </Secao>
+
+      {camada.tipo === "texto" && (
+        <>
+          <Secao titulo="Conteúdo">
+            <textarea
+              value={textoDaCamadaCanvas(camada)}
+              onChange={(ev) => {
+                const v = ev.target.value;
+                patch((c) => {
+                  const t = c as CanvasCamadaTexto;
+                  t.texto = v;
+                  delete t.partes;
+                }, "");
+              }}
+              className="h-20 w-full resize-none rounded border border-border bg-card p-2 text-[11px] outline-none focus:ring-1 focus:ring-ring"
+            />
+          </Secao>
+          <Secao titulo="Tipografia">
+            <Campo rotulo="Fonte">
+              <input
+                className={inputCls}
+                value={camada.fonte ?? ""}
+                placeholder="herdada"
+                onChange={(ev) => {
+                  const v = ev.target.value;
+                  patch((c) => {
+                    const t = c as CanvasCamadaTexto;
+                    if (v) t.fonte = v;
+                    else delete t.fonte;
+                  }, "");
+                }}
+              />
+            </Campo>
+            <Campo rotulo="Tamanho">{num(camada.tamanho, (c, n) => void ((c as CanvasCamadaTexto).tamanho = n))}</Campo>
+            <Campo rotulo="Peso">{num(camada.peso, (c, n) => void ((c as CanvasCamadaTexto).peso = n))}</Campo>
+            <Campo rotulo="Entrelinha">
+              {num(camada.entrelinha ?? camada.tamanho, (c, n) => void ((c as CanvasCamadaTexto).entrelinha = n))}
+            </Campo>
+            <Campo rotulo="Entre letras">
+              {num(camada.entreLetras, (c, n) => void ((c as CanvasCamadaTexto).entreLetras = n))}
+            </Campo>
+            <Campo rotulo="Cor">
+              <input
+                type="color"
+                className={cn(inputCls, "p-0")}
+                value={/^#/.test(camada.cor ?? "") ? camada.cor! : "#000000"}
+                onChange={(ev) => patch((c) => void ((c as CanvasCamadaTexto).cor = ev.target.value), "")}
+              />
+            </Campo>
+            <div className="flex gap-1">
+              {(
+                [
+                  ["left", AlignLeft],
+                  ["center", AlignCenter],
+                  ["right", AlignRight],
+                ] as const
+              ).map(([a, Icon]) => (
+                <button
+                  key={a}
+                  onClick={() => patch((c) => void ((c as CanvasCamadaTexto).alinhamento = a), "Alinhou o texto")}
+                  className={cn(
+                    "grid size-6 place-items-center rounded border border-border hover:bg-secondary",
+                    camada.alinhamento === a ? "bg-primary text-primary-foreground" : "bg-card",
+                  )}
+                >
+                  <Icon className="size-3" />
+                </button>
+              ))}
+            </div>
+          </Secao>
+        </>
+      )}
+
+      {camada.tipo === "forma" && (
+        <Secao titulo="Forma">
+          <Campo rotulo="Preenchimento">
+            <input
+              type="color"
+              className={cn(inputCls, "p-0")}
+              value={/^#/.test(camada.cor ?? "") ? camada.cor! : "#000000"}
+              onChange={(ev) => patch((c) => void ((c as CanvasCamadaForma).cor = ev.target.value), "")}
+            />
+          </Campo>
+          <Campo rotulo="Raio">{num(camada.raio, (c, n) => void ((c as CanvasCamadaForma).raio = n))}</Campo>
+          <Campo rotulo="Borda (px)">
+            {num(camada.borda?.largura, (c, n) => {
+              const f = c as CanvasCamadaForma;
+              f.borda = { largura: n, cor: f.borda?.cor ?? "#000000", ...(f.borda?.estilo ? { estilo: f.borda.estilo } : {}) };
+            })}
+          </Campo>
+          <Campo rotulo="Cor da borda">
+            <input
+              type="color"
+              className={cn(inputCls, "p-0")}
+              value={/^#/.test(camada.borda?.cor ?? "") ? camada.borda!.cor : "#000000"}
+              onChange={(ev) => {
+                const v = ev.target.value;
+                patch((c) => {
+                  const f = c as CanvasCamadaForma;
+                  f.borda = { largura: f.borda?.largura ?? 1, cor: v, ...(f.borda?.estilo ? { estilo: f.borda.estilo } : {}) };
+                }, "");
+              }}
+            />
+          </Campo>
+          <Campo rotulo="Estilo da borda">
+            <select
+              className={inputCls}
+              value={camada.borda?.estilo ?? "solid"}
+              onChange={(ev) => {
+                const v = ev.target.value as "solid" | "dashed" | "dotted";
+                patch((c) => {
+                  const f = c as CanvasCamadaForma;
+                  f.borda = { largura: f.borda?.largura ?? 1, cor: f.borda?.cor ?? "#000000", estilo: v };
+                }, "");
+              }}
+            >
+              <option value="solid">sólida</option>
+              <option value="dashed">tracejada</option>
+              <option value="dotted">pontilhada</option>
+            </select>
+          </Campo>
+        </Secao>
+      )}
+
+      {camada.tipo === "imagem" && (
+        <Secao titulo="Imagem">
+          <Campo rotulo="Raio">{num(camada.raio, (c, n) => void ((c as CanvasCamadaImagem).raio = n))}</Campo>
+          <input
+            readOnly
+            value={camada.src}
+            className="h-6 w-full rounded border border-border bg-secondary px-1.5 text-[11px] text-muted-foreground"
+          />
+        </Secao>
+      )}
+
+      <Secao titulo={`Opacidade · ${Math.round((camada.opacidade ?? 1) * 100)}%`}>
+        <Slider
+          value={[Math.round((camada.opacidade ?? 1) * 100)]}
+          max={100}
+          step={1}
+          onValueChange={(v) => patch((c) => void (c.opacidade = (v[0] ?? 100) / 100), "")}
+        />
+      </Secao>
+
+      <Secao titulo="Posição">
+        <Campo rotulo="X">{num(camada.x, (c, n) => void (c.x = n))}</Campo>
+        <Campo rotulo="Y">{num(camada.y, (c, n) => void (c.y = n))}</Campo>
+        {camada.tipo !== "texto" && (
+          <>
+            <Campo rotulo="Largura">{num(camada.w, (c, n) => void (c.w = n))}</Campo>
+            <Campo rotulo="Altura">{num(camada.h, (c, n) => void (c.h = n))}</Campo>
+          </>
+        )}
+      </Secao>
+
+      <Secao titulo="Sombra">
+        {!sombra ? (
+          <button
+            onClick={() =>
+              patch(
+                (c) => void ((c as { sombra?: CanvasSombra }).sombra = { x: 0, y: 4, blur: 12, cor: "#00000040" }),
+                "Adicionou sombra",
+              )
+            }
+            className="flex h-6 w-full items-center justify-center gap-1 rounded border border-border bg-card text-[11px] hover:bg-secondary"
+          >
+            <Plus className="size-3" /> Add: shadow
+          </button>
+        ) : (
+          <>
+            <Campo rotulo="Deslocamento X">
+              {num(sombra.x, (c, n) => void ((c as { sombra?: CanvasSombra }).sombra!.x = n))}
+            </Campo>
+            <Campo rotulo="Deslocamento Y">
+              {num(sombra.y, (c, n) => void ((c as { sombra?: CanvasSombra }).sombra!.y = n))}
+            </Campo>
+            <Campo rotulo="Desfoque">
+              {num(sombra.blur, (c, n) => void ((c as { sombra?: CanvasSombra }).sombra!.blur = n))}
+            </Campo>
+            <Campo rotulo="Cor">
+              <input
+                type="color"
+                className={cn(inputCls, "p-0")}
+                value={/^#[0-9a-f]{6}$/i.test(sombra.cor) ? sombra.cor : "#000000"}
+                onChange={(ev) =>
+                  patch((c) => void ((c as { sombra?: CanvasSombra }).sombra!.cor = ev.target.value), "")
+                }
+              />
+            </Campo>
+            <button
+              onClick={() => patch((c) => void delete (c as { sombra?: CanvasSombra }).sombra, "Removeu sombra")}
+              className="h-6 w-full rounded border border-border bg-card text-[11px] hover:bg-secondary"
+            >
+              Remover sombra
+            </button>
+          </>
+        )}
+      </Secao>
+    </>
+  );
+}
+
+function PropsPanelFluxo() {
+  const e = useEstudio();
   const d = e.doc;
 
   return (
