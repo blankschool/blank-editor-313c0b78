@@ -791,7 +791,7 @@ export function CanvasView({
     );
   }
   return (
-    <div className="flex flex-col items-center gap-10">
+    <div ref={refPaginas} className="flex flex-col items-center gap-10">
       {paginas.map((p, i) => {
         const pid = p.id ?? `p${i + 1}`;
         const selNaPagina = (p.camadas ?? []).find(
@@ -804,6 +804,25 @@ export function CanvasView({
           : null;
         const alcas = selNaPagina && selNaPagina.tipo !== "texto";
         const lado = 10 / (escala || 1);
+        const larguraPag = p.largura || 1080;
+        const esc = escala || 1;
+        const dimSel =
+          geoSel && (geoSel.w > 0 || geoSel.h > 0)
+            ? { w: geoSel.w, h: geoSel.h }
+            : (medida ?? { w: 0, h: 0 });
+        const alturaBarra = 30 / esc;
+        const folga = 12 / esc;
+        const alturaSel = geoSel ? (geoSel.h > 0 ? geoSel.h : dimSel.h) : 0;
+        const acimaCabe = geoSel ? geoSel.y - alturaBarra - folga >= 0 : false;
+        const topoBarra = geoSel
+          ? acimaCabe
+            ? geoSel.y - alturaBarra - folga
+            : geoSel.y + alturaSel + folga
+          : 0;
+        const larguraBarra = barraW / esc;
+        const esqBarra = geoSel
+          ? Math.max(0, Math.min(geoSel.x, Math.max(0, larguraPag - larguraBarra)))
+          : 0;
         return (
           <div key={pid} className="relative">
             {paginas.length > 1 && (
@@ -831,6 +850,7 @@ export function CanvasView({
                   <CamadaCanvasView
                     key={cid}
                     c={vivo}
+                    cid={cid}
                     selecionada={selecionada === cid}
                     onSelecionar={onSelecionar ? () => onSelecionar(pid, cid) : undefined}
                     onPointerDown={
@@ -845,29 +865,32 @@ export function CanvasView({
                 );
               })}
 
-              {geoSel && selNaPagina && (
+              {geoSel && selNaPagina && selecionada && (
                 <div
+                  ref={refBarra}
                   style={{
                     position: "absolute",
-                    left: geoSel.x,
-                    top: geoSel.y - 14 / (escala || 1) - 8 / (escala || 1),
-                    transform: `scale(${1 / (escala || 1)})`,
-                    transformOrigin: "left bottom",
-                    background: "hsl(var(--accent))",
-                    color: "hsl(var(--accent-foreground))",
-                    fontSize: 10,
-                    fontWeight: 600,
-                    lineHeight: "14px",
-                    padding: "0 6px",
-                    borderRadius: 3,
-                    whiteSpace: "nowrap",
-                    pointerEvents: "none",
+                    left: esqBarra,
+                    top: topoBarra,
+                    transform: `scale(${1 / esc})`,
+                    transformOrigin: "left top",
                     zIndex: 70,
                   }}
                 >
-                  {selNaPagina.nome ?? selNaPagina.tipo} · {Math.round(geoSel.w)}×{Math.round(geoSel.h)}
+                  <div className="flex items-center gap-0.5 rounded-lg border border-border bg-popover p-1 shadow-[var(--shadow-panel)]">
+                    <span className="whitespace-nowrap px-1 text-[10px] font-semibold text-accent">
+                      {selNaPagina.nome ?? selNaPagina.tipo} · {Math.round(dimSel.w)}×{Math.round(dimSel.h)}
+                    </span>
+                    {acoes && (
+                      <>
+                        <span className="mx-1 h-4 w-px bg-border" />
+                        {acoes({ paginaId: pid, camadaId: selecionada, camada: selNaPagina })}
+                      </>
+                    )}
+                  </div>
                 </div>
               )}
+
 
               {alcas && geoSel && selNaPagina && (
                 <>
