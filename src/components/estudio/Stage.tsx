@@ -63,9 +63,9 @@ export function Stage() {
             )}
           >
             {a.fixada && <Pin className="size-3 shrink-0 text-accent" />}
-            <button onClick={() => e.setAbaAtiva(a.id)} className="truncate">
+            <Link to="/d/$designId" params={{ designId: a.id }} className="truncate">
               {a.nome}
-            </button>
+            </Link>
             <button
               onClick={() => e.moverAba(a.id, -1)}
               title="Mover para a esquerda"
