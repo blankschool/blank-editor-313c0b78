@@ -265,6 +265,81 @@ export function comCamadaCanvas(
   return doc;
 }
 
+/* --------- criar / remover camadas do canvas --------- */
+
+function novoIdCamada(prefixo: string): string {
+  const r =
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID().slice(0, 8)
+      : Math.random().toString(36).slice(2, 10);
+  return `${prefixo}-${r}`;
+}
+
+export function novaCamadaTexto(pagina: CanvasPagina): CanvasCamadaTexto {
+  const w = 600;
+  return {
+    tipo: "texto",
+    id: novoIdCamada("txt"),
+    nome: "Novo texto",
+    x: Math.round(((pagina.largura || 1080) - w) / 2),
+    y: Math.round(((pagina.altura || 1440) - 60) / 2),
+    w,
+    texto: "Novo texto",
+    fonte: "NYT Franklin",
+    peso: 600,
+    tamanho: 48,
+    cor: "#ffffff",
+    quebra: true,
+  };
+}
+
+export function novaCamadaForma(pagina: CanvasPagina): CanvasCamadaForma {
+  const w = 200;
+  const h = 80;
+  return {
+    tipo: "forma",
+    id: novoIdCamada("frm"),
+    nome: "Forma",
+    x: Math.round(((pagina.largura || 1080) - w) / 2),
+    y: Math.round(((pagina.altura || 1440) - h) / 2),
+    w,
+    h,
+    cor: "#4ADC75",
+  };
+}
+
+export function novaCamadaImagem(pagina: CanvasPagina, src: string, nome: string): CanvasCamadaImagem {
+  const w = 600;
+  const h = 400;
+  return {
+    tipo: "imagem",
+    id: novoIdCamada("img"),
+    nome,
+    x: Math.round(((pagina.largura || 1080) - w) / 2),
+    y: Math.round(((pagina.altura || 1440) - h) / 2),
+    w,
+    h,
+    src,
+  };
+}
+
+export function adicionarCamadaCanvas(doc: DocCanvas, paginaId: string | null, camada: CanvasCamada): DocCanvas {
+  const pg = doc.paginas.find((p, i) => (p.id ?? `p${i + 1}`) === paginaId) ?? doc.paginas[0];
+  if (pg) {
+    pg.camadas = [...(pg.camadas ?? []), camada];
+  }
+  return doc;
+}
+
+export function removerCamadaCanvas(doc: DocCanvas, paginaId: string | null, camadaId: string): DocCanvas {
+  doc.paginas.forEach((p, i) => {
+    const pid = p.id ?? `p${i + 1}`;
+    if (paginaId && pid !== paginaId) return;
+    p.camadas = (p.camadas ?? []).filter((c, j) => idCamadaCanvas(c, j, pid) !== camadaId);
+  });
+  return doc;
+}
+
 export function ehDocCanvas(d: unknown): d is DocCanvas {
   return (
     !!d &&
