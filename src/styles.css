@@ -159,28 +159,28 @@
 /* Fontes originais dos previews (usadas pelos documentos kind: "canvas") */
 @font-face {
   font-family: "Anicon Sans";
-  src: url("/previews/agrum-eleicao/fonts/AniconSans-Regular.woff2") format("woff2");
+  src: url("https://sites-blank-editor-supabase.ickanz.easypanel.host/storage/v1/object/public/templates/agrum-eleicao/fonts/AniconSans-Regular.woff2") format("woff2");
   font-weight: 400;
   font-style: normal;
   font-display: block;
 }
 @font-face {
   font-family: "NYT Franklin";
-  src: url("/previews/agrum-eleicao/fonts/NYTFranklin-Light.woff2") format("woff2");
+  src: url("https://sites-blank-editor-supabase.ickanz.easypanel.host/storage/v1/object/public/templates/agrum-eleicao/fonts/NYTFranklin-Light.woff2") format("woff2");
   font-weight: 300;
   font-style: normal;
   font-display: block;
 }
 @font-face {
   font-family: "NYT Franklin";
-  src: url("/previews/agrum-eleicao/fonts/NYTFranklin-Semibold.woff2") format("woff2");
+  src: url("https://sites-blank-editor-supabase.ickanz.easypanel.host/storage/v1/object/public/templates/agrum-eleicao/fonts/NYTFranklin-Semibold.woff2") format("woff2");
   font-weight: 600;
   font-style: normal;
   font-display: block;
 }
 @font-face {
   font-family: "NYT Franklin";
-  src: url("/previews/agrum-eleicao/fonts/NYTFranklin-Bold.woff2") format("woff2");
+  src: url("https://sites-blank-editor-supabase.ickanz.easypanel.host/storage/v1/object/public/templates/agrum-eleicao/fonts/NYTFranklin-Bold.woff2") format("woff2");
   font-weight: 700;
   font-style: normal;
   font-display: block;
