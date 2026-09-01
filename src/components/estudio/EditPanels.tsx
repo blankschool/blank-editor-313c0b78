@@ -1531,7 +1531,21 @@ function SelecaoCanvasPanel({ modo = "simples" }: { modo?: "simples" | "pro" }) 
                 },
               )}
             </Campo>
+            {camada.tipo === "imagem" && (
+              <Campo rotulo="Rotação da foto (°)" sujo={dif("imgRot")}>
+                {num(
+                  (camada as { imgRot?: number }).imgRot ?? 0,
+                  (c, n) => {
+                    if (c.tipo !== "imagem") return;
+                    const r = Math.round(((n % 360) + 360) % 360);
+                    if (r) c.imgRot = r;
+                    else delete c.imgRot;
+                  },
+                )}
+              </Campo>
+            )}
           </Secao>
+
 
 
           <Secao titulo="Ordem (z)">

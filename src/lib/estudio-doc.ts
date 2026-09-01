@@ -206,6 +206,8 @@ export interface CanvasCamadaImagem {
   /** vazio ou ausente = placeholder de imagem */
   src?: string;
   img?: { x: number; y: number; w: number; h: number };
+  /** rotação da foto dentro da moldura, em graus */
+  imgRot?: number;
 
   raio?: number;
   opacidade?: number;
@@ -455,6 +457,49 @@ export function limitarImg(img: CaixaImg, mw: number, mh: number): CaixaImg {
   const y = img.h >= mh ? Math.min(0, Math.max(mh - img.h, img.y)) : (mh - img.h) / 2;
   return { ...img, x, y };
 }
+
+function girar2d(x: number, y: number, graus: number): { x: number; y: number } {
+  const t = (graus * Math.PI) / 180;
+  const cos = Math.cos(t);
+  const sen = Math.sin(t);
+  return { x: x * cos - y * sen, y: x * sen + y * cos };
+}
+
+/**
+ * Mesma ideia de `limitarImg`, mas ciente da rotação da foto: a caixa girada
+ * precisa continuar cobrindo a moldura (escala mínima + posição travada).
+ */
+export function ajustarImgRot(
+  img: CaixaImg,
+  rot: number,
+  mw: number,
+  mh: number,
+): CaixaImg {
+  const r = ((rot % 360) + 360) % 360;
+  if (!r) return limitarImg(img, mw, mh);
+  const rad = (r * Math.PI) / 180;
+  const co = Math.abs(Math.cos(rad));
+  const se = Math.abs(Math.sin(rad));
+  /* meia-extensão da moldura vista nos eixos da foto */
+  const ex = (mw * co + mh * se) / 2;
+  const ey = (mw * se + mh * co) / 2;
+
+  const k = Math.max(1, (2 * ex) / (img.w || 1), (2 * ey) / (img.h || 1));
+  const w = (img.w || 1) * k;
+  const h = (img.h || 1) * k;
+
+  const dx = img.x + img.w / 2 - mw / 2;
+  const dy = img.y + img.h / 2 - mh / 2;
+  const u = girar2d(dx, dy, -r);
+  const lx = Math.max(0, w / 2 - ex);
+  const ly = Math.max(0, h / 2 - ey);
+  const ux = Math.min(lx, Math.max(-lx, u.x));
+  const uy = Math.min(ly, Math.max(-ly, u.y));
+  const d = girar2d(ux, uy, r);
+  return { w, h, x: mw / 2 + d.x - w / 2, y: mh / 2 + d.y - h / 2 };
+}
+
+
 
 /** ao mudar o tamanho da moldura, reenquadra em cover sem achatar */
 export function reenquadrarImg(

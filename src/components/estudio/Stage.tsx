@@ -64,7 +64,7 @@ import {
   estiloDoTrecho,
   substituirTextoPreservandoPartes,
   virarPlaceholderImagem,
-  limitarImg,
+  ajustarImgRot,
   coverImg,
   containImg,
   medirImagem,
@@ -493,7 +493,11 @@ function transformRot(c: CanvasCamada): string | undefined {
   return r ? `rotate(${r}deg)` : undefined;
 }
 
-/** imagem da camada: enquadramento cover e modo recorte (arrastar / zoom) */
+/**
+ * Imagem da camada. Duas camadas independentes:
+ * - moldura (janela fixa, com clip da forma e overflow hidden)
+ * - foto por trás, com posição, escala e rotação próprias (modo ajuste)
+ */
 function ImagemCanvasView({
   c,
   cid,
@@ -514,10 +518,9 @@ function ImagemCanvasView({
   onPointerDown?: ((ev: React.PointerEvent) => void) | undefined;
   recortando?: boolean | undefined;
   escala: number;
-  onRecorte?: ((img: CaixaImg) => void) | undefined;
+  onRecorte?: ((img: CaixaImg, rot: number) => void) | undefined;
   onSairRecorte?: (() => void) | undefined;
 }) {
-
   const [nat, setNat] = useState<{ w: number; h: number } | null>(null);
   useEffect(() => {
     let vivoAinda = true;
@@ -533,10 +536,22 @@ function ImagemCanvasView({
   /* sem enquadramento gravado, usa cover com a proporção real do arquivo */
   const gravado: CaixaImg =
     c.img ?? (nat ? coverImg(c.w, c.h, nat.w, nat.h) : { x: 0, y: 0, w: c.w, h: c.h });
-  const [vivo, setVivo] = useState<CaixaImg | null>(null);
-  const arrasteRef = useRef<{ px: number; py: number; base: CaixaImg } | null>(null);
+  const rotGravada = c.imgRot ?? 0;
+  const [vivo, setVivo] = useState<{ img: CaixaImg; rot: number } | null>(null);
+  const arrasteRef = useRef<{
+    modo: ModoArraste;
+    px: number;
+    py: number;
+    base: CaixaImg;
+    rot: number;
+    ang0: number;
+    centro: { x: number; y: number };
+  } | null>(null);
   const timerZoom = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const inner = vivo ?? gravado;
+  const caixaRef = useRef<HTMLDivElement | null>(null);
+  const inner = vivo?.img ?? gravado;
+  const innerRot = vivo?.rot ?? rotGravada;
+  const rotMoldura = c.rotacao ?? 0;
 
   useEffect(() => {
     if (!recortando) setVivo(null);
@@ -552,21 +567,77 @@ function ImagemCanvasView({
     return () => window.removeEventListener("keydown", tecla);
   }, [recortando, onSairRecorte]);
 
-
   useEffect(() => {
     if (!recortando) return;
     const mover = (ev: PointerEvent) => {
       const st = arrasteRef.current;
       if (!st) return;
-      const dx = (ev.clientX - st.px) / (escala || 1);
-      const dy = (ev.clientY - st.py) / (escala || 1);
-      setVivo(limitarImg({ ...st.base, x: st.base.x + dx, y: st.base.y + dy }, c.w, c.h));
+      const esc = escala || 1;
+
+      if (st.modo === "girar") {
+        const ang =
+          (Math.atan2(ev.clientY - st.centro.y, ev.clientX - st.centro.x) * 180) / Math.PI;
+        let novaRot = st.rot + (ang - st.ang0);
+        if (ev.shiftKey) novaRot = Math.round(novaRot / 15) * 15;
+        setVivo({ img: ajustarImgRot(st.base, novaRot, c.w, c.h), rot: novaRot });
+        return;
+      }
+
+      /* delta do ponteiro trazido para os eixos da moldura e depois da foto */
+      const dxT = (ev.clientX - st.px) / esc;
+      const dyT = (ev.clientY - st.py) / esc;
+      const dq = girarPonto(dxT, dyT, -rotMoldura);
+
+      if (st.modo === "mover") {
+        setVivo({
+          img: ajustarImgRot(
+            { ...st.base, x: st.base.x + dq.x, y: st.base.y + dq.y },
+            st.rot,
+            c.w,
+            c.h,
+          ),
+          rot: st.rot,
+        });
+        return;
+      }
+
+      const dl = girarPonto(dq.x, dq.y, -st.rot);
+      const sx = st.modo.includes("e") ? 1 : st.modo.includes("w") ? -1 : 0;
+      const sy = st.modo.includes("s") ? 1 : st.modo.includes("n") ? -1 : 0;
+      const canto = sx !== 0 && sy !== 0;
+      let w = Math.max(20, st.base.w + sx * dl.x);
+      let h = Math.max(20, st.base.h + sy * dl.y);
+      /* cantos escalam proporcional (Shift libera); laterais esticam */
+      if (canto && !ev.shiftKey) {
+        const k = Math.max(w / (st.base.w || 1), h / (st.base.h || 1));
+        w = (st.base.w || 1) * k;
+        h = (st.base.h || 1) * k;
+      } else if (!canto && ev.shiftKey) {
+        const k = sx !== 0 ? w / (st.base.w || 1) : h / (st.base.h || 1);
+        w = (st.base.w || 1) * k;
+        h = (st.base.h || 1) * k;
+      }
+      /* o canto oposto fica parado */
+      const c0 = { x: st.base.x + st.base.w / 2, y: st.base.y + st.base.h / 2 };
+      const off0 = girarPonto((-sx * st.base.w) / 2, (-sy * st.base.h) / 2, st.rot);
+      const ancora = { x: c0.x + off0.x, y: c0.y + off0.y };
+      const off1 = girarPonto((sx * w) / 2, (sy * h) / 2, st.rot);
+      const centro = { x: ancora.x + off1.x, y: ancora.y + off1.y };
+      setVivo({
+        img: ajustarImgRot(
+          { w, h, x: centro.x - w / 2, y: centro.y - h / 2 },
+          st.rot,
+          c.w,
+          c.h,
+        ),
+        rot: st.rot,
+      });
     };
     const soltar = () => {
       if (!arrasteRef.current) return;
       arrasteRef.current = null;
       setVivo((v) => {
-        if (v) onRecorte?.(v);
+        if (v) onRecorte?.(v.img, v.rot);
         return v;
       });
     };
@@ -576,15 +647,44 @@ function ImagemCanvasView({
       window.removeEventListener("pointermove", mover);
       window.removeEventListener("pointerup", soltar);
     };
-  }, [recortando, escala, c.w, c.h, onRecorte]);
+  }, [recortando, escala, c.w, c.h, rotMoldura, onRecorte]);
+
+  /** centro da foto em coordenadas de tela (para a alça de girar) */
+  const centroDaFotoNaTela = () => {
+    const el = caixaRef.current;
+    const esc = escala || 1;
+    if (!el) return { x: 0, y: 0 };
+    const r = el.getBoundingClientRect();
+    const cm = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+    const d = girarPonto(
+      inner.x + inner.w / 2 - c.w / 2,
+      inner.y + inner.h / 2 - c.h / 2,
+      rotMoldura,
+    );
+    return { x: cm.x + d.x * esc, y: cm.y + d.y * esc };
+  };
+
+  const iniciarAlca = (ev: React.PointerEvent, modo: ModoArraste) => {
+    if (ev.button !== 0) return;
+    ev.preventDefault();
+    ev.stopPropagation();
+    const centro = centroDaFotoNaTela();
+    arrasteRef.current = {
+      modo,
+      px: ev.clientX,
+      py: ev.clientY,
+      base: inner,
+      rot: innerRot,
+      centro,
+      ang0: (Math.atan2(ev.clientY - centro.y, ev.clientX - centro.x) * 180) / Math.PI,
+    };
+  };
 
   const zoom = (fator: number) => {
-    const atual = vivo ?? gravado;
-    const minW = c.w;
-    const minH = c.h;
+    const atual = inner;
     let w = atual.w * fator;
     let h = atual.h * fator;
-    const kmin = Math.max(minW / atual.w, minH / atual.h);
+    const kmin = Math.max(c.w / atual.w, c.h / atual.h);
     if (fator < kmin) {
       w = atual.w * kmin;
       h = atual.h * kmin;
@@ -592,10 +692,15 @@ function ImagemCanvasView({
     const cx = c.w / 2 - atual.x;
     const cy = c.h / 2 - atual.y;
     const k = w / atual.w;
-    const novo = limitarImg({ w, h, x: c.w / 2 - cx * k, y: c.h / 2 - cy * k }, c.w, c.h);
-    setVivo(novo);
+    const novo = ajustarImgRot(
+      { w, h, x: c.w / 2 - cx * k, y: c.h / 2 - cy * k },
+      innerRot,
+      c.w,
+      c.h,
+    );
+    setVivo({ img: novo, rot: innerRot });
     if (timerZoom.current) clearTimeout(timerZoom.current);
-    timerZoom.current = setTimeout(() => onRecorte?.(novo), 250);
+    timerZoom.current = setTimeout(() => onRecorte?.(novo, innerRot), 250);
   };
 
   /* base cover: 100% do slider = foto preenchendo a moldura */
@@ -606,23 +711,29 @@ function ImagemCanvasView({
     const f = Math.max(1, fator);
     const w = base.w * f;
     const h = base.h * f;
-    const atual = vivo ?? gravado;
+    const atual = inner;
     const fx = atual.w ? (c.w / 2 - atual.x) / atual.w : 0.5;
     const fy = atual.h ? (c.h / 2 - atual.y) / atual.h : 0.5;
-    const novo = limitarImg({ w, h, x: c.w / 2 - fx * w, y: c.h / 2 - fy * h }, c.w, c.h);
-    setVivo(novo);
+    const novo = ajustarImgRot(
+      { w, h, x: c.w / 2 - fx * w, y: c.h / 2 - fy * h },
+      innerRot,
+      c.w,
+      c.h,
+    );
+    setVivo({ img: novo, rot: innerRot });
     if (timerZoom.current) clearTimeout(timerZoom.current);
-    timerZoom.current = setTimeout(() => onRecorte?.(novo), 200);
+    timerZoom.current = setTimeout(() => onRecorte?.(novo, innerRot), 200);
   };
 
-  const aplicarEnquadramento = (modo: "cover" | "contain") => {
+  const aplicarEnquadramento = (modo: "cover" | "contain" | "redefinir") => {
     if (!nat) return;
     const novo =
-      modo === "cover" ? coverImg(c.w, c.h, nat.w, nat.h) : containImg(c.w, c.h, nat.w, nat.h);
-    setVivo(novo);
-    onRecorte?.(novo);
+      modo === "contain" ? containImg(c.w, c.h, nat.w, nat.h) : coverImg(c.w, c.h, nat.w, nat.h);
+    const rot = modo === "redefinir" ? 0 : innerRot;
+    const final = modo === "contain" ? novo : ajustarImgRot(novo, rot, c.w, c.h);
+    setVivo({ img: final, rot });
+    onRecorte?.(final, rot);
   };
-
 
   const estiloImg: React.CSSProperties = {
     position: "absolute",
@@ -631,13 +742,24 @@ function ImagemCanvasView({
     top: inner.y,
     width: inner.w,
     height: inner.h,
-    transform: c.espelhoY ? "scaleY(-1)" : undefined,
+    transform: [
+      innerRot ? `rotate(${innerRot}deg)` : "",
+      c.espelhoY ? "scaleY(-1)" : "",
+    ]
+      .filter(Boolean)
+      .join(" ") || undefined,
+    transformOrigin: "center center",
     userSelect: "none",
     pointerEvents: "none",
   };
 
+  const esc = escala || 1;
+  const alvo = 20 / esc;
+  const visual = 9 / esc;
+
   return (
     <div
+      ref={caixaRef}
       style={{
         position: "absolute",
         left: c.x,
@@ -664,7 +786,16 @@ function ImagemCanvasView({
           if (ev.button !== 0) return;
           ev.preventDefault();
           ev.stopPropagation();
-          arrasteRef.current = { px: ev.clientX, py: ev.clientY, base: inner };
+          const centro = centroDaFotoNaTela();
+          arrasteRef.current = {
+            modo: "mover",
+            px: ev.clientX,
+            py: ev.clientY,
+            base: inner,
+            rot: innerRot,
+            centro,
+            ang0: 0,
+          };
           return;
         }
         onPointerDown?.(ev);
@@ -697,11 +828,108 @@ function ImagemCanvasView({
             style={{
               position: "absolute",
               inset: 0,
-              border: `${2 / (escala || 1)}px solid #fff`,
+              border: `${2 / esc}px solid #fff`,
               boxShadow: "0 0 0 9999px rgba(0,0,0,0.45)",
               pointerEvents: "none",
             }}
           />
+          {/* alças que transformam a FOTO, não a moldura */}
+          <div
+            style={{
+              position: "absolute",
+              left: inner.x,
+              top: inner.y,
+              width: inner.w,
+              height: inner.h,
+              transform: innerRot ? `rotate(${innerRot}deg)` : undefined,
+              transformOrigin: "center center",
+              pointerEvents: "none",
+              zIndex: 45,
+            }}
+          >
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                border: `${1.5 / esc}px dashed rgba(255,255,255,.9)`,
+                pointerEvents: "none",
+              }}
+            />
+            {DIRECOES.map((dir) => {
+              const left = dir.includes("w") ? 0 : dir.includes("e") ? inner.w : inner.w / 2;
+              const top = dir.includes("n") ? 0 : dir.includes("s") ? inner.h : inner.h / 2;
+              return (
+                <div
+                  key={dir}
+                  onPointerDown={(ev) => iniciarAlca(ev, dir)}
+                  style={{
+                    position: "absolute",
+                    left: left - alvo / 2,
+                    top: top - alvo / 2,
+                    width: alvo,
+                    height: alvo,
+                    display: "grid",
+                    placeItems: "center",
+                    cursor: cursorDaAlca(dir, innerRot + rotMoldura),
+                    pointerEvents: "auto",
+                    touchAction: "none",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: visual,
+                      height: visual,
+                      borderRadius: visual / 2,
+                      background: "#fff",
+                      border: `${1.5 / esc}px solid hsl(var(--accent))`,
+                      boxShadow: `0 ${1 / esc}px ${3 / esc}px rgba(0,0,0,.3)`,
+                    }}
+                  />
+                </div>
+              );
+            })}
+            <div
+              style={{
+                position: "absolute",
+                left: inner.w / 2,
+                top: -(28 / esc),
+                width: 1 / esc,
+                height: 28 / esc,
+                background: "hsl(var(--accent))",
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              onPointerDown={(ev) => iniciarAlca(ev, "girar")}
+              title="Girar a foto"
+              style={{
+                position: "absolute",
+                left: inner.w / 2 - alvo / 2,
+                top: -(28 / esc) - alvo / 2,
+                width: alvo,
+                height: alvo,
+                display: "grid",
+                placeItems: "center",
+                cursor: "grab",
+                pointerEvents: "auto",
+                touchAction: "none",
+              }}
+            >
+              <div
+                style={{
+                  width: 14 / esc,
+                  height: 14 / esc,
+                  borderRadius: 999,
+                  background: "#fff",
+                  border: `${1.5 / esc}px solid hsl(var(--accent))`,
+                  display: "grid",
+                  placeItems: "center",
+                }}
+              >
+                <RotateCw style={{ width: 9 / esc, height: 9 / esc, color: "hsl(var(--accent))" }} />
+              </div>
+            </div>
+          </div>
           <div
             onPointerDown={(ev) => ev.stopPropagation()}
             onClick={(ev) => ev.stopPropagation()}
@@ -709,9 +937,9 @@ function ImagemCanvasView({
               position: "absolute",
               left: "50%",
               top: c.h,
-              transform: `translate(-50%, ${12 / (escala || 1)}px) scale(${1 / (escala || 1)})`,
+              transform: `translate(-50%, ${12 / esc}px) scale(${1 / esc})`,
               transformOrigin: "top center",
-              zIndex: 40,
+              zIndex: 50,
             }}
           >
             <div className="flex items-center gap-2 rounded-xl border border-border bg-card/95 px-2 py-1.5 shadow-lg backdrop-blur">
@@ -729,7 +957,7 @@ function ImagemCanvasView({
               </button>
               <button
                 className="rounded-md px-2 py-1 text-[11px] hover:bg-secondary"
-                onClick={() => aplicarEnquadramento("cover")}
+                onClick={() => aplicarEnquadramento("redefinir")}
               >
                 Redefinir
               </button>
@@ -748,6 +976,14 @@ function ImagemCanvasView({
                 {Math.round(zoomAtual * 100)}%
               </span>
               <span className="h-4 w-px bg-border" />
+              <span
+                className="text-[11px] tabular-nums text-muted-foreground"
+                title="Rotação atual da foto"
+              >
+                {Math.round(innerRot)}°
+              </span>
+
+              <span className="h-4 w-px bg-border" />
               <button
                 className="rounded-md bg-primary px-2 py-1 text-[11px] text-primary-foreground"
                 onClick={() => onSairRecorte?.()}
@@ -761,6 +997,7 @@ function ImagemCanvasView({
     </div>
   );
 }
+
 
 
 function CamadaCanvasView({
@@ -789,7 +1026,7 @@ function CamadaCanvasView({
   onDuploClique?: (() => void) | undefined;
   recortando?: boolean | undefined;
   escala?: number;
-  onRecorte?: ((img: CaixaImg) => void) | undefined;
+  onRecorte?: ((img: CaixaImg, rot: number) => void) | undefined;
   onSairRecorte?: (() => void) | undefined;
 }) {
   if (c.oculto) return null;
@@ -1364,7 +1601,9 @@ export function CanvasView({
   onSelecaoTexto?: ((sel: { inicio: number; fim: number } | null) => void) | undefined;
   onDuploClique?: ((paginaId: string, camadaId: string, camada: CanvasCamada) => void) | undefined;
   recortando?: string | null;
-  onRecorte?: ((paginaId: string, camadaId: string, img: CaixaImg) => void) | undefined;
+  onRecorte?:
+    | ((paginaId: string, camadaId: string, img: CaixaImg, rot: number) => void)
+    | undefined;
   onSairRecorte?: (() => void) | undefined;
 }) {
 
@@ -1642,7 +1881,7 @@ export function CanvasView({
                     onDuploClique={onDuploClique ? () => onDuploClique(pid, cid, c) : undefined}
                     recortando={recortando === cid}
                     escala={escala}
-                    onRecorte={onRecorte ? (img) => onRecorte(pid, cid, img) : undefined}
+                    onRecorte={onRecorte ? (img, rot) => onRecorte(pid, cid, img, rot) : undefined}
                     onSairRecorte={onSairRecorte}
                   />
 
@@ -1830,8 +2069,9 @@ function CanvasComSelecao({ doc }: { doc: DocCanvas }) {
               if (c.tipo === "imagem" && c.img && c.w && c.h) {
                 /* reenquadra sem achatar: a foto acompanha o maior fator */
                 const k = Math.max(geo.w / c.w, geo.h / c.h);
-                c.img = limitarImg(
+                c.img = ajustarImgRot(
                   { x: c.img.x * k, y: c.img.y * k, w: c.img.w * k, h: c.img.h * k },
+                  c.imgRot ?? 0,
                   geo.w,
                   geo.h,
                 );
@@ -1958,12 +2198,16 @@ function CanvasComSelecao({ doc }: { doc: DocCanvas }) {
           );
         }}
         recortando={recortando}
-        onRecorte={(pid, cid, img) =>
+        onRecorte={(pid, cid, img, rot) =>
           patchCamada(
             pid,
             cid,
             (c) => {
-              if (c.tipo === "imagem") c.img = img;
+              if (c.tipo === "imagem") {
+                c.img = img;
+                if (rot) c.imgRot = rot;
+                else delete c.imgRot;
+              }
             },
             "Ajustou a imagem",
           )
