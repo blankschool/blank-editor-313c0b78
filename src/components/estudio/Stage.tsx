@@ -1161,6 +1161,66 @@ function CanvasComSelecao({ doc }: { doc: DocCanvas }) {
   const e = useEstudio();
   const escala = (e.zoom / 100) * (larguras[e.viewport] / 1080);
   const podeArrastar = e.ferramenta === "cursor";
+  const [editando, setEditando] = useState<string | null>(null);
+  const [selTexto, setSelTexto] = useState<{ inicio: number; fim: number } | null>(null);
+  const inputImg = useRef<HTMLInputElement>(null);
+  const alvoUpload = useRef<{ pid: string; cid: string } | null>(null);
+
+  useEffect(() => {
+    if (editando && e.camadaCanvas !== editando) setEditando(null);
+  }, [e.camadaCanvas, editando]);
+
+  const patchCamada = useCallback(
+    (pid: string, cid: string, fn: (c: CanvasCamada) => void, rotulo: string) =>
+      e.atualizarDocCanvas((d) => comCamadaCanvas(d, pid, cid, fn), rotulo),
+    [e],
+  );
+
+  const abrirUpload = (pid: string, cid: string) => {
+    alvoUpload.current = { pid, cid };
+    inputImg.current?.click();
+  };
+
+  const aoEscolherImagem = async (file: File) => {
+    const alvo = alvoUpload.current;
+    if (!alvo) return;
+    try {
+      const url = await enviarImagemCanvas(file);
+      patchCamada(
+        alvo.pid,
+        alvo.cid,
+        (c) => {
+          if (c.tipo !== "imagem") return;
+          c.src = url;
+          delete c.img;
+        },
+        "Trocou a imagem",
+      );
+      toast.success("Imagem aplicada.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Falha ao enviar a imagem.");
+    }
+  };
+
+  /* estilo de um trecho selecionado na camada em edição */
+  const camadaEditando = editando ? acharCamadaCanvas(doc, e.paginaCanvas, editando)?.camada : null;
+  const camadaTexto =
+    camadaEditando && camadaEditando.tipo === "texto" ? (camadaEditando as CanvasCamadaTexto) : null;
+  const temTrecho = !!(selTexto && selTexto.fim > selTexto.inicio);
+  const estiloSel: Partial<CanvasParteTexto> =
+    camadaTexto && temTrecho ? estiloDoTrecho(camadaTexto, selTexto!.inicio, selTexto!.fim) : {};
+
+  const aplicarNoTrecho = (patch: Partial<Omit<CanvasParteTexto, "texto">>, rotulo: string) => {
+    if (!camadaTexto || !temTrecho || !editando) return;
+    const { inicio, fim } = selTexto!;
+    patchCamada(
+      e.paginaCanvas ?? (doc.paginas?.[0]?.id ?? "p1"),
+      editando,
+      (c) => aplicarEstiloEmTrecho(c as CanvasCamadaTexto, inicio, fim, patch),
+      rotulo,
+    );
+  };
+
   const gravar = useCallback(
     (pid: string, cid: string, geo: { x: number; y: number; w: number; h: number }, modo: string) => {
       e.atualizarDocCanvas(
