@@ -401,7 +401,7 @@ export function Stage() {
             const proximo = !e.modoEdicao;
             if (proximo) {
               if (!e.docCanvas && !e.docHtml && !e.selecionado) e.setSelecionado("titulo");
-              e.setPainelEdicao("texto");
+              e.setPainelEdicao("simples");
             } else {
               e.setModoEdicao(false);
             }
@@ -538,6 +538,17 @@ function CamadaCanvasView({
         fontFamily: c.fonte ? `"${c.fonte}", sans-serif` : undefined,
         fontWeight: c.peso,
         fontSize: c.tamanho,
+        fontStyle: c.italico ? "italic" : undefined,
+        textDecoration:
+          c.sublinhado && c.riscado
+            ? "underline line-through"
+            : c.sublinhado
+              ? "underline"
+              : c.riscado
+                ? "line-through"
+                : undefined,
+        textTransform: c.caixa && c.caixa !== "normal" ? c.caixa : undefined,
+        background: c.fundo,
         lineHeight: c.entrelinha !== undefined ? `${c.entrelinha}px` : undefined,
         letterSpacing: c.entreLetras !== undefined ? `${c.entreLetras}px` : undefined,
         color: c.cor,
@@ -1088,28 +1099,27 @@ function CanvasComSelecao({ doc }: { doc: DocCanvas }) {
       }}
       acoes={({ paginaId, camadaId, camada }) => (
         <>
-          {camada.tipo === "texto" && (
-            <button
-              title="Texto"
-              onClick={() => e.setPainelEdicao("texto")}
-              className={cn(
-                "flex h-6 items-center gap-1 rounded-md px-1.5 text-[11px]",
-                e.painelEdicao === "texto" ? "bg-primary text-primary-foreground" : "hover:bg-secondary",
-              )}
-            >
-              <Type className="size-3.5" /> Texto
-            </button>
-          )}
           <button
-            title="Cor"
-            onClick={() => e.setPainelEdicao("cor")}
+            title="Editar camada"
+            onClick={() => e.setPainelEdicao("simples")}
             className={cn(
               "flex h-6 items-center gap-1 rounded-md px-1.5 text-[11px]",
-              e.painelEdicao === "cor" ? "bg-primary text-primary-foreground" : "hover:bg-secondary",
+              e.painelEdicao === "simples" ? "bg-primary text-primary-foreground" : "hover:bg-secondary",
             )}
           >
-            <Palette className="size-3.5" /> Cor
+            {camada.tipo === "texto" ? <Type className="size-3.5" /> : <Palette className="size-3.5" />} Editar
           </button>
+          <button
+            title="Camadas e posição (Pro)"
+            onClick={() => e.setPainelEdicao("pro")}
+            className={cn(
+              "flex h-6 items-center gap-1 rounded-md px-1.5 text-[11px]",
+              e.painelEdicao === "pro" ? "bg-primary text-primary-foreground" : "hover:bg-secondary",
+            )}
+          >
+            <LayoutGrid className="size-3.5" /> Pro
+          </button>
+
           <span className="mx-1 h-4 w-px bg-border" />
           <button
             title="Duplicar camada"
@@ -1397,10 +1407,8 @@ function SelecaoOverlay({
 
         {(
           [
-            ["texto", Type, "Texto"],
-            ["cor", Palette, "Cor"],
-            ["layout", LayoutGrid, "Layout"],
-            ["estrutura", Move, "Estrutura"],
+            ["simples", Type, "Simples"],
+            ["pro", LayoutGrid, "Pro"],
           ] as const
         ).map(([id, Icon, titulo]) => (
           <button
@@ -1415,6 +1423,7 @@ function SelecaoOverlay({
             <Icon className="size-3.5" /> {titulo}
           </button>
         ))}
+
         <span className="mx-1 h-4 w-px bg-border" />
         <button
           title="Duplicar elemento"

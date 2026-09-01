@@ -1,21 +1,33 @@
-import { createFileRoute, notFound } from "@tanstack/react-router";
+import { createFileRoute, notFound, redirect } from "@tanstack/react-router";
 import { PanelSurface } from "@/components/estudio/RightPanel";
-import { TextPanel, ColorPanel, LayoutPanel, LayersPanel } from "@/components/estudio/EditPanels";
+import { InspectorPanel } from "@/components/estudio/EditPanels";
+
+const antigos: Record<string, "simples" | "pro"> = {
+  texto: "simples",
+  cor: "simples",
+  layout: "simples",
+  estrutura: "pro",
+};
 
 const titulos: Record<string, string> = {
-  texto: "Texto e tipografia",
-  cor: "Cor e preenchimento",
-  layout: "Layout e espaçamento",
-  estrutura: "Estrutura e camadas",
+  simples: "Editar · Simples",
+  pro: "Editar · Pro",
 };
 
 export const Route = createFileRoute("/d/$designId/editar/$painel")({
   beforeLoad: ({ params }) => {
+    const alvo = antigos[params.painel];
+    if (alvo) {
+      throw redirect({
+        to: "/d/$designId/editar/$painel",
+        params: { designId: params.designId, painel: alvo },
+      });
+    }
     if (!titulos[params.painel]) throw notFound();
   },
   head: ({ params }) => {
-    const t = `Editar · ${titulos[params.painel] ?? "elemento"} — Estúdio`;
-    const d = "Modo editar do palco: selecione um elemento e ajuste texto, cor, layout ou estrutura.";
+    const t = `${titulos[params.painel] ?? "Editar"} — Estúdio`;
+    const d = "Inspector do Estúdio: aparência, texto, posição e camadas do elemento selecionado.";
     return {
       meta: [
         { title: t },
@@ -34,11 +46,8 @@ function EditarPainelRoute() {
   const { painel } = Route.useParams();
 
   return (
-    <PanelSurface titulo={titulos[painel] ?? "Editar"}>
-      {painel === "texto" && <TextPanel />}
-      {painel === "cor" && <ColorPanel />}
-      {painel === "layout" && <LayoutPanel />}
-      {painel === "estrutura" && <LayersPanel />}
+    <PanelSurface titulo="Editar">
+      <InspectorPanel aba={painel === "pro" ? "pro" : "simples"} />
     </PanelSurface>
   );
 }

@@ -63,19 +63,33 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-function Secao({ titulo, children }: { titulo: string; children: React.ReactNode }) {
+function Secao({
+  titulo,
+  acao,
+  children,
+}: {
+  titulo: string;
+  acao?: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
     <div className="border-b border-border px-3 py-2.5">
-      <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{titulo}</p>
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{titulo}</p>
+        {acao}
+      </div>
       <div className="space-y-2">{children}</div>
     </div>
   );
 }
 
-function Campo({ rotulo, children }: { rotulo: string; children: React.ReactNode }) {
+function Campo({ rotulo, sujo, children }: { rotulo: string; sujo?: boolean; children: React.ReactNode }) {
   return (
     <label className="flex items-center justify-between gap-2 text-[11px]">
-      <span className="text-muted-foreground">{rotulo}</span>
+      <span className="flex items-center gap-1 text-muted-foreground">
+        {sujo && <span className="size-1.5 rounded-full bg-[hsl(var(--accent))]" title="Diferente do salvo" />}
+        {rotulo}
+      </span>
       {children}
     </label>
   );
@@ -83,6 +97,7 @@ function Campo({ rotulo, children }: { rotulo: string; children: React.ReactNode
 
 const inputCls =
   "h-6 w-24 rounded border border-border bg-card px-1.5 text-[11px] outline-none focus:ring-1 focus:ring-ring";
+
 
 function useAlvo(): ElId {
   const e = useEstudio();
@@ -994,9 +1009,10 @@ export function PropsPanel() {
 }
 
 /* inspector simples da camada selecionada (canvas) */
-function SelecaoCanvasPanel() {
+function SelecaoCanvasPanel({ modo = "simples" }: { modo?: "simples" | "pro" }) {
   const e = useEstudio();
   const achado = acharCamadaCanvas(e.docCanvas, e.paginaCanvas, e.camadaCanvas);
+  const salvaAchada = acharCamadaCanvas(e.canvasSalvo, e.paginaCanvas, e.camadaCanvas);
 
   if (!achado)
     return (
@@ -1021,6 +1037,27 @@ function SelecaoCanvasPanel() {
     />
   );
   const sombra = (camada as { sombra?: CanvasSombra }).sombra;
+  const salva = salvaAchada?.camada as Record<string, unknown> | undefined;
+  const dif = (k: string) =>
+    JSON.stringify((camada as unknown as Record<string, unknown>)[k]) !== JSON.stringify(salva?.[k]);
+  const redefinir = (ks: string[]) =>
+    patch((c) => {
+      const alvo = c as unknown as Record<string, unknown>;
+      ks.forEach((k) => {
+        const v = salva?.[k];
+        if (v === undefined) delete alvo[k];
+        else alvo[k] = JSON.parse(JSON.stringify(v));
+      });
+    }, "Redefiniu valores");
+  const botaoRedefinir = (ks: string[]) =>
+    ks.some(dif) ? (
+      <button
+        onClick={() => redefinir(ks)}
+        className="flex items-center gap-1 rounded px-1 text-[10px] text-muted-foreground hover:bg-secondary"
+      >
+        <RotateCcw className="size-3" /> Redefinir
+      </button>
+    ) : null;
 
   return (
     <>
@@ -1032,7 +1069,7 @@ function SelecaoCanvasPanel() {
 
       {camada.tipo === "texto" && (
         <>
-          <Secao titulo="Conteúdo">
+          <Secao titulo="Conteúdo" acao={botaoRedefinir(["texto", "partes"])}>
             <textarea
               value={textoDaCamadaCanvas(camada)}
               onChange={(ev) => {
@@ -1046,7 +1083,13 @@ function SelecaoCanvasPanel() {
               className="h-20 w-full resize-none rounded border border-border bg-card p-2 text-[11px] outline-none focus:ring-1 focus:ring-ring"
             />
           </Secao>
-          <Secao titulo="Tipografia">
+          <Secao
+            titulo="Tipografia"
+            acao={botaoRedefinir([
+              "fonte", "tamanho", "peso", "entrelinha", "entreLetras", "cor", "alinhamento",
+              "italico", "sublinhado", "riscado", "caixa", "fundo",
+            ])}
+          >
             <Campo rotulo="Fonte">
               <input
                 className={inputCls}
@@ -1098,7 +1141,72 @@ function SelecaoCanvasPanel() {
                 </button>
               ))}
             </div>
+            <div className="flex gap-1">
+              {(
+                [
+                  ["italico", Italic, "Itálico"],
+                  ["sublinhado", Underline, "Sublinhado"],
+                  ["riscado", Strikethrough, "Riscado"],
+                ] as const
+              ).map(([k, Icon, titulo]) => (
+                <button
+                  key={k}
+                  title={titulo}
+                  onClick={() =>
+                    patch((c) => {
+                      const t = c as CanvasCamadaTexto;
+                      if (t[k]) delete t[k];
+                      else t[k] = true;
+                    }, titulo)
+                  }
+                  className={cn(
+                    "grid size-6 place-items-center rounded border border-border hover:bg-secondary",
+                    camada[k] ? "bg-primary text-primary-foreground" : "bg-card",
+                  )}
+                >
+                  <Icon className="size-3" />
+                </button>
+              ))}
+            </div>
+            <Campo rotulo="Caixa" sujo={dif("caixa")}>
+              <select
+                className={inputCls}
+                value={camada.caixa ?? "normal"}
+                onChange={(ev) => {
+                  const v = ev.target.value as "normal" | "uppercase" | "lowercase";
+                  patch((c) => {
+                    const t = c as CanvasCamadaTexto;
+                    if (v === "normal") delete t.caixa;
+                    else t.caixa = v;
+                  }, "");
+                }}
+              >
+                <option value="normal">normal</option>
+                <option value="uppercase">MAIÚSCULAS</option>
+                <option value="lowercase">minúsculas</option>
+              </select>
+            </Campo>
+            <Campo rotulo="Fundo" sujo={dif("fundo")}>
+              <div className="flex items-center gap-1">
+                <input
+                  type="color"
+                  className={cn(inputCls, "w-14 p-0")}
+                  value={/^#[0-9a-f]{6}$/i.test(camada.fundo ?? "") ? camada.fundo! : "#ffffff"}
+                  onChange={(ev) => patch((c) => void ((c as CanvasCamadaTexto).fundo = ev.target.value), "")}
+                />
+                {camada.fundo && (
+                  <button
+                    title="Sem fundo"
+                    onClick={() => patch((c) => void delete (c as CanvasCamadaTexto).fundo, "Removeu o fundo")}
+                    className="grid size-6 place-items-center rounded border border-border bg-card hover:bg-secondary"
+                  >
+                    <Trash2 className="size-3" />
+                  </button>
+                )}
+              </div>
+            </Campo>
           </Secao>
+
         </>
       )}
 
@@ -1173,16 +1281,52 @@ function SelecaoCanvasPanel() {
         />
       </Secao>
 
-      <Secao titulo="Posição">
-        <Campo rotulo="X">{num(camada.x, (c, n) => void (c.x = n))}</Campo>
-        <Campo rotulo="Y">{num(camada.y, (c, n) => void (c.y = n))}</Campo>
-        {camada.tipo !== "texto" && (
-          <>
-            <Campo rotulo="Largura">{num(camada.w, (c, n) => void (c.w = n))}</Campo>
-            <Campo rotulo="Altura">{num(camada.h, (c, n) => void (c.h = n))}</Campo>
-          </>
-        )}
-      </Secao>
+      {modo === "pro" && (
+        <>
+          <Secao titulo="Posição" acao={botaoRedefinir(["x", "y", "w", "h"])}>
+            <Campo rotulo="X" sujo={dif("x")}>
+              {num(camada.x, (c, n) => void (c.x = n))}
+            </Campo>
+            <Campo rotulo="Y" sujo={dif("y")}>
+              {num(camada.y, (c, n) => void (c.y = n))}
+            </Campo>
+            {camada.tipo !== "texto" && (
+              <>
+                <Campo rotulo="Largura" sujo={dif("w")}>
+                  {num(camada.w, (c, n) => void (c.w = n))}
+                </Campo>
+                <Campo rotulo="Altura" sujo={dif("h")}>
+                  {num(camada.h, (c, n) => void (c.h = n))}
+                </Campo>
+              </>
+            )}
+          </Secao>
+
+          <Secao titulo="Ordem (z)">
+            <div className="grid grid-cols-2 gap-1">
+              {(
+                [
+                  ["topo", "Trazer para frente"],
+                  [1, "Avançar"],
+                  [-1, "Recuar"],
+                  ["fundo", "Enviar para trás"],
+                ] as const
+              ).map(([d, titulo]) => (
+                <button
+                  key={String(d)}
+                  onClick={() =>
+                    e.atualizarDocCanvas((doc) => moverCamadaCanvas(doc, e.paginaCanvas, id, d), titulo)
+                  }
+                  className="h-6 rounded border border-border bg-card text-[11px] hover:bg-secondary"
+                >
+                  {titulo}
+                </button>
+              ))}
+            </div>
+          </Secao>
+        </>
+      )}
+
 
       <Secao titulo="Sombra">
         {!sombra ? (
@@ -1227,9 +1371,127 @@ function SelecaoCanvasPanel() {
           </>
         )}
       </Secao>
+
+      {modo === "simples" && <ExportarSelecao camadaId={id} nome={camada.nome ?? camada.tipo} />}
+      {modo === "pro" && <CamadasCanvasPanel />}
     </>
   );
 }
+
+function ExportarSelecao({ camadaId, nome }: { camadaId: string; nome: string }) {
+  const [ocupado, setOcupado] = useState(false);
+  const exportar = async (escala: 1 | 2) => {
+    setOcupado(true);
+    try {
+      const blob = await camadaParaPng(camadaId, escala);
+      if (!blob) {
+        toast.error("Não consegui rasterizar essa camada.");
+        return;
+      }
+      baixarArquivo(`${nome.replace(/\s+/g, "-").toLowerCase()}@${escala}x.png`, blob, "image/png");
+      toast.success(`PNG ${escala}× exportado`);
+    } finally {
+      setOcupado(false);
+    }
+  };
+  return (
+    <Secao titulo="Exportar seleção">
+      <div
+        className="grid h-16 place-items-center rounded border border-border text-[10px] text-muted-foreground"
+        style={{
+          backgroundImage:
+            "linear-gradient(45deg,hsl(var(--muted)) 25%,transparent 25%),linear-gradient(-45deg,hsl(var(--muted)) 25%,transparent 25%),linear-gradient(45deg,transparent 75%,hsl(var(--muted)) 75%),linear-gradient(-45deg,transparent 75%,hsl(var(--muted)) 75%)",
+          backgroundSize: "12px 12px",
+          backgroundPosition: "0 0,0 6px,6px -6px,-6px 0",
+        }}
+      >
+        fundo transparente
+      </div>
+      <div className="grid grid-cols-2 gap-1">
+        {([1, 2] as const).map((s) => (
+          <button
+            key={s}
+            disabled={ocupado}
+            onClick={() => void exportar(s)}
+            className="h-6 rounded border border-border bg-card text-[11px] hover:bg-secondary disabled:opacity-50"
+          >
+            PNG {s}×
+          </button>
+        ))}
+      </div>
+    </Secao>
+  );
+}
+
+/* ============ Inspector unificado (Simples / Pro) ============ */
+
+export function InspectorPanel({ aba }: { aba: "simples" | "pro" }) {
+  const e = useEstudio();
+
+  return (
+    <div className="flex h-full flex-col">
+      <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-2">
+        <div className="flex rounded-md border border-border p-0.5">
+          {(
+            [
+              ["simples", "Simples"],
+              ["pro", "Pro"],
+            ] as const
+          ).map(([id, rotulo]) => (
+            <button
+              key={id}
+              onClick={() => e.setPainelEdicao(id)}
+              className={cn(
+                "h-6 rounded px-2 text-[11px]",
+                aba === id ? "bg-primary text-primary-foreground" : "hover:bg-secondary",
+              )}
+            >
+              {rotulo}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-1">
+          {e.sujo && <span className="size-1.5 rounded-full bg-[hsl(var(--accent))]" title="Alterações não salvas" />}
+          <button
+            disabled={!e.sujo}
+            onClick={() => e.descartarRascunho()}
+            className="h-6 rounded border border-border px-2 text-[11px] hover:bg-secondary disabled:opacity-40"
+          >
+            Descartar
+          </button>
+          <button
+            disabled={!e.sujo}
+            onClick={() => e.salvarRascunho()}
+            className="h-6 rounded bg-primary px-2 text-[11px] text-primary-foreground hover:opacity-90 disabled:opacity-40"
+          >
+            Salvar
+          </button>
+        </div>
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-auto">
+        {e.docHtml ? (
+          <Secao titulo="Documento">
+            <p className="text-[11px] text-muted-foreground">Preview em HTML: somente leitura.</p>
+          </Secao>
+        ) : e.docCanvas ? (
+          <SelecaoCanvasPanel modo={aba} />
+        ) : aba === "simples" ? (
+          <>
+            <TextPanelFluxo />
+            <ColorPanelFluxo />
+          </>
+        ) : (
+          <>
+            <LayoutPanel />
+            <CamadasFluxoPanel />
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 
 function PropsPanelFluxo() {
   const e = useEstudio();
