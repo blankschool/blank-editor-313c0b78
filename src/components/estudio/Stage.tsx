@@ -851,7 +851,7 @@ function ImagemCanvasView({
                 pointerEvents: "none",
               }}
             />
-            {DIRECOES.map((dir) => {
+            {DIRECOES_CANTO.map((dir) => {
               const left = dir.includes("w") ? 0 : dir.includes("e") ? inner.w : inner.w / 2;
               const top = dir.includes("n") ? 0 : dir.includes("s") ? inner.h : inner.h / 2;
               return (
