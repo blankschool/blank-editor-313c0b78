@@ -1075,17 +1075,14 @@ function SelecaoCanvasPanel({ modo = "simples" }: { modo?: "simples" | "pro" }) 
       {camada.tipo === "texto" && (
         <>
           <Secao titulo="Conteúdo" acao={botaoRedefinir(["texto", "partes"])}>
-            <textarea
-              value={textoDaCamadaCanvas(camada)}
-              onChange={(ev) => {
-                const v = ev.target.value;
-                patch((c) => {
-                  const t = c as CanvasCamadaTexto;
-                  t.texto = v;
-                  delete t.partes;
-                }, "");
-              }}
-              className="h-20 w-full resize-none rounded border border-border bg-card p-2 text-[11px] outline-none focus:ring-1 focus:ring-ring"
+            <ConteudoRico
+              camada={camada}
+              onTexto={(v) =>
+                patch((c) => substituirTextoPreservandoPartes(c as CanvasCamadaTexto, v), "Editou o texto")
+              }
+              onTrecho={(inicio, fim, est, rotulo) =>
+                patch((c) => aplicarEstiloEmTrecho(c as CanvasCamadaTexto, inicio, fim, est), rotulo)
+              }
             />
           </Secao>
           <Secao
@@ -1147,6 +1144,21 @@ function SelecaoCanvasPanel({ modo = "simples" }: { modo?: "simples" | "pro" }) 
               ))}
             </div>
             <div className="flex gap-1">
+              <button
+                title="Negrito"
+                onClick={() =>
+                  patch((c) => {
+                    const t = c as CanvasCamadaTexto;
+                    t.peso = (t.peso ?? 400) >= 700 ? 400 : 700;
+                  }, "Alternou negrito")
+                }
+                className={cn(
+                  "grid size-6 place-items-center rounded border border-border hover:bg-secondary",
+                  (camada.peso ?? 400) >= 700 ? "bg-primary text-primary-foreground" : "bg-card",
+                )}
+              >
+                <Bold className="size-3" />
+              </button>
               {(
                 [
                   ["italico", Italic, "Itálico"],
@@ -1173,6 +1185,9 @@ function SelecaoCanvasPanel({ modo = "simples" }: { modo?: "simples" | "pro" }) 
                 </button>
               ))}
             </div>
+            <Campo rotulo="Raio do fundo" sujo={dif("raio")}>
+              {num(camada.raio, (c, n) => void ((c as CanvasCamadaTexto).raio = n))}
+            </Campo>
             <Campo rotulo="Caixa" sujo={dif("caixa")}>
               <select
                 className={inputCls}
@@ -1267,13 +1282,48 @@ function SelecaoCanvasPanel({ modo = "simples" }: { modo?: "simples" | "pro" }) 
       )}
 
       {camada.tipo === "imagem" && (
-        <Secao titulo="Imagem">
-          <Campo rotulo="Raio">{num(camada.raio, (c, n) => void ((c as CanvasCamadaImagem).raio = n))}</Campo>
-          <input
-            readOnly
-            value={camada.src}
-            className="h-6 w-full rounded border border-border bg-secondary px-1.5 text-[11px] text-muted-foreground"
+        <Secao titulo={camada.src ? "Imagem" : "Placeholder de imagem"}>
+          <Campo rotulo="Raio" sujo={dif("raio")}>
+            {num(camada.raio, (c, n) => void ((c as CanvasCamadaImagem).raio = n))}
+          </Campo>
+          <ImagemDaCamada
+            src={camada.src}
+            onEscolher={(url) =>
+              patch((c) => {
+                const im = c as CanvasCamadaImagem;
+                im.src = url;
+                delete im.img;
+              }, "Trocou a imagem")
+            }
+            onLimpar={
+              camada.src
+                ? () =>
+                    patch((c) => {
+                      const im = c as CanvasCamadaImagem;
+                      delete im.src;
+                      delete im.img;
+                    }, "Virou placeholder")
+                : undefined
+            }
           />
+        </Secao>
+      )}
+
+      {camada.tipo !== "imagem" && (
+        <Secao titulo="Placeholder">
+          <button
+            onClick={() =>
+              patch((c) => {
+                const novo = virarPlaceholderImagem(c) as unknown as Record<string, unknown>;
+                const alvo = c as unknown as Record<string, unknown>;
+                Object.keys(alvo).forEach((k) => delete alvo[k]);
+                Object.assign(alvo, novo);
+              }, "Virou placeholder de imagem")
+            }
+            className="flex h-6 w-full items-center justify-center gap-1 rounded border border-border bg-card text-[11px] hover:bg-secondary"
+          >
+            <ImagePlus className="size-3" /> Transformar em placeholder de imagem
+          </button>
         </Secao>
       )}
 
