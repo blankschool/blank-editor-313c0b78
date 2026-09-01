@@ -167,8 +167,11 @@ export interface CanvasCamadaTexto {
   oculto?: boolean;
   x: number;
   y: number;
+  /** graus, sentido horário */
+  rotacao?: number;
   w?: number;
   h?: number;
+
   texto?: string;
   partes?: CanvasParteTexto[];
   fonte?: string;
