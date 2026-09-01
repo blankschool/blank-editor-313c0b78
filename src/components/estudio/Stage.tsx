@@ -1218,6 +1218,8 @@ export function CanvasView({
   onTextoInput,
   onSelecaoTexto,
   onDuploClique,
+  recortando = null,
+  onRecorte,
 }: {
   doc: DocCanvas;
   selecionada?: string | null;
@@ -1233,7 +1235,10 @@ export function CanvasView({
   onTextoInput?: ((novo: string) => void) | undefined;
   onSelecaoTexto?: ((sel: { inicio: number; fim: number } | null) => void) | undefined;
   onDuploClique?: ((paginaId: string, camadaId: string, camada: CanvasCamada) => void) | undefined;
+  recortando?: string | null;
+  onRecorte?: ((paginaId: string, camadaId: string, img: CaixaImg) => void) | undefined;
 }) {
+
   const refPaginas = useRef<HTMLDivElement | null>(null);
   const refBarra = useRef<HTMLDivElement | null>(null);
   const [barraW, setBarraW] = useState(0);
