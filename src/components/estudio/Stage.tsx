@@ -32,7 +32,8 @@ import {
   Italic,
   Underline,
   Strikethrough,
-  Frame,
+  Crop,
+  ImageUp,
 } from "lucide-react";
 import { useEstudio } from "./EstudioContext";
 import { cn } from "@/lib/utils";
@@ -63,6 +64,8 @@ import {
   estiloDoTrecho,
   substituirTextoPreservandoPartes,
   virarPlaceholderImagem,
+  limitarImg,
+  type CaixaImg,
 } from "@/lib/estudio-doc";
 import {
   offsetsDaSelecao,
@@ -482,6 +485,169 @@ function estiloCss(s: EstiloEl | undefined): React.CSSProperties {
   };
 }
 
+function transformRot(c: CanvasCamada): string | undefined {
+  const r = (c as { rotacao?: number }).rotacao;
+  return r ? `rotate(${r}deg)` : undefined;
+}
+
+/** imagem da camada: enquadramento cover e modo recorte (arrastar / zoom) */
+function ImagemCanvasView({
+  c,
+  cid,
+  marca,
+  clique,
+  duplo,
+  onPointerDown,
+  recortando,
+  escala,
+  onRecorte,
+}: {
+  c: CanvasCamadaImagem;
+  cid?: string | undefined;
+  marca: React.CSSProperties;
+  clique?: ((ev: React.MouseEvent) => void) | undefined;
+  duplo?: ((ev: React.MouseEvent) => void) | undefined;
+  onPointerDown?: ((ev: React.PointerEvent) => void) | undefined;
+  recortando?: boolean | undefined;
+  escala: number;
+  onRecorte?: ((img: CaixaImg) => void) | undefined;
+}) {
+  const gravado: CaixaImg = c.img ?? { x: 0, y: 0, w: c.w, h: c.h };
+  const [vivo, setVivo] = useState<CaixaImg | null>(null);
+  const arrasteRef = useRef<{ px: number; py: number; base: CaixaImg } | null>(null);
+  const timerZoom = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const inner = vivo ?? gravado;
+
+  useEffect(() => {
+    if (!recortando) setVivo(null);
+  }, [recortando]);
+
+  useEffect(() => {
+    if (!recortando) return;
+    const mover = (ev: PointerEvent) => {
+      const st = arrasteRef.current;
+      if (!st) return;
+      const dx = (ev.clientX - st.px) / (escala || 1);
+      const dy = (ev.clientY - st.py) / (escala || 1);
+      setVivo(limitarImg({ ...st.base, x: st.base.x + dx, y: st.base.y + dy }, c.w, c.h));
+    };
+    const soltar = () => {
+      if (!arrasteRef.current) return;
+      arrasteRef.current = null;
+      setVivo((v) => {
+        if (v) onRecorte?.(v);
+        return v;
+      });
+    };
+    window.addEventListener("pointermove", mover);
+    window.addEventListener("pointerup", soltar);
+    return () => {
+      window.removeEventListener("pointermove", mover);
+      window.removeEventListener("pointerup", soltar);
+    };
+  }, [recortando, escala, c.w, c.h, onRecorte]);
+
+  const zoom = (fator: number) => {
+    const atual = vivo ?? gravado;
+    const minW = c.w;
+    const minH = c.h;
+    let w = atual.w * fator;
+    let h = atual.h * fator;
+    const kmin = Math.max(minW / atual.w, minH / atual.h);
+    if (fator < kmin) {
+      w = atual.w * kmin;
+      h = atual.h * kmin;
+    }
+    const cx = c.w / 2 - atual.x;
+    const cy = c.h / 2 - atual.y;
+    const k = w / atual.w;
+    const novo = limitarImg({ w, h, x: c.w / 2 - cx * k, y: c.h / 2 - cy * k }, c.w, c.h);
+    setVivo(novo);
+    if (timerZoom.current) clearTimeout(timerZoom.current);
+    timerZoom.current = setTimeout(() => onRecorte?.(novo), 250);
+  };
+
+  const estiloImg: React.CSSProperties = {
+    position: "absolute",
+    display: "block",
+    left: inner.x,
+    top: inner.y,
+    width: inner.w,
+    height: inner.h,
+    transform: c.espelhoY ? "scaleY(-1)" : undefined,
+    userSelect: "none",
+    pointerEvents: "none",
+  };
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: c.x,
+        top: c.y,
+        width: c.w,
+        height: c.h,
+        transform: transformRot(c),
+        overflow: recortando ? "visible" : "hidden",
+        borderRadius:
+          !recortando && c.raio !== undefined
+            ? Math.min(c.raio, Math.min(c.w, c.h) / 2)
+            : undefined,
+        opacity: c.opacidade,
+        boxShadow: c.sombra
+          ? `${c.sombra.x}px ${c.sombra.y}px ${c.sombra.blur}px ${c.sombra.cor}`
+          : undefined,
+        cursor: recortando ? "grab" : undefined,
+        ...marca,
+      }}
+      onClick={clique}
+      onDoubleClick={duplo}
+      onPointerDown={(ev) => {
+        if (recortando) {
+          if (ev.button !== 0) return;
+          ev.preventDefault();
+          ev.stopPropagation();
+          arrasteRef.current = { px: ev.clientX, py: ev.clientY, base: inner };
+          return;
+        }
+        onPointerDown?.(ev);
+      }}
+      onWheel={(ev) => {
+        if (!recortando) return;
+        ev.stopPropagation();
+        const dy = ev.deltaY * (ev.deltaMode === 1 ? 16 : ev.deltaMode === 2 ? 100 : 1);
+        zoom(Math.exp(-dy * 0.0015));
+      }}
+      data-camada={cid}
+      data-recorte={recortando ? "1" : undefined}
+    >
+      {recortando && <img src={c.src} alt="" style={{ ...estiloImg, opacity: 0.3 }} />}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          overflow: "hidden",
+          borderRadius:
+            c.raio !== undefined ? Math.min(c.raio, Math.min(c.w, c.h) / 2) : undefined,
+        }}
+      >
+        <img src={c.src} alt="" style={estiloImg} />
+      </div>
+      {recortando && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            border: `${2 / (escala || 1)}px solid #fff`,
+            boxShadow: "0 0 0 9999px rgba(0,0,0,0.25)",
+            pointerEvents: "none",
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
 function CamadaCanvasView({
   c,
   cid,
@@ -492,6 +658,9 @@ function CamadaCanvasView({
   onTextoInput,
   onSelecaoTexto,
   onDuploClique,
+  recortando,
+  escala = 1,
+  onRecorte,
 }: {
   c: CanvasCamada;
   cid?: string;
@@ -502,6 +671,9 @@ function CamadaCanvasView({
   onTextoInput?: ((novo: string) => void) | undefined;
   onSelecaoTexto?: ((sel: { inicio: number; fim: number } | null) => void) | undefined;
   onDuploClique?: (() => void) | undefined;
+  recortando?: boolean | undefined;
+  escala?: number;
+  onRecorte?: ((img: CaixaImg) => void) | undefined;
 }) {
   if (c.oculto) return null;
   const marca: React.CSSProperties = selecionada
@@ -528,6 +700,7 @@ function CamadaCanvasView({
           top: c.y,
           width: c.w,
           height: c.h,
+          transform: transformRot(c),
           borderRadius: c.raio,
           opacity: c.opacidade,
           border: "2px dashed hsl(var(--border))",
@@ -557,44 +730,21 @@ function CamadaCanvasView({
     );
   }
   if (c.tipo === "imagem") {
-    const inner = c.img ?? { x: 0, y: 0, w: c.w, h: c.h };
     return (
-      <div
-        style={{
-          position: "absolute",
-          left: c.x,
-          top: c.y,
-          width: c.w,
-          height: c.h,
-          overflow: "hidden",
-          borderRadius: c.raio !== undefined ? Math.min(c.raio, Math.min(c.w, c.h) / 2) : undefined,
-          opacity: c.opacidade,
-          boxShadow: c.sombra
-            ? `${c.sombra.x}px ${c.sombra.y}px ${c.sombra.blur}px ${c.sombra.cor}`
-            : undefined,
-          ...marca,
-        }}
-        onClick={clique}
-        onDoubleClick={duplo}
+      <ImagemCanvasView
+        c={c}
+        cid={cid}
+        marca={marca}
+        clique={clique}
+        duplo={duplo}
         onPointerDown={onPointerDown}
-        data-camada={cid}
-      >
-        <img
-          src={c.src}
-          alt=""
-          style={{
-            position: "absolute",
-            display: "block",
-            left: inner.x,
-            top: inner.y,
-            width: inner.w,
-            height: inner.h,
-            transform: c.espelhoY ? "scaleY(-1)" : undefined,
-          }}
-        />
-      </div>
+        recortando={recortando}
+        escala={escala}
+        onRecorte={onRecorte}
+      />
     );
   }
+
   if (c.tipo === "forma") {
     return (
       <div
@@ -604,6 +754,8 @@ function CamadaCanvasView({
           top: c.y,
           width: c.w,
           height: c.h,
+          transform: transformRot(c),
+
           background: c.cor,
           borderRadius: c.raio !== undefined ? Math.min(c.raio, Math.min(c.w, c.h) / 2) : undefined,
           opacity: c.opacidade,
@@ -629,6 +781,8 @@ function CamadaCanvasView({
     top: c.y,
     width: c.w,
     height: c.h,
+    transform: transformRot(c),
+
     fontFamily: c.fonte ? `"${c.fonte}", sans-serif` : undefined,
     fontWeight: c.peso,
     fontSize: c.tamanho,
@@ -782,16 +936,64 @@ interface Geo {
   y: number;
   w: number;
   h: number;
+  /** rotação em graus (opcional) */
+  r?: number;
 }
 
-type ModoArraste = "mover" | "nw" | "ne" | "sw" | "se";
+type Direcao = "nw" | "n" | "ne" | "e" | "se" | "s" | "sw" | "w";
+type ModoArraste = "mover" | "girar" | Direcao;
+
+const DIRECOES: Direcao[] = ["nw", "n", "ne", "e", "se", "s", "sw", "w"];
+/** ângulo de cada alça, 0° = topo, sentido horário */
+const ANGULO_ALCA: Record<Direcao, number> = {
+  n: 0,
+  ne: 45,
+  e: 90,
+  se: 135,
+  s: 180,
+  sw: 225,
+  w: 270,
+  nw: 315,
+};
+const CURSORES = [
+  "ns-resize",
+  "nesw-resize",
+  "ew-resize",
+  "nwse-resize",
+  "ns-resize",
+  "nesw-resize",
+  "ew-resize",
+  "nwse-resize",
+];
+
+/** cursor certo para a alça já considerando a rotação da camada */
+function cursorDaAlca(dir: Direcao, rotacao = 0): string {
+  const a = ((ANGULO_ALCA[dir] + rotacao) % 360 + 360) % 360;
+  return CURSORES[Math.round(a / 45) % 8]!;
+}
 
 const MARGEM_PRANCHETA = 108;
 const TOLERANCIA_SNAP = 4;
 
-function geoDaCamada(c: CanvasCamada): Geo {
-  return { x: c.x, y: c.y, w: (c as { w?: number }).w ?? 0, h: (c as { h?: number }).h ?? 0 };
+function girarPonto(x: number, y: number, graus: number): { x: number; y: number } {
+  const t = (graus * Math.PI) / 180;
+  const cos = Math.cos(t);
+  const sen = Math.sin(t);
+  return { x: x * cos - y * sen, y: x * sen + y * cos };
 }
+
+function geoDaCamada(c: CanvasCamada): Geo {
+  const g: Geo = {
+    x: c.x,
+    y: c.y,
+    w: (c as { w?: number }).w ?? 0,
+    h: (c as { h?: number }).h ?? 0,
+  };
+  const r = (c as { rotacao?: number }).rotacao;
+  if (r) g.r = r;
+  return g;
+}
+
 
 function alvosGuias(pagina: CanvasPagina, ignorar: string): { v: number[]; h: number[] } {
   const L = pagina.largura || 1080;
@@ -814,22 +1016,26 @@ function encaixar(
   ignorar: string,
   modo: ModoArraste,
 ): { geo: Geo; guias: { v: number[]; h: number[] } } {
-  const alvos = alvosGuias(pagina, ignorar);
   const guias: { v: number[]; h: number[] } = { v: [], h: [] };
   const out: Geo = { ...geo };
+  /* sem encaixe ao girar ou com a caixa rotacionada */
+  if (modo === "girar" || geo.r) return { geo: out, guias };
+  const alvos = alvosGuias(pagina, ignorar);
+  const mexeEsq = modo === "nw" || modo === "sw" || modo === "w";
+  const mexeDir = modo === "ne" || modo === "se" || modo === "e";
+  const mexeTopo = modo === "nw" || modo === "ne" || modo === "n";
+  const mexeBase = modo === "sw" || modo === "se" || modo === "s";
 
-  const bordasV: Array<[number, number]> =
+  const bordasV: number[] =
     modo === "mover"
-      ? [
-          [geo.x, 0],
-          [geo.x + geo.w / 2, geo.w / 2],
-          [geo.x + geo.w, geo.w],
-        ]
-      : modo === "nw" || modo === "sw"
-        ? [[geo.x, 0]]
-        : [[geo.x + geo.w, geo.w]];
+      ? [geo.x, geo.x + geo.w / 2, geo.x + geo.w]
+      : mexeEsq
+        ? [geo.x]
+        : mexeDir
+          ? [geo.x + geo.w]
+          : [];
   let melhorV: { delta: number; linha: number } | null = null;
-  bordasV.forEach(([pos]) => {
+  bordasV.forEach((pos) => {
     alvos.v.forEach((t) => {
       const d = t - pos;
       if (Math.abs(d) <= TOLERANCIA_SNAP && (!melhorV || Math.abs(d) < Math.abs(melhorV.delta)))
@@ -839,25 +1045,23 @@ function encaixar(
   if (melhorV) {
     const mv = melhorV as { delta: number; linha: number };
     if (modo === "mover") out.x += mv.delta;
-    else if (modo === "nw" || modo === "sw") {
+    else if (mexeEsq) {
       out.x += mv.delta;
       out.w -= mv.delta;
     } else out.w += mv.delta;
     guias.v.push(mv.linha);
   }
 
-  const bordasH: Array<[number, number]> =
+  const bordasH: number[] =
     modo === "mover"
-      ? [
-          [geo.y, 0],
-          [geo.y + geo.h / 2, geo.h / 2],
-          [geo.y + geo.h, geo.h],
-        ]
-      : modo === "nw" || modo === "ne"
-        ? [[geo.y, 0]]
-        : [[geo.y + geo.h, geo.h]];
+      ? [geo.y, geo.y + geo.h / 2, geo.y + geo.h]
+      : mexeTopo
+        ? [geo.y]
+        : mexeBase
+          ? [geo.y + geo.h]
+          : [];
   let melhorH: { delta: number; linha: number } | null = null;
-  bordasH.forEach(([pos]) => {
+  bordasH.forEach((pos) => {
     alvos.h.forEach((t) => {
       const d = t - pos;
       if (Math.abs(d) <= TOLERANCIA_SNAP && (!melhorH || Math.abs(d) < Math.abs(melhorH.delta)))
@@ -867,7 +1071,7 @@ function encaixar(
   if (melhorH) {
     const mh = melhorH as { delta: number; linha: number };
     if (modo === "mover") out.y += mh.delta;
-    else if (modo === "nw" || modo === "ne") {
+    else if (mexeTopo) {
       out.y += mh.delta;
       out.h -= mh.delta;
     } else out.h += mh.delta;
@@ -876,6 +1080,134 @@ function encaixar(
 
   return { geo: out, guias };
 }
+
+/** alças de redimensionar + rotação, com área de clique maior que o desenho */
+function AlcasSelecao({
+  geo,
+  escala,
+  aoIniciar,
+}: {
+  geo: Geo;
+  escala: number;
+  aoIniciar: (ev: React.PointerEvent, modo: ModoArraste) => void;
+}) {
+  const esc = escala || 1;
+  const alvo = 20 / esc; // área clicável
+  const visual = 9 / esc; // quadradinho desenhado
+  const rot = geo.r ?? 0;
+  const pos = (dir: Direcao) => ({
+    left: dir.includes("w") ? 0 : dir.includes("e") ? geo.w : geo.w / 2,
+    top: dir.includes("n") ? 0 : dir.includes("s") ? geo.h : geo.h / 2,
+  });
+  const lateral = (dir: Direcao) => dir === "n" || dir === "s" || dir === "e" || dir === "w";
+  const desenho = (dir: Direcao): React.CSSProperties => {
+    const horizontal = dir === "n" || dir === "s";
+    if (!lateral(dir))
+      return { width: visual, height: visual, borderRadius: visual / 2 };
+    return {
+      width: horizontal ? Math.min(geo.w * 0.4, 22 / esc) : visual * 0.7,
+      height: horizontal ? visual * 0.7 : Math.min(geo.h * 0.4, 22 / esc),
+      borderRadius: visual / 2,
+    };
+  };
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: geo.x,
+        top: geo.y,
+        width: geo.w,
+        height: geo.h,
+        transform: rot ? `rotate(${rot}deg)` : undefined,
+        pointerEvents: "none",
+        zIndex: 55,
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          border: `${1.5 / esc}px solid hsl(var(--accent))`,
+          pointerEvents: "none",
+        }}
+      />
+      {DIRECOES.map((dir) => {
+        const p = pos(dir);
+        return (
+          <div
+            key={dir}
+            onPointerDown={(ev) => aoIniciar(ev, dir)}
+            style={{
+              position: "absolute",
+              left: p.left - alvo / 2,
+              top: p.top - alvo / 2,
+              width: alvo,
+              height: alvo,
+              display: "grid",
+              placeItems: "center",
+              cursor: cursorDaAlca(dir, rot),
+              pointerEvents: "auto",
+              touchAction: "none",
+            }}
+          >
+            <div
+              style={{
+                ...desenho(dir),
+                background: "#fff",
+                border: `${1.5 / esc}px solid hsl(var(--accent))`,
+                boxShadow: `0 ${1 / esc}px ${3 / esc}px rgba(0,0,0,.25)`,
+              }}
+            />
+          </div>
+        );
+      })}
+      <div
+        onPointerDown={(ev) => aoIniciar(ev, "girar")}
+        title="Girar"
+        style={{
+          position: "absolute",
+          left: geo.w / 2 - alvo / 2,
+          top: -(28 / esc) - alvo / 2,
+          width: alvo,
+          height: alvo,
+          display: "grid",
+          placeItems: "center",
+          cursor: "grab",
+          pointerEvents: "auto",
+          touchAction: "none",
+        }}
+      >
+        <div
+          style={{
+            width: 14 / esc,
+            height: 14 / esc,
+            borderRadius: 999,
+            background: "#fff",
+            border: `${1.5 / esc}px solid hsl(var(--accent))`,
+            boxShadow: `0 ${1 / esc}px ${3 / esc}px rgba(0,0,0,.25)`,
+            display: "grid",
+            placeItems: "center",
+          }}
+        >
+          <RotateCw style={{ width: 9 / esc, height: 9 / esc, color: "hsl(var(--accent))" }} />
+        </div>
+      </div>
+      <div
+        style={{
+          position: "absolute",
+          left: geo.w / 2,
+          top: -(28 / esc),
+          width: 1 / esc,
+          height: 28 / esc,
+          background: "hsl(var(--accent))",
+          pointerEvents: "none",
+        }}
+      />
+    </div>
+  );
+}
+
 
 export function CanvasView({
   doc,
@@ -889,6 +1221,8 @@ export function CanvasView({
   onTextoInput,
   onSelecaoTexto,
   onDuploClique,
+  recortando = null,
+  onRecorte,
 }: {
   doc: DocCanvas;
   selecionada?: string | null;
@@ -904,7 +1238,10 @@ export function CanvasView({
   onTextoInput?: ((novo: string) => void) | undefined;
   onSelecaoTexto?: ((sel: { inicio: number; fim: number } | null) => void) | undefined;
   onDuploClique?: ((paginaId: string, camadaId: string, camada: CanvasCamada) => void) | undefined;
+  recortando?: string | null;
+  onRecorte?: ((paginaId: string, camadaId: string, img: CaixaImg) => void) | undefined;
 }) {
+
   const refPaginas = useRef<HTMLDivElement | null>(null);
   const refBarra = useRef<HTMLDivElement | null>(null);
   const [barraW, setBarraW] = useState(0);
@@ -944,7 +1281,9 @@ export function CanvasView({
     py: number;
     pagina: CanvasPagina;
     atual: Geo;
+    centro: { x: number; y: number };
   } | null>(null);
+
 
   const paginas = Array.isArray(doc.paginas) ? doc.paginas : [];
 
@@ -953,22 +1292,68 @@ export function CanvasView({
     const mover = (ev: PointerEvent) => {
       const st = refArraste.current;
       if (!st) return;
-      const dx = (ev.clientX - st.px) / (escala || 1);
-      const dy = (ev.clientY - st.py) / (escala || 1);
+      const rot = st.inicio.r ?? 0;
+
+      if (st.modo === "girar") {
+        const cx = st.centro.x;
+        const cy = st.centro.y;
+        const ang = (Math.atan2(ev.clientY - cy, ev.clientX - cx) * 180) / Math.PI + 90;
+        let r = ang;
+        if (ev.shiftKey) r = Math.round(r / 15) * 15;
+        const arredondado: Geo = { ...st.inicio, r: Math.round(((r % 360) + 360) % 360) };
+        st.atual = arredondado;
+        setArraste({
+          paginaId: st.paginaId,
+          camadaId: st.camadaId,
+          modo: st.modo,
+          geo: arredondado,
+          guias: { v: [], h: [] },
+        });
+        return;
+      }
+
+      const dxTela = (ev.clientX - st.px) / (escala || 1);
+      const dyTela = (ev.clientY - st.py) / (escala || 1);
       let bruto: Geo;
       if (st.modo === "mover") {
-        bruto = { ...st.inicio, x: st.inicio.x + dx, y: st.inicio.y + dy };
+        bruto = { ...st.inicio, x: st.inicio.x + dxTela, y: st.inicio.y + dyTela };
       } else {
-        const esq = st.modo === "nw" || st.modo === "sw";
-        const topo = st.modo === "nw" || st.modo === "ne";
-        const w = Math.max(8, st.inicio.w + (esq ? -dx : dx));
-        const h = Math.max(8, st.inicio.h + (topo ? -dy : dy));
-        bruto = {
-          x: esq ? st.inicio.x + (st.inicio.w - w) : st.inicio.x,
-          y: topo ? st.inicio.y + (st.inicio.h - h) : st.inicio.y,
-          w,
-          h,
+        /* delta no referencial da caixa (desfaz a rotação) */
+        const local = girarPonto(dxTela, dyTela, -rot);
+        const esq = st.modo === "nw" || st.modo === "sw" || st.modo === "w";
+        const dir = st.modo === "ne" || st.modo === "se" || st.modo === "e";
+        const topo = st.modo === "nw" || st.modo === "ne" || st.modo === "n";
+        const base = st.modo === "sw" || st.modo === "se" || st.modo === "s";
+        const doCentro = ev.altKey;
+        const fator = doCentro ? 2 : 1;
+        let w = esq
+          ? Math.max(8, st.inicio.w - local.x * fator)
+          : dir
+            ? Math.max(8, st.inicio.w + local.x * fator)
+            : st.inicio.w;
+        let h = topo
+          ? Math.max(8, st.inicio.h - local.y * fator)
+          : base
+            ? Math.max(8, st.inicio.h + local.y * fator)
+            : st.inicio.h;
+        const canto = (esq || dir) && (topo || base);
+        if (canto && ev.shiftKey && st.inicio.w > 0 && st.inicio.h > 0) {
+          const k = Math.max(w / st.inicio.w, h / st.inicio.h);
+          w = st.inicio.w * k;
+          h = st.inicio.h * k;
+        }
+        /* mantém a âncora oposta parada, mesmo com a caixa girada */
+        const ox = doCentro ? (st.inicio.w - w) / 2 : esq ? st.inicio.w - w : 0;
+        const oy = doCentro ? (st.inicio.h - h) / 2 : topo ? st.inicio.h - h : 0;
+        const dCentroLocal = {
+          x: ox + w / 2 - st.inicio.w / 2,
+          y: oy + h / 2 - st.inicio.h / 2,
         };
+        const dCentro = girarPonto(dCentroLocal.x, dCentroLocal.y, rot);
+        const cx = st.inicio.x + st.inicio.w / 2 + dCentro.x;
+        const cy = st.inicio.y + st.inicio.h / 2 + dCentro.y;
+        bruto = { x: cx - w / 2, y: cy - h / 2, w, h };
+        if (rot) bruto.r = rot;
       }
       const { geo, guias } = encaixar(bruto, st.pagina, st.camadaId, st.modo);
       const arredondado: Geo = {
@@ -977,6 +1362,7 @@ export function CanvasView({
         w: Math.round(geo.w),
         h: Math.round(geo.h),
       };
+      if (rot) arredondado.r = rot;
       st.atual = arredondado;
       setArraste({
         paginaId: st.paginaId,
@@ -1012,6 +1398,16 @@ export function CanvasView({
     ev.preventDefault();
     ev.stopPropagation();
     const inicio = geoDaCamada(camada);
+    /* centro da camada em coordenadas de tela, para a rotação */
+    const cont = refPaginas.current?.querySelector<HTMLElement>(`[data-pagina="${paginaId}"]`);
+    const r = cont?.getBoundingClientRect();
+    const esc = escala || 1;
+    const centro = r
+      ? {
+          x: r.left + (inicio.x + inicio.w / 2) * esc,
+          y: r.top + (inicio.y + inicio.h / 2) * esc,
+        }
+      : { x: ev.clientX, y: ev.clientY };
     refArraste.current = {
       paginaId,
       camadaId,
@@ -1021,9 +1417,11 @@ export function CanvasView({
       py: ev.clientY,
       pagina,
       atual: inicio,
+      centro,
     };
     setArraste({ paginaId, camadaId, modo, geo: inicio, guias: { v: [], h: [] } });
   };
+
 
   if (!paginas.length) {
     return (
@@ -1044,8 +1442,8 @@ export function CanvasView({
             ? arraste.geo
             : geoDaCamada(selNaPagina)
           : null;
-        const alcas = selNaPagina && selNaPagina.tipo !== "texto";
-        const lado = 10 / (escala || 1);
+        const alcas = !!selNaPagina;
+
         const larguraPag = p.largura || 1080;
         const esc = escala || 1;
         const dimSel =
@@ -1073,6 +1471,7 @@ export function CanvasView({
               </span>
             )}
             <div
+              data-pagina={pid}
               style={{
                 position: "relative",
                 width: p.largura || 1080,
@@ -1090,9 +1489,12 @@ export function CanvasView({
                         ...c,
                         x: arraste.geo.x,
                         y: arraste.geo.y,
-                        ...(c.tipo === "texto" ? {} : { w: arraste.geo.w, h: arraste.geo.h }),
+                        w: arraste.geo.w,
+                        h: c.tipo === "texto" && arraste.modo === "mover" ? c.h : arraste.geo.h,
+                        ...(arraste.geo.r !== undefined ? { rotacao: arraste.geo.r } : {}),
                       } as CanvasCamada)
                     : c;
+
                 return (
                   <CamadaCanvasView
                     key={cid}
@@ -1101,7 +1503,7 @@ export function CanvasView({
                     selecionada={selecionada === cid}
                     onSelecionar={onSelecionar ? () => onSelecionar(pid, cid) : undefined}
                     onPointerDown={
-                      arrastavel && editando !== cid
+                      arrastavel && editando !== cid && recortando !== cid
                         ? (ev) => {
                             onSelecionar?.(pid, cid);
                             iniciar(ev, p, pid, cid, c, "mover");
@@ -1112,7 +1514,11 @@ export function CanvasView({
                     onTextoInput={onTextoInput}
                     onSelecaoTexto={onSelecaoTexto}
                     onDuploClique={onDuploClique ? () => onDuploClique(pid, cid, c) : undefined}
+                    recortando={recortando === cid}
+                    escala={escala}
+                    onRecorte={onRecorte ? (img) => onRecorte(pid, cid, img) : undefined}
                   />
+
                 );
               })}
 
@@ -1143,29 +1549,20 @@ export function CanvasView({
                 </div>
               )}
 
-              {alcas && geoSel && selNaPagina && (
-                <>
-                  {(["nw", "ne", "sw", "se"] as const).map((m) => (
-                    <div
-                      key={m}
-                      onPointerDown={(ev) => iniciar(ev, p, pid, selecionada!, selNaPagina, m)}
-                      style={{
-                        position: "absolute",
-                        width: lado,
-                        height: lado,
-                        left:
-                          (m === "nw" || m === "sw" ? geoSel.x : geoSel.x + geoSel.w) - lado / 2,
-                        top: (m === "nw" || m === "ne" ? geoSel.y : geoSel.y + geoSel.h) - lado / 2,
-                        background: "hsl(var(--accent))",
-                        border: `${1 / (escala || 1)}px solid #fff`,
-                        borderRadius: lado / 2,
-                        cursor: m === "nw" || m === "se" ? "nwse-resize" : "nesw-resize",
-                        zIndex: 50,
-                      }}
-                    />
-                  ))}
-                </>
+              {alcas && geoSel && selNaPagina && arrastavel && editando !== selecionada && (
+                <AlcasSelecao
+                  geo={{
+                    x: geoSel.x,
+                    y: geoSel.y,
+                    w: geoSel.w || dimSel.w,
+                    h: geoSel.h || dimSel.h,
+                    ...(geoSel.r !== undefined ? { r: geoSel.r } : {}),
+                  }}
+                  escala={esc}
+                  aoIniciar={(ev, m) => iniciar(ev, p, pid, selecionada!, selNaPagina, m)}
+                />
               )}
+
 
               {arraste && arraste.paginaId === pid && (
                 <>
@@ -1214,13 +1611,16 @@ function CanvasComSelecao({ doc }: { doc: DocCanvas }) {
   const escala = (e.zoom / 100) * (larguras[e.viewport] / 1080);
   const podeArrastar = e.ferramenta === "cursor";
   const [editando, setEditando] = useState<string | null>(null);
+  const [recortando, setRecortando] = useState<string | null>(null);
   const [selTexto, setSelTexto] = useState<{ inicio: number; fim: number } | null>(null);
   const inputImg = useRef<HTMLInputElement>(null);
   const alvoUpload = useRef<{ pid: string; cid: string } | null>(null);
 
   useEffect(() => {
     if (editando && e.camadaCanvas !== editando) setEditando(null);
-  }, [e.camadaCanvas, editando]);
+    if (recortando && e.camadaCanvas !== recortando) setRecortando(null);
+  }, [e.camadaCanvas, editando, recortando]);
+
 
   const patchCamada = useCallback(
     (pid: string, cid: string, fn: (c: CanvasCamada) => void, rotulo: string) =>
@@ -1282,33 +1682,45 @@ function CanvasComSelecao({ doc }: { doc: DocCanvas }) {
     (
       pid: string,
       cid: string,
-      geo: { x: number; y: number; w: number; h: number },
+      geo: { x: number; y: number; w: number; h: number; r?: number },
       modo: string,
     ) => {
       e.atualizarDocCanvas(
         (d) =>
           comCamadaCanvas(d, pid, cid, (c) => {
+            if (modo === "girar") {
+              const r = Math.round(geo.r ?? 0);
+              if (r) (c as { rotacao?: number }).rotacao = r;
+              else delete (c as { rotacao?: number }).rotacao;
+              return;
+            }
             c.x = geo.x;
             c.y = geo.y;
-            if (modo !== "mover" && c.tipo !== "texto") {
+            if (modo !== "mover") {
               if (c.tipo === "imagem" && c.img && c.w && c.h) {
-                const rx = geo.w / c.w;
-                const ry = geo.h / c.h;
-                c.img = {
-                  x: c.img.x * rx,
-                  y: c.img.y * ry,
-                  w: c.img.w * rx,
-                  h: c.img.h * ry,
-                };
+                /* reenquadra sem achatar: a foto acompanha o maior fator */
+                const k = Math.max(geo.w / c.w, geo.h / c.h);
+                c.img = limitarImg(
+                  { x: c.img.x * k, y: c.img.y * k, w: c.img.w * k, h: c.img.h * k },
+                  geo.w,
+                  geo.h,
+                );
               }
               c.w = geo.w;
-              c.h = geo.h;
+              if (c.tipo === "texto") {
+                if (geo.h > 0) c.h = geo.h;
+              } else c.h = geo.h;
             }
           }),
-        modo === "mover" ? "Moveu camada" : "Redimensionou camada",
+        modo === "mover"
+          ? "Moveu camada"
+          : modo === "girar"
+            ? "Girou camada"
+            : "Redimensionou camada",
       );
     },
     [e],
+
   );
   useEffect(() => {
     const emCampo = (t: EventTarget | null) => {
@@ -1415,16 +1827,30 @@ function CanvasComSelecao({ doc }: { doc: DocCanvas }) {
             "Editou o texto",
           );
         }}
+        recortando={recortando}
+        onRecorte={(pid, cid, img) =>
+          patchCamada(
+            pid,
+            cid,
+            (c) => {
+              if (c.tipo === "imagem") c.img = img;
+            },
+            "Ajustou a imagem",
+          )
+        }
         onDuploClique={(pid, cid, camada) => {
           e.setPaginaCanvas(pid);
           e.setCamadaCanvas(cid);
           if (camada.tipo === "texto") setEditando(cid);
+          else if (camada.tipo === "imagem" && camada.src) setRecortando(cid);
           else if (camada.tipo === "imagem") abrirUpload(pid, cid);
         }}
         onSelecionar={(pid, cid) => {
           e.setPaginaCanvas(pid);
           e.setCamadaCanvas(cid);
+          if (recortando && recortando !== cid) setRecortando(null);
         }}
+
         acoes={({ paginaId, camadaId, camada }) => (
           <>
             {editando === camadaId && camada.tipo === "texto" ? (
@@ -1533,14 +1959,31 @@ function CanvasComSelecao({ doc }: { doc: DocCanvas }) {
                   </button>
                 )}
                 {camada.tipo === "imagem" ? (
-                  <button
-                    title="Trocar imagem"
-                    onClick={() => abrirUpload(paginaId, camadaId)}
-                    className="grid size-6 place-items-center rounded-md hover:bg-secondary"
-                  >
-                    <ImagePlus className="size-3.5" />
-                  </button>
+                  <>
+                    {camada.src && (
+                      <button
+                        title={recortando === camadaId ? "Concluir ajuste" : "Ajustar imagem (recorte e zoom)"}
+                        onClick={() =>
+                          setRecortando(recortando === camadaId ? null : camadaId)
+                        }
+                        className={cn(
+                          "grid size-6 place-items-center rounded-md hover:bg-secondary",
+                          recortando === camadaId && "bg-accent text-accent-foreground",
+                        )}
+                      >
+                        <Crop className="size-3.5" />
+                      </button>
+                    )}
+                    <button
+                      title="Trocar imagem"
+                      onClick={() => abrirUpload(paginaId, camadaId)}
+                      className="grid size-6 place-items-center rounded-md hover:bg-secondary"
+                    >
+                      <ImagePlus className="size-3.5" />
+                    </button>
+                  </>
                 ) : (
+
                   <button
                     title="Transformar em placeholder de imagem"
                     onClick={() => {
@@ -1561,7 +2004,7 @@ function CanvasComSelecao({ doc }: { doc: DocCanvas }) {
                     }}
                     className="grid size-6 place-items-center rounded-md hover:bg-secondary"
                   >
-                    <Frame className="size-3.5" />
+                    <ImageUp className="size-3.5" />
                   </button>
                 )}
                 <button

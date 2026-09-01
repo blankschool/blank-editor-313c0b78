@@ -1521,7 +1521,18 @@ function SelecaoCanvasPanel({ modo = "simples" }: { modo?: "simples" | "pro" }) 
                 </Campo>
               </>
             )}
+            <Campo rotulo="Rotação (°)" sujo={dif("rotacao")}>
+              {num(
+                (camada as { rotacao?: number }).rotacao ?? 0,
+                (c, n) => {
+                  const r = Math.round(((n % 360) + 360) % 360);
+                  if (r) (c as { rotacao?: number }).rotacao = r;
+                  else delete (c as { rotacao?: number }).rotacao;
+                },
+              )}
+            </Campo>
           </Secao>
+
 
           <Secao titulo="Ordem (z)">
             <div className="grid grid-cols-2 gap-1">
