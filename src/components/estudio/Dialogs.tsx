@@ -6,20 +6,63 @@ import { Switch } from "@/components/ui/switch";
 import { sistemas } from "@/lib/estudio-mock";
 import { useEstudio } from "./EstudioContext";
 import { cn } from "@/lib/utils";
+import { baixarArquivo, comEstilo, docParaHtml, docParaPng, paletaPorSistema } from "@/lib/estudio-doc";
+import { toast } from "sonner";
 
 const formatos = [
-  { id: "pdf", rotulo: "PDF", icone: FileText },
-  { id: "img", rotulo: "Imagem", icone: FileImage },
-  { id: "slides", rotulo: "Slides", icone: Presentation },
+  { id: "png", rotulo: "Imagem PNG", icone: FileImage },
   { id: "html", rotulo: "HTML offline", icone: Globe },
-  { id: "zip", rotulo: ".zip do projeto", icone: Package },
-  { id: "ext", rotulo: "Ferramenta externa", icone: Send },
+  { id: "json", rotulo: "JSON do design", icone: FileText },
+  { id: "slides", rotulo: "HTML por versão", icone: Presentation },
+  { id: "zip", rotulo: "Todas as telas (HTML)", icone: Package },
+  { id: "clip", rotulo: "Copiar marcação", icone: Send },
 ];
 
-/* 1m — exportar */
+/* exportar — baixa arquivo de verdade */
 export function ExportDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
-  const [formato, setFormato] = useState("pdf");
-  const [escopo, setEscopo] = useState("atual");
+  const e = useEstudio();
+  const [formato, setFormato] = useState("png");
+  const [escopo, setEscopo] = useState<"atual" | "todas">("atual");
+  const [escala, setEscala] = useState(2);
+  const [largura, setLargura] = useState(880);
+  const [ocupado, setOcupado] = useState(false);
+
+  const exportar = async () => {
+    setOcupado(true);
+    try {
+      if (formato === "png") {
+        const blob = await docParaPng(e.doc, e.nomeAtivo, largura, escala);
+        if (!blob) throw new Error("canvas indisponível");
+        baixarArquivo(`${e.nomeAtivo}.png`, blob, "image/png");
+      } else if (formato === "html") {
+        baixarArquivo(`${e.nomeAtivo}.html`, docParaHtml(e.doc, e.nomeAtivo, largura));
+      } else if (formato === "json") {
+        baixarArquivo(`${e.nomeAtivo}.json`, JSON.stringify(e.doc, null, 2), "application/json");
+      } else if (formato === "slides") {
+        const corpo = e.versoes.length
+          ? e.versoes.map((v) => docParaHtml(v.doc, `${e.nomeAtivo} — ${v.rotulo}`, largura)).join("\n<hr>\n")
+          : docParaHtml(e.doc, e.nomeAtivo, largura);
+        baixarArquivo(`${e.nomeAtivo}-versoes.html`, corpo);
+      } else if (formato === "zip") {
+        baixarArquivo(
+          `${e.projeto}-telas.html`,
+          e.abas.map((a) => docParaHtml(e.doc, a.nome, largura)).join("\n<hr>\n"),
+        );
+      } else {
+        await navigator.clipboard.writeText(docParaHtml(e.doc, e.nomeAtivo, largura));
+        toast.success("Marcação copiada para a área de transferência.");
+        setOcupado(false);
+        onOpenChange(false);
+        return;
+      }
+      toast.success(`Exportado (${escopo === "atual" ? "tela atual" : "todas as telas"}).`);
+      onOpenChange(false);
+    } catch {
+      toast.error("Não consegui gerar o arquivo neste navegador.");
+    } finally {
+      setOcupado(false);
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -49,7 +92,7 @@ export function ExportDialog({ open, onOpenChange }: { open: boolean; onOpenChan
           <div className="flex items-center justify-between text-[12px]">
             <span className="text-muted-foreground">Escopo</span>
             <div className="flex gap-1">
-              {["atual", "todas"].map((s) => (
+              {(["atual", "todas"] as const).map((s) => (
                 <button
                   key={s}
                   onClick={() => setEscopo(s)}
@@ -66,29 +109,47 @@ export function ExportDialog({ open, onOpenChange }: { open: boolean; onOpenChan
           <div className="text-[12px]">
             <div className="mb-1 flex justify-between text-muted-foreground">
               <span>Escala</span>
-              <span>2×</span>
+              <span>{escala}×</span>
             </div>
-            <Slider defaultValue={[50]} max={100} step={25} />
+            <Slider value={[escala]} min={1} max={4} step={1} onValueChange={(v) => setEscala(v[0]!)} />
           </div>
           <label className="flex items-center justify-between text-[12px]">
-            <span className="text-muted-foreground">Tamanho de papel</span>
-            <select className="h-7 rounded border border-border bg-card px-2 text-[11px]">
-              <option>A4 retrato</option>
-              <option>A4 paisagem</option>
-              <option>Personalizado 1440×1024</option>
+            <span className="text-muted-foreground">Largura do artboard</span>
+            <select
+              value={largura}
+              onChange={(ev) => setLargura(Number(ev.target.value))}
+              className="h-7 rounded border border-border bg-card px-2 text-[11px]"
+            >
+              <option value={340}>Mobile 340</option>
+              <option value={620}>Tablet 620</option>
+              <option value={880}>Desktop 880</option>
+              <option value={1440}>Personalizado 1440</option>
             </select>
           </label>
         </div>
 
-        <button className="h-8 rounded-md bg-primary text-[12px] font-medium text-primary-foreground">Exportar</button>
+        <button
+          onClick={() => void exportar()}
+          disabled={ocupado}
+          className="h-8 rounded-md bg-primary text-[12px] font-medium text-primary-foreground disabled:opacity-50"
+        >
+          {ocupado ? "Gerando…" : "Exportar"}
+        </button>
       </DialogContent>
     </Dialog>
   );
 }
 
-/* 1m — compartilhar */
+/* compartilhar — link real e copiável */
 export function ShareDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
+  const e = useEstudio();
   const [copiado, setCopiado] = useState(false);
+  const [quemVe, setQuemVe] = useState("Qualquer pessoa com o link");
+  const [expira, setExpira] = useState("7 dias");
+  const [comentar, setComentar] = useState(true);
+
+  const origem = typeof window === "undefined" ? "" : window.location.origin;
+  const link = `${origem}/d/${e.abaAtiva}/apresentar`;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -99,11 +160,16 @@ export function ShareDialog({ open, onOpenChange }: { open: boolean; onOpenChang
         </DialogHeader>
 
         <div className="flex gap-1.5">
-          <div className="flex h-8 flex-1 items-center gap-1.5 rounded-md border border-border bg-card px-2 text-[11px] text-muted-foreground">
-            <Link2 className="size-3.5" /> estudio.app/p/aurora-home
+          <div className="flex h-8 flex-1 items-center gap-1.5 overflow-hidden rounded-md border border-border bg-card px-2 text-[11px] text-muted-foreground">
+            <Link2 className="size-3.5 shrink-0" /> <span className="truncate">{link}</span>
           </div>
           <button
-            onClick={() => setCopiado(true)}
+            onClick={() => {
+              void navigator.clipboard.writeText(link);
+              setCopiado(true);
+              toast.success("Link copiado.");
+              window.setTimeout(() => setCopiado(false), 1500);
+            }}
             className="h-8 rounded-md bg-primary px-3 text-[11px] font-medium text-primary-foreground"
           >
             {copiado ? "Copiado" : "Copiar"}
@@ -113,7 +179,11 @@ export function ShareDialog({ open, onOpenChange }: { open: boolean; onOpenChang
         <div className="space-y-3 rounded-md border border-border bg-card p-3 text-[12px]">
           <label className="flex items-center justify-between">
             <span className="text-muted-foreground">Quem vê</span>
-            <select className="h-7 rounded border border-border bg-card px-2 text-[11px]">
+            <select
+              value={quemVe}
+              onChange={(ev) => setQuemVe(ev.target.value)}
+              className="h-7 rounded border border-border bg-card px-2 text-[11px]"
+            >
               <option>Qualquer pessoa com o link</option>
               <option>Só convidados</option>
               <option>Só o time</option>
@@ -121,7 +191,11 @@ export function ShareDialog({ open, onOpenChange }: { open: boolean; onOpenChang
           </label>
           <label className="flex items-center justify-between">
             <span className="text-muted-foreground">Expira em</span>
-            <select className="h-7 rounded border border-border bg-card px-2 text-[11px]">
+            <select
+              value={expira}
+              onChange={(ev) => setExpira(ev.target.value)}
+              className="h-7 rounded border border-border bg-card px-2 text-[11px]"
+            >
               <option>7 dias</option>
               <option>24 horas</option>
               <option>Nunca</option>
@@ -129,18 +203,34 @@ export function ShareDialog({ open, onOpenChange }: { open: boolean; onOpenChang
           </label>
           <label className="flex items-center justify-between">
             <span className="text-muted-foreground">Permite comentar</span>
-            <Switch defaultChecked />
+            <Switch checked={comentar} onCheckedChange={setComentar} />
           </label>
+          <p className="text-[10px] text-muted-foreground">
+            {quemVe} · expira em {expira} · comentários {comentar ? "liberados" : "bloqueados"}.
+          </p>
         </div>
       </DialogContent>
     </Dialog>
   );
 }
 
-/* 1n — design system e marca */
+/* design system e marca */
 export function SystemDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
   const e = useEstudio();
   const atual = sistemas.find((s) => s.id === e.sistemaAtivo) ?? sistemas[0]!;
+
+  const aplicar = () => {
+    const cores = paletaPorSistema[atual.id] ?? atual.cores;
+    e.atualizarDoc(
+      (d) =>
+        comEstilo(comEstilo(comEstilo(d, "cta", { fundo: cores[0] }), "titulo", { cor: cores[2] }), "prova", {
+          cor: cores[1],
+        }),
+      `Aplicou o sistema ${atual.nome}`,
+    );
+    toast.success(`${atual.nome} aplicado ao design aberto.`);
+    onOpenChange(false);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -203,10 +293,16 @@ export function SystemDialog({ open, onOpenChange }: { open: boolean; onOpenChan
               </div>
             </div>
             <div className="flex gap-1.5 pt-1">
-              <button className="h-7 flex-1 rounded border border-border text-[11px] hover:bg-secondary">
-                Trocar sistema
+              <button
+                onClick={() => {
+                  e.enviarPedido(`Aplicar a paleta do sistema ${atual.nome} com cor no CTA`);
+                  onOpenChange(false);
+                }}
+                className="h-7 flex-1 rounded border border-border text-[11px] hover:bg-secondary"
+              >
+                Pedir ao assistente
               </button>
-              <button className="h-7 flex-1 rounded bg-primary text-[11px] text-primary-foreground">
+              <button onClick={aplicar} className="h-7 flex-1 rounded bg-primary text-[11px] text-primary-foreground">
                 Aplicar ao design aberto
               </button>
             </div>
