@@ -1537,29 +1537,20 @@ export function CanvasView({
                 </div>
               )}
 
-              {alcas && geoSel && selNaPagina && (
-                <>
-                  {(["nw", "ne", "sw", "se"] as const).map((m) => (
-                    <div
-                      key={m}
-                      onPointerDown={(ev) => iniciar(ev, p, pid, selecionada!, selNaPagina, m)}
-                      style={{
-                        position: "absolute",
-                        width: lado,
-                        height: lado,
-                        left:
-                          (m === "nw" || m === "sw" ? geoSel.x : geoSel.x + geoSel.w) - lado / 2,
-                        top: (m === "nw" || m === "ne" ? geoSel.y : geoSel.y + geoSel.h) - lado / 2,
-                        background: "hsl(var(--accent))",
-                        border: `${1 / (escala || 1)}px solid #fff`,
-                        borderRadius: lado / 2,
-                        cursor: m === "nw" || m === "se" ? "nwse-resize" : "nesw-resize",
-                        zIndex: 50,
-                      }}
-                    />
-                  ))}
-                </>
+              {alcas && geoSel && selNaPagina && arrastavel && editando !== selecionada && (
+                <AlcasSelecao
+                  geo={{
+                    x: geoSel.x,
+                    y: geoSel.y,
+                    w: geoSel.w || dimSel.w,
+                    h: geoSel.h || dimSel.h,
+                    ...(geoSel.r !== undefined ? { r: geoSel.r } : {}),
+                  }}
+                  escala={esc}
+                  aoIniciar={(ev, m) => iniciar(ev, p, pid, selecionada!, selNaPagina, m)}
+                />
               )}
+
 
               {arraste && arraste.paginaId === pid && (
                 <>
