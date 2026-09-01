@@ -1013,22 +1013,26 @@ function encaixar(
   ignorar: string,
   modo: ModoArraste,
 ): { geo: Geo; guias: { v: number[]; h: number[] } } {
-  const alvos = alvosGuias(pagina, ignorar);
   const guias: { v: number[]; h: number[] } = { v: [], h: [] };
   const out: Geo = { ...geo };
+  /* sem encaixe ao girar ou com a caixa rotacionada */
+  if (modo === "girar" || geo.r) return { geo: out, guias };
+  const alvos = alvosGuias(pagina, ignorar);
+  const mexeEsq = modo === "nw" || modo === "sw" || modo === "w";
+  const mexeDir = modo === "ne" || modo === "se" || modo === "e";
+  const mexeTopo = modo === "nw" || modo === "ne" || modo === "n";
+  const mexeBase = modo === "sw" || modo === "se" || modo === "s";
 
-  const bordasV: Array<[number, number]> =
+  const bordasV: number[] =
     modo === "mover"
-      ? [
-          [geo.x, 0],
-          [geo.x + geo.w / 2, geo.w / 2],
-          [geo.x + geo.w, geo.w],
-        ]
-      : modo === "nw" || modo === "sw"
-        ? [[geo.x, 0]]
-        : [[geo.x + geo.w, geo.w]];
+      ? [geo.x, geo.x + geo.w / 2, geo.x + geo.w]
+      : mexeEsq
+        ? [geo.x]
+        : mexeDir
+          ? [geo.x + geo.w]
+          : [];
   let melhorV: { delta: number; linha: number } | null = null;
-  bordasV.forEach(([pos]) => {
+  bordasV.forEach((pos) => {
     alvos.v.forEach((t) => {
       const d = t - pos;
       if (Math.abs(d) <= TOLERANCIA_SNAP && (!melhorV || Math.abs(d) < Math.abs(melhorV.delta)))
@@ -1038,25 +1042,23 @@ function encaixar(
   if (melhorV) {
     const mv = melhorV as { delta: number; linha: number };
     if (modo === "mover") out.x += mv.delta;
-    else if (modo === "nw" || modo === "sw") {
+    else if (mexeEsq) {
       out.x += mv.delta;
       out.w -= mv.delta;
     } else out.w += mv.delta;
     guias.v.push(mv.linha);
   }
 
-  const bordasH: Array<[number, number]> =
+  const bordasH: number[] =
     modo === "mover"
-      ? [
-          [geo.y, 0],
-          [geo.y + geo.h / 2, geo.h / 2],
-          [geo.y + geo.h, geo.h],
-        ]
-      : modo === "nw" || modo === "ne"
-        ? [[geo.y, 0]]
-        : [[geo.y + geo.h, geo.h]];
+      ? [geo.y, geo.y + geo.h / 2, geo.y + geo.h]
+      : mexeTopo
+        ? [geo.y]
+        : mexeBase
+          ? [geo.y + geo.h]
+          : [];
   let melhorH: { delta: number; linha: number } | null = null;
-  bordasH.forEach(([pos]) => {
+  bordasH.forEach((pos) => {
     alvos.h.forEach((t) => {
       const d = t - pos;
       if (Math.abs(d) <= TOLERANCIA_SNAP && (!melhorH || Math.abs(d) < Math.abs(melhorH.delta)))
@@ -1066,7 +1068,7 @@ function encaixar(
   if (melhorH) {
     const mh = melhorH as { delta: number; linha: number };
     if (modo === "mover") out.y += mh.delta;
-    else if (modo === "nw" || modo === "ne") {
+    else if (mexeTopo) {
       out.y += mh.delta;
       out.h -= mh.delta;
     } else out.h += mh.delta;
@@ -1075,6 +1077,134 @@ function encaixar(
 
   return { geo: out, guias };
 }
+
+/** alças de redimensionar + rotação, com área de clique maior que o desenho */
+function AlcasSelecao({
+  geo,
+  escala,
+  aoIniciar,
+}: {
+  geo: Geo;
+  escala: number;
+  aoIniciar: (ev: React.PointerEvent, modo: ModoArraste) => void;
+}) {
+  const esc = escala || 1;
+  const alvo = 20 / esc; // área clicável
+  const visual = 9 / esc; // quadradinho desenhado
+  const rot = geo.r ?? 0;
+  const pos = (dir: Direcao) => ({
+    left: dir.includes("w") ? 0 : dir.includes("e") ? geo.w : geo.w / 2,
+    top: dir.includes("n") ? 0 : dir.includes("s") ? geo.h : geo.h / 2,
+  });
+  const lateral = (dir: Direcao) => dir === "n" || dir === "s" || dir === "e" || dir === "w";
+  const desenho = (dir: Direcao): React.CSSProperties => {
+    const horizontal = dir === "n" || dir === "s";
+    if (!lateral(dir))
+      return { width: visual, height: visual, borderRadius: visual / 2 };
+    return {
+      width: horizontal ? Math.min(geo.w * 0.4, 22 / esc) : visual * 0.7,
+      height: horizontal ? visual * 0.7 : Math.min(geo.h * 0.4, 22 / esc),
+      borderRadius: visual / 2,
+    };
+  };
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: geo.x,
+        top: geo.y,
+        width: geo.w,
+        height: geo.h,
+        transform: rot ? `rotate(${rot}deg)` : undefined,
+        pointerEvents: "none",
+        zIndex: 55,
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          border: `${1.5 / esc}px solid hsl(var(--accent))`,
+          pointerEvents: "none",
+        }}
+      />
+      {DIRECOES.map((dir) => {
+        const p = pos(dir);
+        return (
+          <div
+            key={dir}
+            onPointerDown={(ev) => aoIniciar(ev, dir)}
+            style={{
+              position: "absolute",
+              left: p.left - alvo / 2,
+              top: p.top - alvo / 2,
+              width: alvo,
+              height: alvo,
+              display: "grid",
+              placeItems: "center",
+              cursor: cursorDaAlca(dir, rot),
+              pointerEvents: "auto",
+              touchAction: "none",
+            }}
+          >
+            <div
+              style={{
+                ...desenho(dir),
+                background: "#fff",
+                border: `${1.5 / esc}px solid hsl(var(--accent))`,
+                boxShadow: `0 ${1 / esc}px ${3 / esc}px rgba(0,0,0,.25)`,
+              }}
+            />
+          </div>
+        );
+      })}
+      <div
+        onPointerDown={(ev) => aoIniciar(ev, "girar")}
+        title="Girar"
+        style={{
+          position: "absolute",
+          left: geo.w / 2 - alvo / 2,
+          top: -(28 / esc) - alvo / 2,
+          width: alvo,
+          height: alvo,
+          display: "grid",
+          placeItems: "center",
+          cursor: "grab",
+          pointerEvents: "auto",
+          touchAction: "none",
+        }}
+      >
+        <div
+          style={{
+            width: 14 / esc,
+            height: 14 / esc,
+            borderRadius: 999,
+            background: "#fff",
+            border: `${1.5 / esc}px solid hsl(var(--accent))`,
+            boxShadow: `0 ${1 / esc}px ${3 / esc}px rgba(0,0,0,.25)`,
+            display: "grid",
+            placeItems: "center",
+          }}
+        >
+          <RotateCw style={{ width: 9 / esc, height: 9 / esc, color: "hsl(var(--accent))" }} />
+        </div>
+      </div>
+      <div
+        style={{
+          position: "absolute",
+          left: geo.w / 2,
+          top: -(28 / esc),
+          width: 1 / esc,
+          height: 28 / esc,
+          background: "hsl(var(--accent))",
+          pointerEvents: "none",
+        }}
+      />
+    </div>
+  );
+}
+
 
 export function CanvasView({
   doc,
