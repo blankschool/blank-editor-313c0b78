@@ -133,7 +133,7 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
       const j = i + dir;
       if (i < 0 || j < 0 || j >= as.length) return as;
       const copia = [...as];
-      const [item] = copia.splice(i, 1);
+      const item = copia.splice(i, 1)[0]!;
       copia.splice(j, 0, item);
       return copia;
     });

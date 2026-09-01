@@ -140,7 +140,7 @@ export function ShareDialog({ open, onOpenChange }: { open: boolean; onOpenChang
 /* 1n — design system e marca */
 export function SystemDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
   const e = useEstudio();
-  const atual = sistemas.find((s) => s.id === e.sistemaAtivo) ?? sistemas[0];
+  const atual = sistemas.find((s) => s.id === e.sistemaAtivo) ?? sistemas[0]!;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
