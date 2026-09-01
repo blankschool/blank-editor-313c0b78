@@ -363,7 +363,7 @@ export function substituirTextoPreservandoPartes(c: CanvasCamadaTexto, novo: str
   partes.forEach((p) => {
     const est: EstiloParte = {};
     CHAVES_PARTE.forEach((k) => {
-      if (p[k] !== undefined) (est as Record<string, unknown>)[k] = p[k];
+      if (p[k] !== undefined) (est as unknown as Record<string, unknown>)[k] = p[k];
     });
     for (let i = 0; i < p.texto.length; i++) estilos.push(est);
   });

@@ -676,7 +676,7 @@ function TextoEditavelPalco({
   onSelecaoTexto,
 }: {
   camada: CanvasCamadaTexto;
-  cid?: string;
+  cid?: string | undefined;
   estilo: React.CSSProperties;
   onTextoInput?: ((novo: string) => void) | undefined;
   onSelecaoTexto?: ((sel: { inicio: number; fim: number } | null) => void) | undefined;
@@ -1210,7 +1210,10 @@ function CanvasComSelecao({ doc }: { doc: DocCanvas }) {
   const estiloSel: Partial<CanvasParteTexto> =
     camadaTexto && temTrecho ? estiloDoTrecho(camadaTexto, selTexto!.inicio, selTexto!.fim) : {};
 
-  const aplicarNoTrecho = (patch: Partial<Omit<CanvasParteTexto, "texto">>, rotulo: string) => {
+  const aplicarNoTrecho = (
+    patch: { [K in keyof Omit<CanvasParteTexto, "texto">]?: CanvasParteTexto[K] | undefined },
+    rotulo: string,
+  ) => {
     if (!camadaTexto || !temTrecho || !editando) return;
     const { inicio, fim } = selTexto!;
     patchCamada(
