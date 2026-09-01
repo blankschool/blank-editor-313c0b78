@@ -130,12 +130,12 @@ export function ehDocHtml(d: unknown): d is DocHtml {
 
 export interface CanvasParteTexto {
   texto: string;
-  peso?: number;
-  cor?: string;
-  italico?: boolean;
-  sublinhado?: boolean;
-  riscado?: boolean;
-  tamanho?: number;
+  peso?: number | undefined;
+  cor?: string | undefined;
+  italico?: boolean | undefined;
+  sublinhado?: boolean | undefined;
+  riscado?: boolean | undefined;
+  tamanho?: number | undefined;
 }
 
 export interface CanvasSombra {
