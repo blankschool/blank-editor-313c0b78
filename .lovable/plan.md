@@ -25,25 +25,43 @@ rodar no SQL editor do self-hosted (não tenho service_role, então não aplico 
 Cada tabela: `GRANT` para `authenticated`, RLS ligada, políticas `owner = auth.uid()`
 para select/insert/update/delete. Sem acesso anônimo.
 
-## 3. Estado vindo do banco
+## 3. Sessão e projeto
+
+- Storage (`uploads`/`renders`) é só arquivo binário; o documento do design continua
+  no `jsonb` das tabelas. Um não substitui o outro.
+- Sem sessão nada é inserido: "Novo design" abre o formulário de entrar/cadastrar
+  (dentro do casco existente, sem rota nova). Como o cadastro do seu servidor já
+  devolve sessão sem e-mail, cadastrar entra direto e o design é criado em seguida.
+- No primeiro login: se o usuário não tem row em `projects`, cria uma
+  (`nome = "Meu projeto"`) e guarda o `id`; todo design nasce com esse `project_id`.
+  `TopBar` renomeia esse row em vez do estado local.
+
+## 4. Estado vindo do banco
 
 `EstudioContext` para de nascer em `estudio-mock.ts`:
 
 - lista de designs, doc do palco, versões, conversa e pinos passam a vir de queries
   TanStack Query sobre essas tabelas, com o client existente.
-- Novo design = `insert` em `designs` com `docPadrao`.
+- Novo design = `insert` em `designs` com `docPadrao` + `project_id` do usuário.
 - Editar o palco = `update` em `designs.doc` com debounce (~500ms) e cache otimista.
-- Enviar no chat = grava a mensagem em `messages`, roda `interpretarPedido` no doc,
-  salva o doc e abre uma row em `versions`; a thread só fala depois.
+- Enviar no chat = grava a mensagem em `messages` com
+  `payload = { texto, autor, tarefas?, arquivo? }` (o texto sempre presente), roda
+  `interpretarPedido` no doc, salva o doc e abre uma row em `versions`; a thread
+  só fala depois, gravando também a resposta do assistente.
 - Restaurar = copia `versions.doc` de volta para `designs.doc`.
-- Comentários/respostas gravam em `comments`/`replies`.
+- Comentários/respostas gravam em `comments`/`replies` com `owner = auth.uid()`;
+  autor exibido vem do e-mail/metadata do usuário logado, sem nome inventado.
+- Camadas do painel vêm de `camadasDoDoc(doc)` (`src/lib/estudio-doc.ts`), não do
+  array `camadas` do mock.
 - Recarregar a página mostra o mesmo arquivo, vindo do banco.
-- Sem sessão: lista vazia e só o botão "Novo design". Nada de Marina, Checkout ou
-  conversa fictícia. `TopBar` mostra o usuário de `supabase.auth` (e sair de verdade).
+- Sem sessão: lista vazia e só o botão de entrar/novo design. Nada de Marina nem
+  Checkout. `TopBar` mostra o usuário de `supabase.auth` e sai de verdade
+  (cancel/clear das queries antes do `signOut`).
 - `localStorage` fica só para cromado: larguras dos painéis, aberto/fechado, zoom.
   O design deixa de ser gravado lá.
 
-## 4. Casco mais vazio
+
+## 5. Casco mais vazio
 
 Em `src/routes/d.$designId.tsx`, a faixa do workspace passa a ser
 `ResizablePanelGroup` / `ResizablePanel` / `ResizableHandle` já existentes:
