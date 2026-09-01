@@ -54,7 +54,7 @@ import {
   type ElId,
   type Variante,
 } from "@/lib/estudio-doc";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { enviarImagemCanvas } from "@/lib/estudio-db";
 import {
@@ -1432,6 +1432,15 @@ function ExportarSelecao({ camadaId, nome }: { camadaId: string; nome: string })
 
 export function InspectorPanel({ aba }: { aba: "simples" | "pro" }) {
   const e = useEstudio();
+  const saida = useRef({ sujo: false, descartar: e.descartarRascunho });
+  saida.current = { sujo: e.sujo, descartar: e.descartarRascunho };
+  useEffect(
+    () => () => {
+      // fechar a rota com rascunho sujo descarta as mudanças
+      if (saida.current.sujo) saida.current.descartar();
+    },
+    [],
+  );
 
   return (
     <div className="flex h-full flex-col">
