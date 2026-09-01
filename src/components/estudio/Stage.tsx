@@ -65,6 +65,9 @@ import {
   substituirTextoPreservandoPartes,
   virarPlaceholderImagem,
   limitarImg,
+  coverImg,
+  containImg,
+  medirImagem,
   type CaixaImg,
 } from "@/lib/estudio-doc";
 import {
@@ -1360,6 +1363,7 @@ export function CanvasView({
   onDuploClique?: ((paginaId: string, camadaId: string, camada: CanvasCamada) => void) | undefined;
   recortando?: string | null;
   onRecorte?: ((paginaId: string, camadaId: string, img: CaixaImg) => void) | undefined;
+  onSairRecorte?: (() => void) | undefined;
 }) {
 
   const refPaginas = useRef<HTMLDivElement | null>(null);
