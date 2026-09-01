@@ -604,19 +604,15 @@ function ImagemCanvasView({
       const dl = girarPonto(dq.x, dq.y, -st.rot);
       const sx = st.modo.includes("e") ? 1 : st.modo.includes("w") ? -1 : 0;
       const sy = st.modo.includes("s") ? 1 : st.modo.includes("n") ? -1 : 0;
-      const canto = sx !== 0 && sy !== 0;
       let w = Math.max(20, st.base.w + sx * dl.x);
       let h = Math.max(20, st.base.h + sy * dl.y);
-      /* cantos escalam proporcional (Shift libera); laterais esticam */
-      if (canto && !ev.shiftKey) {
+      /* a foto só escala proporcional dentro da máscara — nunca estica */
+      {
         const k = Math.max(w / (st.base.w || 1), h / (st.base.h || 1));
         w = (st.base.w || 1) * k;
         h = (st.base.h || 1) * k;
-      } else if (!canto && ev.shiftKey) {
-        const k = sx !== 0 ? w / (st.base.w || 1) : h / (st.base.h || 1);
-        w = (st.base.w || 1) * k;
-        h = (st.base.h || 1) * k;
       }
+
       /* o canto oposto fica parado */
       const c0 = { x: st.base.x + st.base.w / 2, y: st.base.y + st.base.h / 2 };
       const off0 = girarPonto((-sx * st.base.w) / 2, (-sy * st.base.h) / 2, st.rot);
