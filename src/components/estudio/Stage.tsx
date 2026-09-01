@@ -289,7 +289,7 @@ export function Stage() {
             e.setPainelDireito("comentarios");
           }}
           className={cn(
-            "flex h-6 items-center gap-1.5 rounded-md border px-2 text-[11px] font-medium",
+            "flex h-6 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md border px-2 text-[11px] font-medium",
             e.modoComentario ? "border-accent bg-accent text-accent-foreground" : "border-border bg-card hover:bg-secondary",
           )}
         >
@@ -297,7 +297,7 @@ export function Stage() {
         </button>
         <button
           onClick={() => e.setApresentando(true)}
-          className="flex h-6 items-center gap-1.5 rounded-md border border-border bg-card px-2 text-[11px] font-medium hover:bg-secondary"
+          className="flex h-6 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md border border-border bg-card px-2 text-[11px] font-medium hover:bg-secondary"
         >
           <Maximize2 className="size-3.5" /> Apresentar
         </button>
@@ -309,7 +309,7 @@ export function Stage() {
             e.setPainelEdicao(proximo ? "texto" : null);
           }}
           className={cn(
-            "flex h-6 items-center gap-1.5 rounded-md px-2.5 text-[11px] font-semibold",
+            "flex h-6 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md px-2.5 text-[11px] font-semibold",
             e.modoEdicao ? "bg-accent text-accent-foreground" : "bg-primary text-primary-foreground",
           )}
         >
@@ -429,7 +429,7 @@ function SelecaoOverlay() {
           <Trash2 className="size-3.5" />
         </button>
         <span className="mx-1 h-4 w-px bg-border" />
-        <button className="flex h-6 items-center gap-1 rounded-md bg-accent px-2 text-[11px] font-medium text-accent-foreground">
+        <button className="flex h-6 items-center gap-1 whitespace-nowrap rounded-md bg-accent px-2 text-[11px] font-medium text-accent-foreground">
           <Sparkles className="size-3" /> Pedir ao assistente
         </button>
       </div>
