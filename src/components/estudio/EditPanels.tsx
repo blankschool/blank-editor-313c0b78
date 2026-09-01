@@ -355,6 +355,81 @@ function TextPanelFluxo() {
 /* cor e preenchimento */
 export function ColorPanel() {
   const e = useEstudio();
+  if (e.docCanvas) return <ColorPanelCanvas />;
+  if (e.docHtml)
+    return (
+      <Secao titulo="Cor">
+        <p className="text-[11px] text-muted-foreground">Preview em HTML, somente leitura.</p>
+      </Secao>
+    );
+  return <ColorPanelFluxo />;
+}
+
+function ColorPanelCanvas() {
+  const e = useEstudio();
+  const paleta = paletaPorSistema[e.sistemaAtivo] ?? paletaProjeto;
+  const achado = acharCamadaCanvas(e.docCanvas, e.paginaCanvas, e.camadaCanvas);
+
+  if (!achado || achado.camada.tipo === "imagem")
+    return (
+      <Secao titulo="Cor">
+        <p className="text-[11px] text-muted-foreground">
+          {achado ? "Camada de imagem — sem cor nesta etapa." : "Selecione uma camada de texto ou forma."}
+        </p>
+      </Secao>
+    );
+
+  const camada = achado.camada as CanvasCamadaTexto | CanvasCamadaForma;
+  const id = e.camadaCanvas!;
+  const patch = (fn: (c: CanvasCamadaTexto | CanvasCamadaForma) => void, rotulo: string) =>
+    e.atualizarDocCanvas(
+      (d) => comCamadaCanvas(d, e.paginaCanvas, id, (c) => fn(c as CanvasCamadaTexto | CanvasCamadaForma)),
+      rotulo,
+    );
+  const pintar = (c: string) => patch((x) => void (x.cor = c), `Pintou ${camada.nome ?? camada.tipo}`);
+
+  return (
+    <>
+      <Secao titulo={`${camada.tipo === "texto" ? "Cor do texto" : "Preenchimento"} · ${camada.nome ?? camada.tipo}`}>
+        <div className="grid grid-cols-6 gap-1.5">
+          {[...paleta, ...paletaProjeto].slice(0, 12).map((c, i) => (
+            <button
+              key={`${c}-${i}`}
+              onClick={() => pintar(c)}
+              className="size-7 rounded border border-border"
+              style={{ background: c }}
+            />
+          ))}
+        </div>
+        <Campo rotulo="Amostra livre">
+          <input
+            type="color"
+            className={cn(inputCls, "p-0")}
+            value={/^#/.test(camada.cor ?? "") ? (camada.cor as string) : "#000000"}
+            onChange={(ev) => pintar(ev.target.value)}
+          />
+        </Campo>
+        <button
+          onClick={() => patch((c) => void delete c.cor, "Limpou a cor")}
+          className="h-6 w-full rounded border border-border bg-card text-[11px] hover:bg-secondary"
+        >
+          Limpar cor
+        </button>
+      </Secao>
+      <Secao titulo={`Opacidade · ${Math.round((camada.opacidade ?? 1) * 100)}%`}>
+        <Slider
+          value={[Math.round((camada.opacidade ?? 1) * 100)]}
+          max={100}
+          step={1}
+          onValueChange={(v) => patch((c) => void (c.opacidade = (v[0] ?? 100) / 100), "")}
+        />
+      </Secao>
+    </>
+  );
+}
+
+function ColorPanelFluxo() {
+  const e = useEstudio();
   const alvo = useAlvo();
   const s = e.doc.estilos[alvo] ?? {};
   const [campo, setCampo] = useState<"cor" | "fundo" | "borda">("cor");
