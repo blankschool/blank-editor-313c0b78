@@ -773,6 +773,7 @@ function CamadaCanvasView({
   recortando,
   escala = 1,
   onRecorte,
+  onSairRecorte,
 }: {
   c: CanvasCamada;
   cid?: string;
@@ -786,6 +787,7 @@ function CamadaCanvasView({
   recortando?: boolean | undefined;
   escala?: number;
   onRecorte?: ((img: CaixaImg) => void) | undefined;
+  onSairRecorte?: (() => void) | undefined;
 }) {
   if (c.oculto) return null;
   const marca: React.CSSProperties = selecionada
@@ -854,6 +856,7 @@ function CamadaCanvasView({
         recortando={recortando}
         escala={escala}
         onRecorte={onRecorte}
+        onSairRecorte={onSairRecorte}
       />
     );
   }
@@ -1634,6 +1637,7 @@ export function CanvasView({
                     recortando={recortando === cid}
                     escala={escala}
                     onRecorte={onRecorte ? (img) => onRecorte(pid, cid, img) : undefined}
+                    onSairRecorte={onSairRecorte}
                   />
 
                 );
@@ -1955,6 +1959,7 @@ function CanvasComSelecao({ doc }: { doc: DocCanvas }) {
             "Ajustou a imagem",
           )
         }
+        onSairRecorte={() => setRecortando(null)}
         onDuploClique={(pid, cid, camada) => {
           e.setPaginaCanvas(pid);
           e.setCamadaCanvas(cid);
