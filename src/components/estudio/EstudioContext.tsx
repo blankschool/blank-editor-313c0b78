@@ -25,6 +25,7 @@ import {
   type PresetNovo,
 } from "@/lib/estudio-doc";
 import { supabase } from "@/lib/supabase";
+import { canvasAgrum, canvasBarretos } from "@/lib/estudio-canvas-seeds";
 import {
   atualizarComentario,
   atualizarDesign,
@@ -968,6 +969,7 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
       apagarComentario,
       apagarMensagem,
       docHtml,
+      docCanvas,
       filtroComentarios,
       setFiltroComentarios,
       comentarioAtivo,
@@ -1050,6 +1052,7 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
       apagarComentario,
       apagarMensagem,
       docHtml,
+      docCanvas,
       filtroComentarios,
 
       comentarioAtivo,
