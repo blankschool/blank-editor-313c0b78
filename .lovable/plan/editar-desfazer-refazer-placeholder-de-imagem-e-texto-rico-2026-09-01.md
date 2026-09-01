@@ -20,7 +20,7 @@ Hoje `historico` é só um registro de eventos: não guarda documento, então n�
 ## 3. Placeholder de imagem
 
 - Qualquer camada pode virar **placeholder**: ação "Transformar em placeholder" na barra flutuante e no inspector.
-- Placeholder é uma camada imagem sem `src`: mostra moldura tracejada com ícone e o texto "Adicionar imagem", respeitando raio, opacidade e sombra.
+- Placeholder é uma camada imagem sem `src`: mostra moldura tracejada com ícone e o texto "Adicionar imagem", respeitando raio, opacidade e sombra. Arrastar imagem que já tem existe tam'bem
 - Clique duplo no placeholder (ou botão "Enviar imagem" no inspector) abre o seletor de arquivo, envia pelo `enviarImagemCanvas` que já existe e preenche o `src`, ajustando a imagem para cobrir o quadro.
 - Botão "Remover imagem" volta a camada ao estado de placeholder sem perder posição, tamanho e estilo.
 

@@ -10,6 +10,8 @@ import {
   FolderGit2,
   Library,
   MoreHorizontal,
+  Undo2,
+  Redo2,
 } from "lucide-react";
 import { useEstudio } from "./EstudioContext";
 import { AuthDialog } from "./AuthDialog";
@@ -24,11 +26,22 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export function TopBar() {
-  const { projeto, setProjeto, abaAtiva, temSessao, usuarioEmail, sair, setPedirLogin } = useEstudio();
+  const {
+    projeto,
+    setProjeto,
+    abaAtiva,
+    temSessao,
+    usuarioEmail,
+    sair,
+    setPedirLogin,
+    desfazer,
+    refazer,
+    podeDesfazer,
+    podeRefazer,
+  } = useEstudio();
   const [editando, setEditando] = useState(false);
   const [rascunho, setRascunho] = useState(projeto);
   const [extras, setExtras] = useState(false);
-
 
   return (
     <header className="flex h-11 shrink-0 items-center gap-2 border-b border-border bg-surface px-3">
@@ -54,7 +67,10 @@ export function TopBar() {
             onChange={(e) => setRascunho(e.target.value)}
             className="h-7 w-52 text-[13px]"
           />
-          <button type="submit" className="grid size-7 place-items-center rounded-md hover:bg-secondary">
+          <button
+            type="submit"
+            className="grid size-7 place-items-center rounded-md hover:bg-secondary"
+          >
             <Check className="size-3.5" />
           </button>
         </form>
@@ -83,6 +99,27 @@ export function TopBar() {
       )}
 
       <div className="flex-1" />
+
+      {abaAtiva && (
+        <div className="mr-1 flex items-center gap-0.5">
+          <button
+            title="Desfazer (Cmd/Ctrl+Z)"
+            disabled={!podeDesfazer}
+            onClick={desfazer}
+            className="grid size-7 place-items-center rounded-md hover:bg-secondary disabled:opacity-35"
+          >
+            <Undo2 className="size-3.5" />
+          </button>
+          <button
+            title="Refazer (Cmd/Ctrl+Shift+Z)"
+            disabled={!podeRefazer}
+            onClick={refazer}
+            className="grid size-7 place-items-center rounded-md hover:bg-secondary disabled:opacity-35"
+          >
+            <Redo2 className="size-3.5" />
+          </button>
+        </div>
+      )}
 
       {extras && (
         <>
@@ -157,4 +194,3 @@ export function TopBar() {
     </header>
   );
 }
-

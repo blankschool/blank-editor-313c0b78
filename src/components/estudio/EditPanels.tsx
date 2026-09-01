@@ -22,6 +22,8 @@ import {
   Square,
   Underline,
   Strikethrough,
+  ImagePlus,
+  Loader2,
 } from "lucide-react";
 import { useEstudio } from "./EstudioContext";
 import { Slider } from "@/components/ui/slider";
@@ -46,6 +48,12 @@ import {
   paletaProjeto,
   rotuloEl,
   textoDaCamadaCanvas,
+  partesDaCamadaCanvas,
+  aplicarEstiloEmTrecho,
+  estiloDoTrecho,
+  substituirTextoPreservandoPartes,
+  virarPlaceholderImagem,
+  type CanvasParteTexto,
   type CanvasCamada,
   type CanvasCamadaForma,
   type CanvasCamadaImagem,
@@ -57,6 +65,12 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { enviarImagemCanvas } from "@/lib/estudio-db";
+import {
+  offsetsDaSelecao,
+  partesParaHtml,
+  restaurarOffsets,
+  textoDoElemento,
+} from "@/lib/texto-rico";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -80,7 +94,9 @@ function Secao({
   return (
     <div className="border-b border-border px-3 py-2.5">
       <div className="mb-2 flex items-center justify-between gap-2">
-        <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{titulo}</p>
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+          {titulo}
+        </p>
         {acao}
       </div>
       <div className="space-y-2">{children}</div>
@@ -88,11 +104,24 @@ function Secao({
   );
 }
 
-function Campo({ rotulo, sujo, children }: { rotulo: string; sujo?: boolean; children: React.ReactNode }) {
+function Campo({
+  rotulo,
+  sujo,
+  children,
+}: {
+  rotulo: string;
+  sujo?: boolean;
+  children: React.ReactNode;
+}) {
   return (
     <label className="flex items-center justify-between gap-2 text-[11px]">
       <span className="flex items-center gap-1 text-muted-foreground">
-        {sujo && <span className="size-1.5 rounded-full bg-[hsl(var(--accent))]" title="Diferente do salvo" />}
+        {sujo && (
+          <span
+            className="size-1.5 rounded-full bg-[hsl(var(--accent))]"
+            title="Diferente do salvo"
+          />
+        )}
         {rotulo}
       </span>
       {children}
@@ -102,7 +131,6 @@ function Campo({ rotulo, sujo, children }: { rotulo: string; sujo?: boolean; chi
 
 const inputCls =
   "h-6 w-24 rounded border border-border bg-card px-1.5 text-[11px] outline-none focus:ring-1 focus:ring-ring";
-
 
 function useAlvo(): ElId {
   const e = useEstudio();
@@ -129,7 +157,9 @@ function TextPanelCanvas() {
   if (!achado)
     return (
       <Secao titulo="Texto">
-        <p className="text-[11px] text-muted-foreground">Selecione uma camada de texto no palco ou em Camadas.</p>
+        <p className="text-[11px] text-muted-foreground">
+          Selecione uma camada de texto no palco ou em Camadas.
+        </p>
       </Secao>
     );
 
@@ -140,14 +170,20 @@ function TextPanelCanvas() {
     return (
       <Secao titulo={`Imagem · ${nome}`}>
         <p className="text-[11px] text-muted-foreground">Camada de imagem — sem texto.</p>
-        <input readOnly value={camada.src} className="h-6 w-full rounded border border-border bg-secondary px-1.5 text-[11px] text-muted-foreground" />
+        <input
+          readOnly
+          value={camada.src}
+          className="h-6 w-full rounded border border-border bg-secondary px-1.5 text-[11px] text-muted-foreground"
+        />
       </Secao>
     );
 
   if (camada.tipo === "forma")
     return (
       <Secao titulo={`Forma · ${nome}`}>
-        <p className="text-[11px] text-muted-foreground">Camada de forma — sem texto. Use o painel Cor.</p>
+        <p className="text-[11px] text-muted-foreground">
+          Camada de forma — sem texto. Use o painel Cor.
+        </p>
       </Secao>
     );
 
@@ -271,7 +307,9 @@ function TextPanelFluxo() {
         <div className="flex gap-1">
           <button
             title="Negrito"
-            onClick={() => setEstilo({ peso: s.peso === "700" ? "400" : "700" }, "Alternou negrito")}
+            onClick={() =>
+              setEstilo({ peso: s.peso === "700" ? "400" : "700" }, "Alternou negrito")
+            }
             className={cn(
               "grid size-6 place-items-center rounded border border-border hover:bg-secondary",
               s.peso === "700" ? "bg-primary text-primary-foreground" : "bg-card",
@@ -300,14 +338,18 @@ function TextPanelFluxo() {
           </button>
           <button
             title="Reduzir"
-            onClick={() => setEstilo({ tamanho: Math.max(10, (s.tamanho ?? 16) - 2) }, "Reduziu o texto")}
+            onClick={() =>
+              setEstilo({ tamanho: Math.max(10, (s.tamanho ?? 16) - 2) }, "Reduziu o texto")
+            }
             className="grid size-6 place-items-center rounded border border-border bg-card hover:bg-secondary"
           >
             <Undo2 className="size-3" />
           </button>
           <button
             title="Aumentar"
-            onClick={() => setEstilo({ tamanho: Math.min(80, (s.tamanho ?? 16) + 2) }, "Aumentou o texto")}
+            onClick={() =>
+              setEstilo({ tamanho: Math.min(80, (s.tamanho ?? 16) + 2) }, "Aumentou o texto")
+            }
             className="grid size-6 place-items-center rounded border border-border bg-card hover:bg-secondary"
           >
             <Redo2 className="size-3" />
@@ -424,7 +466,9 @@ function ColorPanelCanvas() {
     return (
       <Secao titulo="Cor">
         <p className="text-[11px] text-muted-foreground">
-          {achado ? "Camada de imagem — sem cor nesta etapa." : "Selecione uma camada de texto ou forma."}
+          {achado
+            ? "Camada de imagem — sem cor nesta etapa."
+            : "Selecione uma camada de texto ou forma."}
         </p>
       </Secao>
     );
@@ -433,14 +477,20 @@ function ColorPanelCanvas() {
   const id = e.camadaCanvas!;
   const patch = (fn: (c: CanvasCamadaTexto | CanvasCamadaForma) => void, rotulo: string) =>
     e.atualizarDocCanvas(
-      (d) => comCamadaCanvas(d, e.paginaCanvas, id, (c) => fn(c as CanvasCamadaTexto | CanvasCamadaForma)),
+      (d) =>
+        comCamadaCanvas(d, e.paginaCanvas, id, (c) =>
+          fn(c as CanvasCamadaTexto | CanvasCamadaForma),
+        ),
       rotulo,
     );
-  const pintar = (c: string) => patch((x) => void (x.cor = c), `Pintou ${camada.nome ?? camada.tipo}`);
+  const pintar = (c: string) =>
+    patch((x) => void (x.cor = c), `Pintou ${camada.nome ?? camada.tipo}`);
 
   return (
     <>
-      <Secao titulo={`${camada.tipo === "texto" ? "Cor do texto" : "Preenchimento"} · ${camada.nome ?? camada.tipo}`}>
+      <Secao
+        titulo={`${camada.tipo === "texto" ? "Cor do texto" : "Preenchimento"} · ${camada.nome ?? camada.tipo}`}
+      >
         <div className="grid grid-cols-6 gap-1.5">
           {[...paleta, ...paletaProjeto].slice(0, 12).map((c, i) => (
             <button
@@ -486,7 +536,10 @@ function ColorPanelFluxo() {
   const paleta = paletaPorSistema[e.sistemaAtivo] ?? paletaProjeto;
 
   const pintar = (c: string) =>
-    e.atualizarDoc((d) => comEstilo(d, alvo, { [campo]: c }), `Pintou ${rotuloEl[alvo]} (${campo})`);
+    e.atualizarDoc(
+      (d) => comEstilo(d, alvo, { [campo]: c }),
+      `Pintou ${rotuloEl[alvo]} (${campo})`,
+    );
 
   return (
     <>
@@ -498,7 +551,9 @@ function ColorPanelFluxo() {
               onClick={() => setCampo(a)}
               className={cn(
                 "flex-1 rounded border px-2 py-1 text-[11px] capitalize",
-                campo === a ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card",
+                campo === a
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border bg-card",
               )}
             >
               {a === "cor" ? "texto" : a}
@@ -526,7 +581,9 @@ function ColorPanelFluxo() {
           />
         </Campo>
         <button
-          onClick={() => e.atualizarDoc((d) => comEstilo(d, alvo, { [campo]: undefined }), "Limpou a cor")}
+          onClick={() =>
+            e.atualizarDoc((d) => comEstilo(d, alvo, { [campo]: undefined }), "Limpou a cor")
+          }
           className="h-6 w-full rounded border border-border bg-card text-[11px] hover:bg-secondary"
         >
           Limpar {campo}
@@ -542,10 +599,17 @@ function ColorPanelFluxo() {
       </Secao>
       <Secao titulo="Fundo do artboard">
         <div className="flex gap-1.5">
-          {["var(--card)", "oklch(0.97 0.006 85)", "oklch(0.24 0.01 70)", "oklch(0.88 0.05 85)"].map((c) => (
+          {[
+            "var(--card)",
+            "oklch(0.97 0.006 85)",
+            "oklch(0.24 0.01 70)",
+            "oklch(0.88 0.05 85)",
+          ].map((c) => (
             <button
               key={c}
-              onClick={() => e.atualizarDoc((d) => ({ ...d, fundo: c }), "Trocou o fundo do artboard")}
+              onClick={() =>
+                e.atualizarDoc((d) => ({ ...d, fundo: c }), "Trocou o fundo do artboard")
+              }
               className="h-8 flex-1 rounded border border-border"
               style={{ background: c }}
             />
@@ -553,7 +617,13 @@ function ColorPanelFluxo() {
         </div>
         <button
           onClick={() =>
-            e.atualizarDoc((d) => comEstilo(d, "midia", { fundo: "linear-gradient(90deg,oklch(0.58 0.15 40),oklch(0.88 0.05 85))" }), "Aplicou gradiente na mídia")
+            e.atualizarDoc(
+              (d) =>
+                comEstilo(d, "midia", {
+                  fundo: "linear-gradient(90deg,oklch(0.58 0.15 40),oklch(0.88 0.05 85))",
+                }),
+              "Aplicou gradiente na mídia",
+            )
           }
           className="flex h-6 w-full items-center justify-center gap-1 rounded border border-border bg-card text-[11px] hover:bg-secondary"
         >
@@ -582,7 +652,9 @@ export function LayoutPanel() {
               onClick={() => setL({ direcao: d }, `Direção ${d}`)}
               className={cn(
                 "rounded border px-1 py-1 text-[10px] capitalize",
-                l.direcao === d ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card",
+                l.direcao === d
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border bg-card",
               )}
             >
               {d}
@@ -606,7 +678,9 @@ export function LayoutPanel() {
           <select
             className={inputCls}
             value={l.largura}
-            onChange={(ev) => setL({ largura: ev.target.value as typeof l.largura }, "Trocou a largura")}
+            onChange={(ev) =>
+              setL({ largura: ev.target.value as typeof l.largura }, "Trocou a largura")
+            }
           >
             <option value="auto">Automática</option>
             <option value="fixa">Fixa</option>
@@ -635,7 +709,9 @@ export function LayoutPanel() {
           <select
             className={inputCls}
             value={l.sombra}
-            onChange={(ev) => setL({ sombra: ev.target.value as typeof l.sombra }, "Trocou a sombra")}
+            onChange={(ev) =>
+              setL({ sombra: ev.target.value as typeof l.sombra }, "Trocou a sombra")
+            }
           >
             <option value="suave">Suave</option>
             <option value="nenhuma">Nenhuma</option>
@@ -707,7 +783,9 @@ function CamadasCanvasPanel() {
                 }}
                 className={cn(
                   "h-6 min-w-6 rounded border px-1.5 text-[10px]",
-                  paginaAtual === p ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card",
+                  paginaAtual === p
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border bg-card",
                 )}
               >
                 {i + 1}
@@ -721,7 +799,10 @@ function CamadasCanvasPanel() {
           <button
             onClick={() => {
               const nova = novaCamadaTexto(paginaAtual);
-              e.atualizarDocCanvas((d) => adicionarCamadaCanvas(d, paginaAtual.id ?? null, nova), "Nova camada de texto");
+              e.atualizarDocCanvas(
+                (d) => adicionarCamadaCanvas(d, paginaAtual.id ?? null, nova),
+                "Nova camada de texto",
+              );
               e.setPaginaCanvas(paginaAtual.id ?? null);
               e.setCamadaCanvas(nova.id!);
             }}
@@ -732,7 +813,10 @@ function CamadasCanvasPanel() {
           <button
             onClick={() => {
               const nova = novaCamadaForma(paginaAtual);
-              e.atualizarDocCanvas((d) => adicionarCamadaCanvas(d, paginaAtual.id ?? null, nova), "Nova forma");
+              e.atualizarDocCanvas(
+                (d) => adicionarCamadaCanvas(d, paginaAtual.id ?? null, nova),
+                "Nova forma",
+              );
               e.setPaginaCanvas(paginaAtual.id ?? null);
               e.setCamadaCanvas(nova.id!);
             }}
@@ -760,7 +844,10 @@ function CamadasCanvasPanel() {
               try {
                 const url = await enviarImagemCanvas(file);
                 const nova = novaCamadaImagem(paginaAtual, url, file.name);
-                e.atualizarDocCanvas((d) => adicionarCamadaCanvas(d, paginaAtual.id ?? null, nova), "Nova imagem");
+                e.atualizarDocCanvas(
+                  (d) => adicionarCamadaCanvas(d, paginaAtual.id ?? null, nova),
+                  "Nova imagem",
+                );
                 e.setPaginaCanvas(paginaAtual.id ?? null);
                 e.setCamadaCanvas(nova.id!);
                 toast.success("Imagem enviada.");
@@ -791,7 +878,10 @@ function CamadasCanvasPanel() {
                     e.setPaginaCanvas(paginaAtual.id ?? null);
                     e.setCamadaCanvas(c.id);
                   }}
-                  className={cn("flex-1 truncate text-left", c.oculto && "text-muted-foreground line-through")}
+                  className={cn(
+                    "flex-1 truncate text-left",
+                    c.oculto && "text-muted-foreground line-through",
+                  )}
                   title={c.nome}
                 >
                   {c.nome}
@@ -836,7 +926,10 @@ function CamadasCanvasPanel() {
             <AlertDialogAction
               onClick={() => {
                 const id = apagar!;
-                e.atualizarDocCanvas((d) => removerCamadaCanvas(d, paginaAtual.id ?? null, id), "Apagou camada");
+                e.atualizarDocCanvas(
+                  (d) => removerCamadaCanvas(d, paginaAtual.id ?? null, id),
+                  "Apagou camada",
+                );
                 if (e.camadaCanvas === id) e.setCamadaCanvas(null);
                 setApagar(null);
               }}
@@ -882,14 +975,22 @@ function CamadasFluxoPanel() {
                 )}
               >
                 <GripVertical className="size-3 cursor-grab text-muted-foreground" />
-                <button onClick={() => e.setSelecionado(c.id)} className="flex-1 truncate text-left">
+                <button
+                  onClick={() => e.setSelecionado(c.id)}
+                  className="flex-1 truncate text-left"
+                >
                   <span className="text-muted-foreground">{c.grupo} › </span>
                   {c.nome}
                 </button>
                 <span className="text-[9px] text-muted-foreground">{c.tipo}</span>
                 <button
                   title="Mostrar/ocultar"
-                  onClick={() => e.atualizarDoc((d) => comEstilo(d, c.id, { oculto: !s.oculto }), `Alternou ${c.nome}`)}
+                  onClick={() =>
+                    e.atualizarDoc(
+                      (d) => comEstilo(d, c.id, { oculto: !s.oculto }),
+                      `Alternou ${c.nome}`,
+                    )
+                  }
                 >
                   {s.oculto ? (
                     <EyeOff className="size-3 text-muted-foreground" />
@@ -899,7 +1000,12 @@ function CamadasFluxoPanel() {
                 </button>
                 <button
                   title="Travar"
-                  onClick={() => e.atualizarDoc((d) => comEstilo(d, c.id, { travado: !s.travado }), `Travou ${c.nome}`)}
+                  onClick={() =>
+                    e.atualizarDoc(
+                      (d) => comEstilo(d, c.id, { travado: !s.travado }),
+                      `Travou ${c.nome}`,
+                    )
+                  }
                 >
                   {s.travado ? (
                     <Lock className="size-3 text-accent" />
@@ -945,14 +1051,18 @@ function CamadasFluxoPanel() {
         <div className="flex gap-1">
           <button
             title="Adicionar logo"
-            onClick={() => e.atualizarDoc((d) => ({ ...d, logos: [...d.logos, "Novo"] }), "Adicionou um logo")}
+            onClick={() =>
+              e.atualizarDoc((d) => ({ ...d, logos: [...d.logos, "Novo"] }), "Adicionou um logo")
+            }
             className="grid h-6 flex-1 place-items-center rounded border border-border bg-card hover:bg-secondary"
           >
             <Plus className="size-3" />
           </button>
           <button
             title="Remover último logo"
-            onClick={() => e.atualizarDoc((d) => ({ ...d, logos: d.logos.slice(0, -1) }), "Removeu um logo")}
+            onClick={() =>
+              e.atualizarDoc((d) => ({ ...d, logos: d.logos.slice(0, -1) }), "Removeu um logo")
+            }
             className="grid h-6 flex-1 place-items-center rounded border border-border bg-card hover:bg-secondary"
           >
             <Undo2 className="size-3" />
@@ -975,7 +1085,10 @@ function CamadasFluxoPanel() {
             onClick={() => {
               if (!alvo) return;
               e.atualizarDoc(
-                (d) => ({ ...d, estilos: { ...d.estilos, [alvo]: { ...(d.estilos[alvo] ?? {}), oculto: true } } }),
+                (d) => ({
+                  ...d,
+                  estilos: { ...d.estilos, [alvo]: { ...(d.estilos[alvo] ?? {}), oculto: true } },
+                }),
                 `Ocultou ${rotuloEl[alvo]}`,
               );
             }}
@@ -988,7 +1101,10 @@ function CamadasFluxoPanel() {
           disabled={!alvo}
           onClick={() => {
             if (!alvo) return;
-            e.atualizarDoc((d) => ({ ...d, ordem: d.ordem.filter((x) => x !== alvo) }), `Removeu ${rotuloEl[alvo]}`);
+            e.atualizarDoc(
+              (d) => ({ ...d, ordem: d.ordem.filter((x) => x !== alvo) }),
+              `Removeu ${rotuloEl[alvo]}`,
+            );
             e.setSelecionado(null);
           }}
           className="mt-1.5 h-7 w-full rounded border border-border bg-card text-[11px] font-medium text-destructive hover:bg-secondary disabled:opacity-40"
@@ -1029,7 +1145,10 @@ function SelecaoCanvasPanel({ modo = "simples" }: { modo?: "simples" | "pro" }) 
   const camada = achado.camada;
   const id = e.camadaCanvas!;
   const patch = (fn: (c: CanvasCamada) => void, rotulo: string) =>
-    e.atualizarDocCanvas((d) => comCamadaCanvas(d, e.paginaCanvas, id, (c) => fn(c as CanvasCamada)), rotulo);
+    e.atualizarDocCanvas(
+      (d) => comCamadaCanvas(d, e.paginaCanvas, id, (c) => fn(c as CanvasCamada)),
+      rotulo,
+    );
   const num = (v: number | undefined, fn: (c: CanvasCamada, n: number) => void) => (
     <input
       type="number"
@@ -1044,7 +1163,8 @@ function SelecaoCanvasPanel({ modo = "simples" }: { modo?: "simples" | "pro" }) 
   const sombra = (camada as { sombra?: CanvasSombra }).sombra;
   const salva = salvaAchada?.camada as Record<string, unknown> | undefined;
   const dif = (k: string) =>
-    JSON.stringify((camada as unknown as Record<string, unknown>)[k]) !== JSON.stringify(salva?.[k]);
+    JSON.stringify((camada as unknown as Record<string, unknown>)[k]) !==
+    JSON.stringify(salva?.[k]);
   const redefinir = (ks: string[]) =>
     patch((c) => {
       const alvo = c as unknown as Record<string, unknown>;
@@ -1075,24 +1195,37 @@ function SelecaoCanvasPanel({ modo = "simples" }: { modo?: "simples" | "pro" }) 
       {camada.tipo === "texto" && (
         <>
           <Secao titulo="Conteúdo" acao={botaoRedefinir(["texto", "partes"])}>
-            <textarea
-              value={textoDaCamadaCanvas(camada)}
-              onChange={(ev) => {
-                const v = ev.target.value;
-                patch((c) => {
-                  const t = c as CanvasCamadaTexto;
-                  t.texto = v;
-                  delete t.partes;
-                }, "");
-              }}
-              className="h-20 w-full resize-none rounded border border-border bg-card p-2 text-[11px] outline-none focus:ring-1 focus:ring-ring"
+            <ConteudoRico
+              camada={camada}
+              onTexto={(v) =>
+                patch(
+                  (c) => substituirTextoPreservandoPartes(c as CanvasCamadaTexto, v),
+                  "Editou o texto",
+                )
+              }
+              onTrecho={(inicio, fim, est, rotulo) =>
+                patch(
+                  (c) => aplicarEstiloEmTrecho(c as CanvasCamadaTexto, inicio, fim, est),
+                  rotulo,
+                )
+              }
             />
           </Secao>
           <Secao
             titulo="Tipografia"
             acao={botaoRedefinir([
-              "fonte", "tamanho", "peso", "entrelinha", "entreLetras", "cor", "alinhamento",
-              "italico", "sublinhado", "riscado", "caixa", "fundo",
+              "fonte",
+              "tamanho",
+              "peso",
+              "entrelinha",
+              "entreLetras",
+              "cor",
+              "alinhamento",
+              "italico",
+              "sublinhado",
+              "riscado",
+              "caixa",
+              "fundo",
             ])}
           >
             <Campo rotulo="Fonte">
@@ -1110,10 +1243,17 @@ function SelecaoCanvasPanel({ modo = "simples" }: { modo?: "simples" | "pro" }) 
                 }}
               />
             </Campo>
-            <Campo rotulo="Tamanho">{num(camada.tamanho, (c, n) => void ((c as CanvasCamadaTexto).tamanho = n))}</Campo>
-            <Campo rotulo="Peso">{num(camada.peso, (c, n) => void ((c as CanvasCamadaTexto).peso = n))}</Campo>
+            <Campo rotulo="Tamanho">
+              {num(camada.tamanho, (c, n) => void ((c as CanvasCamadaTexto).tamanho = n))}
+            </Campo>
+            <Campo rotulo="Peso">
+              {num(camada.peso, (c, n) => void ((c as CanvasCamadaTexto).peso = n))}
+            </Campo>
             <Campo rotulo="Entrelinha">
-              {num(camada.entrelinha ?? camada.tamanho, (c, n) => void ((c as CanvasCamadaTexto).entrelinha = n))}
+              {num(
+                camada.entrelinha ?? camada.tamanho,
+                (c, n) => void ((c as CanvasCamadaTexto).entrelinha = n),
+              )}
             </Campo>
             <Campo rotulo="Entre letras">
               {num(camada.entreLetras, (c, n) => void ((c as CanvasCamadaTexto).entreLetras = n))}
@@ -1123,7 +1263,9 @@ function SelecaoCanvasPanel({ modo = "simples" }: { modo?: "simples" | "pro" }) 
                 type="color"
                 className={cn(inputCls, "p-0")}
                 value={/^#/.test(camada.cor ?? "") ? camada.cor! : "#000000"}
-                onChange={(ev) => patch((c) => void ((c as CanvasCamadaTexto).cor = ev.target.value), "")}
+                onChange={(ev) =>
+                  patch((c) => void ((c as CanvasCamadaTexto).cor = ev.target.value), "")
+                }
               />
             </Campo>
             <div className="flex gap-1">
@@ -1136,7 +1278,9 @@ function SelecaoCanvasPanel({ modo = "simples" }: { modo?: "simples" | "pro" }) 
               ).map(([a, Icon]) => (
                 <button
                   key={a}
-                  onClick={() => patch((c) => void ((c as CanvasCamadaTexto).alinhamento = a), "Alinhou o texto")}
+                  onClick={() =>
+                    patch((c) => void ((c as CanvasCamadaTexto).alinhamento = a), "Alinhou o texto")
+                  }
                   className={cn(
                     "grid size-6 place-items-center rounded border border-border hover:bg-secondary",
                     camada.alinhamento === a ? "bg-primary text-primary-foreground" : "bg-card",
@@ -1147,6 +1291,21 @@ function SelecaoCanvasPanel({ modo = "simples" }: { modo?: "simples" | "pro" }) 
               ))}
             </div>
             <div className="flex gap-1">
+              <button
+                title="Negrito"
+                onClick={() =>
+                  patch((c) => {
+                    const t = c as CanvasCamadaTexto;
+                    t.peso = (t.peso ?? 400) >= 700 ? 400 : 700;
+                  }, "Alternou negrito")
+                }
+                className={cn(
+                  "grid size-6 place-items-center rounded border border-border hover:bg-secondary",
+                  (camada.peso ?? 400) >= 700 ? "bg-primary text-primary-foreground" : "bg-card",
+                )}
+              >
+                <Bold className="size-3" />
+              </button>
               {(
                 [
                   ["italico", Italic, "Itálico"],
@@ -1173,6 +1332,9 @@ function SelecaoCanvasPanel({ modo = "simples" }: { modo?: "simples" | "pro" }) 
                 </button>
               ))}
             </div>
+            <Campo rotulo="Raio do fundo" sujo={dif("raio")}>
+              {num(camada.raio, (c, n) => void ((c as CanvasCamadaTexto).raio = n))}
+            </Campo>
             <Campo rotulo="Caixa" sujo={dif("caixa")}>
               <select
                 className={inputCls}
@@ -1197,12 +1359,16 @@ function SelecaoCanvasPanel({ modo = "simples" }: { modo?: "simples" | "pro" }) 
                   type="color"
                   className={cn(inputCls, "w-14 p-0")}
                   value={/^#[0-9a-f]{6}$/i.test(camada.fundo ?? "") ? camada.fundo! : "#ffffff"}
-                  onChange={(ev) => patch((c) => void ((c as CanvasCamadaTexto).fundo = ev.target.value), "")}
+                  onChange={(ev) =>
+                    patch((c) => void ((c as CanvasCamadaTexto).fundo = ev.target.value), "")
+                  }
                 />
                 {camada.fundo && (
                   <button
                     title="Sem fundo"
-                    onClick={() => patch((c) => void delete (c as CanvasCamadaTexto).fundo, "Removeu o fundo")}
+                    onClick={() =>
+                      patch((c) => void delete (c as CanvasCamadaTexto).fundo, "Removeu o fundo")
+                    }
                     className="grid size-6 place-items-center rounded border border-border bg-card hover:bg-secondary"
                   >
                     <Trash2 className="size-3" />
@@ -1211,7 +1377,6 @@ function SelecaoCanvasPanel({ modo = "simples" }: { modo?: "simples" | "pro" }) 
               </div>
             </Campo>
           </Secao>
-
         </>
       )}
 
@@ -1222,14 +1387,22 @@ function SelecaoCanvasPanel({ modo = "simples" }: { modo?: "simples" | "pro" }) 
               type="color"
               className={cn(inputCls, "p-0")}
               value={/^#/.test(camada.cor ?? "") ? camada.cor! : "#000000"}
-              onChange={(ev) => patch((c) => void ((c as CanvasCamadaForma).cor = ev.target.value), "")}
+              onChange={(ev) =>
+                patch((c) => void ((c as CanvasCamadaForma).cor = ev.target.value), "")
+              }
             />
           </Campo>
-          <Campo rotulo="Raio">{num(camada.raio, (c, n) => void ((c as CanvasCamadaForma).raio = n))}</Campo>
+          <Campo rotulo="Raio">
+            {num(camada.raio, (c, n) => void ((c as CanvasCamadaForma).raio = n))}
+          </Campo>
           <Campo rotulo="Borda (px)">
             {num(camada.borda?.largura, (c, n) => {
               const f = c as CanvasCamadaForma;
-              f.borda = { largura: n, cor: f.borda?.cor ?? "#000000", ...(f.borda?.estilo ? { estilo: f.borda.estilo } : {}) };
+              f.borda = {
+                largura: n,
+                cor: f.borda?.cor ?? "#000000",
+                ...(f.borda?.estilo ? { estilo: f.borda.estilo } : {}),
+              };
             })}
           </Campo>
           <Campo rotulo="Cor da borda">
@@ -1241,7 +1414,11 @@ function SelecaoCanvasPanel({ modo = "simples" }: { modo?: "simples" | "pro" }) 
                 const v = ev.target.value;
                 patch((c) => {
                   const f = c as CanvasCamadaForma;
-                  f.borda = { largura: f.borda?.largura ?? 1, cor: v, ...(f.borda?.estilo ? { estilo: f.borda.estilo } : {}) };
+                  f.borda = {
+                    largura: f.borda?.largura ?? 1,
+                    cor: v,
+                    ...(f.borda?.estilo ? { estilo: f.borda.estilo } : {}),
+                  };
                 }, "");
               }}
             />
@@ -1254,7 +1431,11 @@ function SelecaoCanvasPanel({ modo = "simples" }: { modo?: "simples" | "pro" }) 
                 const v = ev.target.value as "solid" | "dashed" | "dotted";
                 patch((c) => {
                   const f = c as CanvasCamadaForma;
-                  f.borda = { largura: f.borda?.largura ?? 1, cor: f.borda?.cor ?? "#000000", estilo: v };
+                  f.borda = {
+                    largura: f.borda?.largura ?? 1,
+                    cor: f.borda?.cor ?? "#000000",
+                    estilo: v,
+                  };
                 }, "");
               }}
             >
@@ -1267,13 +1448,48 @@ function SelecaoCanvasPanel({ modo = "simples" }: { modo?: "simples" | "pro" }) 
       )}
 
       {camada.tipo === "imagem" && (
-        <Secao titulo="Imagem">
-          <Campo rotulo="Raio">{num(camada.raio, (c, n) => void ((c as CanvasCamadaImagem).raio = n))}</Campo>
-          <input
-            readOnly
-            value={camada.src}
-            className="h-6 w-full rounded border border-border bg-secondary px-1.5 text-[11px] text-muted-foreground"
+        <Secao titulo={camada.src ? "Imagem" : "Placeholder de imagem"}>
+          <Campo rotulo="Raio" sujo={dif("raio")}>
+            {num(camada.raio, (c, n) => void ((c as CanvasCamadaImagem).raio = n))}
+          </Campo>
+          <ImagemDaCamada
+            src={camada.src}
+            onEscolher={(url) =>
+              patch((c) => {
+                const im = c as CanvasCamadaImagem;
+                im.src = url;
+                delete im.img;
+              }, "Trocou a imagem")
+            }
+            onLimpar={
+              camada.src
+                ? () =>
+                    patch((c) => {
+                      const im = c as CanvasCamadaImagem;
+                      delete im.src;
+                      delete im.img;
+                    }, "Virou placeholder")
+                : undefined
+            }
           />
+        </Secao>
+      )}
+
+      {camada.tipo !== "imagem" && (
+        <Secao titulo="Placeholder">
+          <button
+            onClick={() =>
+              patch((c) => {
+                const novo = virarPlaceholderImagem(c) as unknown as Record<string, unknown>;
+                const alvo = c as unknown as Record<string, unknown>;
+                Object.keys(alvo).forEach((k) => delete alvo[k]);
+                Object.assign(alvo, novo);
+              }, "Virou placeholder de imagem")
+            }
+            className="flex h-6 w-full items-center justify-center gap-1 rounded border border-border bg-card text-[11px] hover:bg-secondary"
+          >
+            <ImagePlus className="size-3" /> Transformar em placeholder de imagem
+          </button>
         </Secao>
       )}
 
@@ -1320,7 +1536,10 @@ function SelecaoCanvasPanel({ modo = "simples" }: { modo?: "simples" | "pro" }) 
                 <button
                   key={String(d)}
                   onClick={() =>
-                    e.atualizarDocCanvas((doc) => moverCamadaCanvas(doc, e.paginaCanvas, id, d), titulo)
+                    e.atualizarDocCanvas(
+                      (doc) => moverCamadaCanvas(doc, e.paginaCanvas, id, d),
+                      titulo,
+                    )
                   }
                   className="h-6 rounded border border-border bg-card text-[11px] hover:bg-secondary"
                 >
@@ -1332,13 +1551,18 @@ function SelecaoCanvasPanel({ modo = "simples" }: { modo?: "simples" | "pro" }) 
         </>
       )}
 
-
       <Secao titulo="Sombra">
         {!sombra ? (
           <button
             onClick={() =>
               patch(
-                (c) => void ((c as { sombra?: CanvasSombra }).sombra = { x: 0, y: 4, blur: 12, cor: "#00000040" }),
+                (c) =>
+                  void ((c as { sombra?: CanvasSombra }).sombra = {
+                    x: 0,
+                    y: 4,
+                    blur: 12,
+                    cor: "#00000040",
+                  }),
                 "Adicionou sombra",
               )
             }
@@ -1363,12 +1587,17 @@ function SelecaoCanvasPanel({ modo = "simples" }: { modo?: "simples" | "pro" }) 
                 className={cn(inputCls, "p-0")}
                 value={/^#[0-9a-f]{6}$/i.test(sombra.cor) ? sombra.cor : "#000000"}
                 onChange={(ev) =>
-                  patch((c) => void ((c as { sombra?: CanvasSombra }).sombra!.cor = ev.target.value), "")
+                  patch(
+                    (c) => void ((c as { sombra?: CanvasSombra }).sombra!.cor = ev.target.value),
+                    "",
+                  )
                 }
               />
             </Campo>
             <button
-              onClick={() => patch((c) => void delete (c as { sombra?: CanvasSombra }).sombra, "Removeu sombra")}
+              onClick={() =>
+                patch((c) => void delete (c as { sombra?: CanvasSombra }).sombra, "Removeu sombra")
+              }
               className="h-6 w-full rounded border border-border bg-card text-[11px] hover:bg-secondary"
             >
               Remover sombra
@@ -1465,7 +1694,12 @@ export function InspectorPanel({ aba }: { aba: "simples" | "pro" }) {
           ))}
         </div>
         <div className="flex items-center gap-1">
-          {e.sujo && <span className="size-1.5 rounded-full bg-[hsl(var(--accent))]" title="Alterações não salvas" />}
+          {e.sujo && (
+            <span
+              className="size-1.5 rounded-full bg-[hsl(var(--accent))]"
+              title="Alterações não salvas"
+            />
+          )}
           <button
             disabled={!e.sujo}
             onClick={() => e.descartarRascunho()}
@@ -1506,7 +1740,6 @@ export function InspectorPanel({ aba }: { aba: "simples" | "pro" }) {
   );
 }
 
-
 function PropsPanelFluxo() {
   const e = useEstudio();
   const d = e.doc;
@@ -1518,14 +1751,21 @@ function PropsPanelFluxo() {
           <input
             className={inputCls}
             value={d.textos.titulo}
-            onChange={(ev) => e.atualizarDoc((x) => ({ ...x, textos: { ...x.textos, titulo: ev.target.value } }), "")}
+            onChange={(ev) =>
+              e.atualizarDoc(
+                (x) => ({ ...x, textos: { ...x.textos, titulo: ev.target.value } }),
+                "",
+              )
+            }
           />
         </Campo>
         <Campo rotulo="CTA">
           <input
             className={inputCls}
             value={d.textos.cta}
-            onChange={(ev) => e.atualizarDoc((x) => ({ ...x, textos: { ...x.textos, cta: ev.target.value } }), "")}
+            onChange={(ev) =>
+              e.atualizarDoc((x) => ({ ...x, textos: { ...x.textos, cta: ev.target.value } }), "")
+            }
           />
         </Campo>
         <Campo rotulo="Nº de logos">
@@ -1538,7 +1778,16 @@ function PropsPanelFluxo() {
             onChange={(ev) => {
               const n = Math.max(0, Math.min(8, Number(ev.target.value)));
               e.atualizarDoc((x) => {
-                const base = ["Marés", "Fluxo", "Norte", "Cardume", "Vento", "Duna", "Píer", "Ilha"];
+                const base = [
+                  "Marés",
+                  "Fluxo",
+                  "Norte",
+                  "Cardume",
+                  "Vento",
+                  "Duna",
+                  "Píer",
+                  "Ilha",
+                ];
                 return { ...x, logos: base.slice(0, n) };
               }, "");
             }}
@@ -1549,13 +1798,17 @@ function PropsPanelFluxo() {
         <Campo rotulo="Mostrar prova social">
           <Switch
             checked={d.provaSocial}
-            onCheckedChange={(v) => e.atualizarDoc((x) => ({ ...x, provaSocial: v }), "Alternou prova social")}
+            onCheckedChange={(v) =>
+              e.atualizarDoc((x) => ({ ...x, provaSocial: v }), "Alternou prova social")
+            }
           />
         </Campo>
         <Campo rotulo="Herói em tela cheia">
           <Switch
             checked={d.heroiCheio}
-            onCheckedChange={(v) => e.atualizarDoc((x) => ({ ...x, heroiCheio: v }), "Alternou herói cheio")}
+            onCheckedChange={(v) =>
+              e.atualizarDoc((x) => ({ ...x, heroiCheio: v }), "Alternou herói cheio")
+            }
           />
         </Campo>
         <div>
@@ -1597,7 +1850,10 @@ function PropsPanelFluxo() {
                 e.setSistemaAtivo(sid);
                 const cores = paletaPorSistema[sid]!;
                 e.atualizarDoc(
-                  (x) => comEstilo(comEstilo(x, "cta", { fundo: cores[0] }), "titulo", { cor: cores[2] }),
+                  (x) =>
+                    comEstilo(comEstilo(x, "cta", { fundo: cores[0] }), "titulo", {
+                      cor: cores[2],
+                    }),
                   `Aplicou a paleta ${p}`,
                 );
               }}
@@ -1630,6 +1886,186 @@ function PropsPanelFluxo() {
           </button>
         </div>
       </Secao>
+    </>
+  );
+}
+
+/* ---- conteúdo com trechos formatáveis (canvas) ---- */
+type EstiloTrecho = {
+  [K in keyof Omit<CanvasParteTexto, "texto">]?: CanvasParteTexto[K] | undefined;
+};
+
+function ConteudoRico({
+  camada,
+  onTexto,
+  onTrecho,
+}: {
+  camada: CanvasCamadaTexto;
+  onTexto: (v: string) => void;
+  onTrecho: (inicio: number, fim: number, est: EstiloTrecho, rotulo: string) => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const digitando = useRef(false);
+  const [sel, setSel] = useState<{ inicio: number; fim: number } | null>(null);
+  const html = partesParaHtml(partesDaCamadaCanvas(camada));
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    if (digitando.current) {
+      digitando.current = false;
+      return;
+    }
+    if (el.innerHTML === html) return;
+    const s = offsetsDaSelecao(el);
+    el.innerHTML = html;
+    if (s && document.activeElement === el) restaurarOffsets(el, s.inicio, s.fim);
+  }, [html]);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const onSel = () => {
+      if (document.activeElement === el) setSel(offsetsDaSelecao(el));
+    };
+    document.addEventListener("selectionchange", onSel);
+    return () => document.removeEventListener("selectionchange", onSel);
+  }, []);
+
+  const temTrecho = !!(sel && sel.fim > sel.inicio);
+  const est = temTrecho ? estiloDoTrecho(camada, sel!.inicio, sel!.fim) : {};
+  const aplicar = (patch: EstiloTrecho, rotulo: string) => {
+    if (!temTrecho) return;
+    onTrecho(sel!.inicio, sel!.fim, patch, rotulo);
+  };
+
+  return (
+    <>
+      <div
+        ref={ref}
+        contentEditable
+        suppressContentEditableWarning
+        spellCheck={false}
+        onInput={() => {
+          const el = ref.current;
+          if (!el) return;
+          digitando.current = true;
+          onTexto(textoDoElemento(el));
+        }}
+        className="min-h-20 w-full whitespace-pre-wrap rounded border border-border bg-card p-2 text-[11px] outline-none focus:ring-1 focus:ring-ring"
+      />
+      <div className="flex items-center gap-1">
+        {(
+          [
+            [
+              "Negrito",
+              Bold,
+              () => ({ peso: est.peso === 700 ? undefined : 700 }),
+              est.peso === 700,
+            ],
+            ["Itálico", Italic, () => ({ italico: est.italico ? undefined : true }), !!est.italico],
+            [
+              "Sublinhado",
+              Underline,
+              () => ({ sublinhado: est.sublinhado ? undefined : true }),
+              !!est.sublinhado,
+            ],
+            [
+              "Riscado",
+              Strikethrough,
+              () => ({ riscado: est.riscado ? undefined : true }),
+              !!est.riscado,
+            ],
+          ] as const
+        ).map(([titulo, Icon, calc, ativo]) => (
+          <button
+            key={titulo}
+            title={`${titulo} no trecho selecionado`}
+            disabled={!temTrecho}
+            onMouseDown={(ev) => ev.preventDefault()}
+            onClick={() => aplicar(calc(), `Aplicou ${titulo.toLowerCase()} no trecho`)}
+            className={cn(
+              "grid size-6 place-items-center rounded border border-border hover:bg-secondary disabled:opacity-40",
+              ativo ? "bg-primary text-primary-foreground" : "bg-card",
+            )}
+          >
+            <Icon className="size-3" />
+          </button>
+        ))}
+        <input
+          type="color"
+          title="Cor do trecho selecionado"
+          disabled={!temTrecho}
+          onMouseDown={(ev) => ev.preventDefault()}
+          value={/^#[0-9a-f]{6}$/i.test(est.cor ?? "") ? est.cor! : "#000000"}
+          onChange={(ev) => aplicar({ cor: ev.target.value }, "Pintou o trecho")}
+          className="h-6 w-10 rounded border border-border bg-card p-0 disabled:opacity-40"
+        />
+        <span className="ml-1 text-[10px] text-muted-foreground">
+          {temTrecho ? "trecho selecionado" : "selecione um trecho"}
+        </span>
+      </div>
+    </>
+  );
+}
+
+/* ---- imagem da camada: enviar, trocar, virar placeholder ---- */
+function ImagemDaCamada({
+  src,
+  onEscolher,
+  onLimpar,
+}: {
+  src?: string | undefined;
+  onEscolher: (url: string) => void;
+  onLimpar?: (() => void) | undefined;
+}) {
+  const [ocupado, setOcupado] = useState(false);
+  const input = useRef<HTMLInputElement>(null);
+  return (
+    <>
+      <input
+        ref={input}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={async (ev) => {
+          const f = ev.target.files?.[0];
+          ev.target.value = "";
+          if (!f) return;
+          setOcupado(true);
+          try {
+            onEscolher(await enviarImagemCanvas(f));
+            toast.success("Imagem aplicada.");
+          } catch (err) {
+            toast.error(err instanceof Error ? err.message : "Falha ao enviar a imagem.");
+          } finally {
+            setOcupado(false);
+          }
+        }}
+      />
+      <input
+        readOnly
+        value={src ?? "sem imagem (placeholder)"}
+        className="h-6 w-full rounded border border-border bg-secondary px-1.5 text-[11px] text-muted-foreground"
+      />
+      <div className="grid grid-cols-2 gap-1">
+        <button
+          disabled={ocupado}
+          onClick={() => input.current?.click()}
+          className="flex h-6 items-center justify-center gap-1 rounded border border-border bg-card text-[11px] hover:bg-secondary disabled:opacity-50"
+        >
+          {ocupado ? <Loader2 className="size-3 animate-spin" /> : <ImagePlus className="size-3" />}
+          {src ? "Trocar imagem" : "Enviar imagem"}
+        </button>
+        {onLimpar && (
+          <button
+            onClick={onLimpar}
+            className="h-6 rounded border border-border bg-card text-[11px] hover:bg-secondary"
+          >
+            Virar placeholder
+          </button>
+        )}
+      </div>
     </>
   );
 }
