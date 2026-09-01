@@ -606,8 +606,8 @@ function ImagemCanvasView({
       const sy = st.modo.includes("s") ? 1 : st.modo.includes("n") ? -1 : 0;
       let w = Math.max(20, st.base.w + sx * dl.x);
       let h = Math.max(20, st.base.h + sy * dl.y);
-      /* a foto só escala proporcional dentro da máscara — nunca estica */
-      {
+/* a foto só escala proporcional dentro da máscara — a menos que Shift segure o esticão livre */
+      if (!ev.shiftKey) {
         const k = Math.max(w / (st.base.w || 1), h / (st.base.h || 1));
         w = (st.base.w || 1) * k;
         h = (st.base.h || 1) * k;
