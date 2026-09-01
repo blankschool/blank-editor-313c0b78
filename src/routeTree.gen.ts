@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as BibliotecaRouteImport } from './routes/biblioteca'
+import { Route as DesignSystemRouteImport } from './routes/design-system'
 import { Route as DDesignIdRouteImport } from './routes/d.$designId'
 import { Route as DDesignIdIndexRouteImport } from './routes/d.$designId.index'
 import { Route as DDesignIdPainelRouteImport } from './routes/d.$designId.$painel'
@@ -28,6 +29,11 @@ const IndexRoute = IndexRouteImport.update({
 const BibliotecaRoute = BibliotecaRouteImport.update({
   id: '/biblioteca',
   path: '/biblioteca',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DesignSystemRoute = DesignSystemRouteImport.update({
+  id: '/design-system',
+  path: '/design-system',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DDesignIdRoute = DDesignIdRouteImport.update({
@@ -74,6 +80,7 @@ const DDesignIdEditarPainelRoute = DDesignIdEditarPainelRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/biblioteca': typeof BibliotecaRoute
+  '/design-system': typeof DesignSystemRoute
   '/d/$designId': typeof DDesignIdRouteWithChildren
   '/d/$designId/$painel': typeof DDesignIdPainelRoute
   '/d/$designId/apresentar': typeof DDesignIdApresentarRoute
@@ -86,6 +93,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/biblioteca': typeof BibliotecaRoute
+  '/design-system': typeof DesignSystemRoute
   '/d/$designId/$painel': typeof DDesignIdPainelRoute
   '/d/$designId/apresentar': typeof DDesignIdApresentarRoute
   '/d/$designId/compartilhar': typeof DDesignIdCompartilharRoute
@@ -98,6 +106,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/biblioteca': typeof BibliotecaRoute
+  '/design-system': typeof DesignSystemRoute
   '/d/$designId': typeof DDesignIdRouteWithChildren
   '/d/$designId/$painel': typeof DDesignIdPainelRoute
   '/d/$designId/apresentar': typeof DDesignIdApresentarRoute
@@ -112,6 +121,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/biblioteca'
+    | '/design-system'
     | '/d/$designId'
     | '/d/$designId/$painel'
     | '/d/$designId/apresentar'
@@ -124,6 +134,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/biblioteca'
+    | '/design-system'
     | '/d/$designId/$painel'
     | '/d/$designId/apresentar'
     | '/d/$designId/compartilhar'
@@ -135,6 +146,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/biblioteca'
+    | '/design-system'
     | '/d/$designId'
     | '/d/$designId/$painel'
     | '/d/$designId/apresentar'
@@ -148,6 +160,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BibliotecaRoute: typeof BibliotecaRoute
+  DesignSystemRoute: typeof DesignSystemRoute
   DDesignIdRoute: typeof DDesignIdRouteWithChildren
 }
 
@@ -165,6 +178,13 @@ declare module '@tanstack/react-router' {
       path: '/biblioteca'
       fullPath: '/biblioteca'
       preLoaderRoute: typeof BibliotecaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/design-system': {
+      id: '/design-system'
+      path: '/design-system'
+      fullPath: '/design-system'
+      preLoaderRoute: typeof DesignSystemRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/d/$designId': {
@@ -253,6 +273,7 @@ const DDesignIdRouteWithChildren = DDesignIdRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BibliotecaRoute: BibliotecaRoute,
+  DesignSystemRoute: DesignSystemRoute,
   DDesignIdRoute: DDesignIdRouteWithChildren,
 }
 export const routeTree = rootRouteImport
