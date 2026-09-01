@@ -1282,22 +1282,68 @@ export function CanvasView({
     const mover = (ev: PointerEvent) => {
       const st = refArraste.current;
       if (!st) return;
-      const dx = (ev.clientX - st.px) / (escala || 1);
-      const dy = (ev.clientY - st.py) / (escala || 1);
+      const rot = st.inicio.r ?? 0;
+
+      if (st.modo === "girar") {
+        const cx = st.centro.x;
+        const cy = st.centro.y;
+        const ang = (Math.atan2(ev.clientY - cy, ev.clientX - cx) * 180) / Math.PI + 90;
+        let r = ang;
+        if (ev.shiftKey) r = Math.round(r / 15) * 15;
+        const arredondado: Geo = { ...st.inicio, r: Math.round(((r % 360) + 360) % 360) };
+        st.atual = arredondado;
+        setArraste({
+          paginaId: st.paginaId,
+          camadaId: st.camadaId,
+          modo: st.modo,
+          geo: arredondado,
+          guias: { v: [], h: [] },
+        });
+        return;
+      }
+
+      const dxTela = (ev.clientX - st.px) / (escala || 1);
+      const dyTela = (ev.clientY - st.py) / (escala || 1);
       let bruto: Geo;
       if (st.modo === "mover") {
-        bruto = { ...st.inicio, x: st.inicio.x + dx, y: st.inicio.y + dy };
+        bruto = { ...st.inicio, x: st.inicio.x + dxTela, y: st.inicio.y + dyTela };
       } else {
-        const esq = st.modo === "nw" || st.modo === "sw";
-        const topo = st.modo === "nw" || st.modo === "ne";
-        const w = Math.max(8, st.inicio.w + (esq ? -dx : dx));
-        const h = Math.max(8, st.inicio.h + (topo ? -dy : dy));
-        bruto = {
-          x: esq ? st.inicio.x + (st.inicio.w - w) : st.inicio.x,
-          y: topo ? st.inicio.y + (st.inicio.h - h) : st.inicio.y,
-          w,
-          h,
+        /* delta no referencial da caixa (desfaz a rotação) */
+        const local = girarPonto(dxTela, dyTela, -rot);
+        const esq = st.modo === "nw" || st.modo === "sw" || st.modo === "w";
+        const dir = st.modo === "ne" || st.modo === "se" || st.modo === "e";
+        const topo = st.modo === "nw" || st.modo === "ne" || st.modo === "n";
+        const base = st.modo === "sw" || st.modo === "se" || st.modo === "s";
+        const doCentro = ev.altKey;
+        const fator = doCentro ? 2 : 1;
+        let w = esq
+          ? Math.max(8, st.inicio.w - local.x * fator)
+          : dir
+            ? Math.max(8, st.inicio.w + local.x * fator)
+            : st.inicio.w;
+        let h = topo
+          ? Math.max(8, st.inicio.h - local.y * fator)
+          : base
+            ? Math.max(8, st.inicio.h + local.y * fator)
+            : st.inicio.h;
+        const canto = (esq || dir) && (topo || base);
+        if (canto && ev.shiftKey && st.inicio.w > 0 && st.inicio.h > 0) {
+          const k = Math.max(w / st.inicio.w, h / st.inicio.h);
+          w = st.inicio.w * k;
+          h = st.inicio.h * k;
+        }
+        /* mantém a âncora oposta parada, mesmo com a caixa girada */
+        const ox = doCentro ? (st.inicio.w - w) / 2 : esq ? st.inicio.w - w : 0;
+        const oy = doCentro ? (st.inicio.h - h) / 2 : topo ? st.inicio.h - h : 0;
+        const dCentroLocal = {
+          x: ox + w / 2 - st.inicio.w / 2,
+          y: oy + h / 2 - st.inicio.h / 2,
         };
+        const dCentro = girarPonto(dCentroLocal.x, dCentroLocal.y, rot);
+        const cx = st.inicio.x + st.inicio.w / 2 + dCentro.x;
+        const cy = st.inicio.y + st.inicio.h / 2 + dCentro.y;
+        bruto = { x: cx - w / 2, y: cy - h / 2, w, h };
+        if (rot) bruto.r = rot;
       }
       const { geo, guias } = encaixar(bruto, st.pagina, st.camadaId, st.modo);
       const arredondado: Geo = {
@@ -1306,6 +1352,7 @@ export function CanvasView({
         w: Math.round(geo.w),
         h: Math.round(geo.h),
       };
+      if (rot) arredondado.r = rot;
       st.atual = arredondado;
       setArraste({
         paginaId: st.paginaId,
@@ -1341,6 +1388,16 @@ export function CanvasView({
     ev.preventDefault();
     ev.stopPropagation();
     const inicio = geoDaCamada(camada);
+    /* centro da camada em coordenadas de tela, para a rotação */
+    const cont = refPaginas.current?.querySelector<HTMLElement>(`[data-pagina="${paginaId}"]`);
+    const r = cont?.getBoundingClientRect();
+    const esc = escala || 1;
+    const centro = r
+      ? {
+          x: r.left + (inicio.x + inicio.w / 2) * esc,
+          y: r.top + (inicio.y + inicio.h / 2) * esc,
+        }
+      : { x: ev.clientX, y: ev.clientY };
     refArraste.current = {
       paginaId,
       camadaId,
@@ -1350,9 +1407,11 @@ export function CanvasView({
       py: ev.clientY,
       pagina,
       atual: inicio,
+      centro,
     };
     setArraste({ paginaId, camadaId, modo, geo: inicio, guias: { v: [], h: [] } });
   };
+
 
   if (!paginas.length) {
     return (
