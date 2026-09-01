@@ -442,10 +442,12 @@ function CamadaCanvasView({
   c,
   selecionada,
   onSelecionar,
+  onPointerDown,
 }: {
   c: CanvasCamada;
   selecionada?: boolean;
   onSelecionar?: (() => void) | undefined;
+  onPointerDown?: ((ev: React.PointerEvent) => void) | undefined;
 }) {
   if (c.oculto) return null;
   const marca: React.CSSProperties = selecionada
@@ -457,6 +459,7 @@ function CamadaCanvasView({
         onSelecionar();
       }
     : undefined;
+  void onPointerDown;
   if (c.tipo === "imagem") {
     const inner = c.img ?? { x: 0, y: 0, w: c.w, h: c.h };
     return (
