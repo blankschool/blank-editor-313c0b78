@@ -736,7 +736,6 @@ function TextoEditavelPalco({
         ev.stopPropagation();
         if (ev.key === "Escape") (ev.currentTarget as HTMLElement).blur();
       }}
-      dangerouslySetInnerHTML={{ __html: html }}
     />
   );
 }
