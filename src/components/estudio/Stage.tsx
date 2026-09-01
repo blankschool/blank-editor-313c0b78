@@ -1324,71 +1324,191 @@ function CanvasComSelecao({ doc }: { doc: DocCanvas }) {
   }, [doc, e]);
 
   return (
-    <CanvasView
-      doc={doc}
-      selecionada={e.camadaCanvas}
-      escala={escala}
-      arrastavel={podeArrastar}
-      onGeometria={gravar}
-      onSelecionar={(pid, cid) => {
-        e.setPaginaCanvas(pid);
-        e.setCamadaCanvas(cid);
-      }}
-      acoes={({ paginaId, camadaId, camada }) => (
-        <>
-          <button
-            title="Editar camada"
-            onClick={() => e.setPainelEdicao("simples")}
-            className={cn(
-              "flex h-6 items-center gap-1 rounded-md px-1.5 text-[11px]",
-              e.painelEdicao === "simples" ? "bg-primary text-primary-foreground" : "hover:bg-secondary",
+    <>
+      <input
+        ref={inputImg}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(ev) => {
+          const f = ev.target.files?.[0];
+          ev.target.value = "";
+          if (f) void aoEscolherImagem(f);
+        }}
+      />
+      <CanvasView
+        doc={doc}
+        selecionada={e.camadaCanvas}
+        escala={escala}
+        arrastavel={podeArrastar}
+        onGeometria={gravar}
+        editando={editando}
+        onSelecaoTexto={setSelTexto}
+        onTextoInput={(novo) => {
+          if (!editando) return;
+          patchCamada(
+            e.paginaCanvas ?? (doc.paginas?.[0]?.id ?? "p1"),
+            editando,
+            (c) => substituirTextoPreservandoPartes(c as CanvasCamadaTexto, novo),
+            "Editou o texto",
+          );
+        }}
+        onDuploClique={(pid, cid, camada) => {
+          e.setPaginaCanvas(pid);
+          e.setCamadaCanvas(cid);
+          if (camada.tipo === "texto") setEditando(cid);
+          else if (camada.tipo === "imagem") abrirUpload(pid, cid);
+        }}
+        onSelecionar={(pid, cid) => {
+          e.setPaginaCanvas(pid);
+          e.setCamadaCanvas(cid);
+        }}
+        acoes={({ paginaId, camadaId, camada }) => (
+          <>
+            {editando === camadaId && camada.tipo === "texto" ? (
+              <>
+                {(
+                  [
+                    ["Negrito", Bold, () => ({ peso: estiloSel.peso === 700 ? undefined : 700 })],
+                    ["Itálico", Italic, () => ({ italico: estiloSel.italico ? undefined : true })],
+                    ["Sublinhado", Underline, () => ({ sublinhado: estiloSel.sublinhado ? undefined : true })],
+                    ["Riscado", Strikethrough, () => ({ riscado: estiloSel.riscado ? undefined : true })],
+                  ] as const
+                ).map(([titulo, Icon, calc]) => (
+                  <button
+                    key={titulo}
+                    title={`${titulo} no trecho`}
+                    disabled={!temTrecho}
+                    onMouseDown={(ev) => ev.preventDefault()}
+                    onClick={() => aplicarNoTrecho(calc(), `Aplicou ${titulo.toLowerCase()}`)}
+                    className={cn(
+                      "grid size-6 place-items-center rounded-md hover:bg-secondary disabled:opacity-40",
+                      titulo === "Negrito" && estiloSel.peso === 700 && "bg-primary text-primary-foreground",
+                      titulo === "Itálico" && estiloSel.italico && "bg-primary text-primary-foreground",
+                      titulo === "Sublinhado" && estiloSel.sublinhado && "bg-primary text-primary-foreground",
+                      titulo === "Riscado" && estiloSel.riscado && "bg-primary text-primary-foreground",
+                    )}
+                  >
+                    <Icon className="size-3.5" />
+                  </button>
+                ))}
+                <label
+                  title="Cor do trecho"
+                  className="grid size-6 cursor-pointer place-items-center rounded-md hover:bg-secondary"
+                  onMouseDown={(ev) => ev.preventDefault()}
+                >
+                  <Palette className="size-3.5" />
+                  <input
+                    type="color"
+                    className="sr-only"
+                    value={estiloSel.cor ?? "#000000"}
+                    onChange={(ev) => aplicarNoTrecho({ cor: ev.target.value }, "Pintou o trecho")}
+                  />
+                </label>
+                <span className="mx-1 h-4 w-px bg-border" />
+                <button
+                  onClick={() => setEditando(null)}
+                  className="flex h-6 items-center rounded-md px-1.5 text-[11px] hover:bg-secondary"
+                >
+                  Concluir
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  title="Editar camada"
+                  onClick={() => e.setPainelEdicao("simples")}
+                  className={cn(
+                    "flex h-6 items-center gap-1 rounded-md px-1.5 text-[11px]",
+                    e.painelEdicao === "simples" ? "bg-primary text-primary-foreground" : "hover:bg-secondary",
+                  )}
+                >
+                  {camada.tipo === "texto" ? <Type className="size-3.5" /> : <Palette className="size-3.5" />} Editar
+                </button>
+                <button
+                  title="Camadas e posição (Pro)"
+                  onClick={() => e.setPainelEdicao("pro")}
+                  className={cn(
+                    "flex h-6 items-center gap-1 rounded-md px-1.5 text-[11px]",
+                    e.painelEdicao === "pro" ? "bg-primary text-primary-foreground" : "hover:bg-secondary",
+                  )}
+                >
+                  <LayoutGrid className="size-3.5" /> Pro
+                </button>
+                <span className="mx-1 h-4 w-px bg-border" />
+                {camada.tipo === "texto" && (
+                  <button
+                    title="Editar texto no lugar"
+                    onClick={() => setEditando(camadaId)}
+                    className="grid size-6 place-items-center rounded-md hover:bg-secondary"
+                  >
+                    <Type className="size-3.5" />
+                  </button>
+                )}
+                {camada.tipo === "imagem" ? (
+                  <button
+                    title="Trocar imagem"
+                    onClick={() => abrirUpload(paginaId, camadaId)}
+                    className="grid size-6 place-items-center rounded-md hover:bg-secondary"
+                  >
+                    <ImagePlus className="size-3.5" />
+                  </button>
+                ) : (
+                  <button
+                    title="Transformar em placeholder de imagem"
+                    onClick={() => {
+                      e.atualizarDocCanvas(
+                        (d) =>
+                          comCamadaCanvas(d, paginaId, camadaId, (c) => {
+                            const novo = virarPlaceholderImagem(c) as unknown as Record<string, unknown>;
+                            Object.keys(c as unknown as Record<string, unknown>).forEach(
+                              (k) => delete (c as unknown as Record<string, unknown>)[k],
+                            );
+                            Object.assign(c, novo);
+                          }),
+                        "Virou placeholder",
+                      );
+                    }}
+                    className="grid size-6 place-items-center rounded-md hover:bg-secondary"
+                  >
+                    <Frame className="size-3.5" />
+                  </button>
+                )}
+                <button
+                  title="Duplicar camada"
+                  onClick={() => {
+                    const copia = duplicarCamadaCanvas(camada);
+                    e.atualizarDocCanvas((d) => adicionarCamadaCanvas(d, paginaId, copia), "Duplicou camada");
+                    e.setCamadaCanvas(copia.id!);
+                  }}
+                  className="grid size-6 place-items-center rounded-md hover:bg-secondary"
+                >
+                  <Copy className="size-3.5" />
+                </button>
+                <button
+                  title="Excluir camada"
+                  onClick={() => {
+                    e.atualizarDocCanvas((d) => removerCamadaCanvas(d, paginaId, camadaId), "Apagou camada");
+                    e.setCamadaCanvas(null);
+                  }}
+                  className="grid size-6 place-items-center rounded-md hover:bg-secondary"
+                >
+                  <Trash2 className="size-3.5" />
+                </button>
+                <span className="mx-1 h-4 w-px bg-border" />
+                <button
+                  title="Pedir ao assistente"
+                  onClick={() => e.enviarPedido(`Melhorar a camada ${camada.nome ?? camada.tipo}`)}
+                  className="grid size-6 place-items-center rounded-md bg-accent text-accent-foreground"
+                >
+                  <Sparkles className="size-3.5" />
+                </button>
+              </>
             )}
-          >
-            {camada.tipo === "texto" ? <Type className="size-3.5" /> : <Palette className="size-3.5" />} Editar
-          </button>
-          <button
-            title="Camadas e posição (Pro)"
-            onClick={() => e.setPainelEdicao("pro")}
-            className={cn(
-              "flex h-6 items-center gap-1 rounded-md px-1.5 text-[11px]",
-              e.painelEdicao === "pro" ? "bg-primary text-primary-foreground" : "hover:bg-secondary",
-            )}
-          >
-            <LayoutGrid className="size-3.5" /> Pro
-          </button>
-
-          <span className="mx-1 h-4 w-px bg-border" />
-          <button
-            title="Duplicar camada"
-            onClick={() => {
-              const copia = duplicarCamadaCanvas(camada);
-              e.atualizarDocCanvas((d) => adicionarCamadaCanvas(d, paginaId, copia), "Duplicou camada");
-              e.setCamadaCanvas(copia.id!);
-            }}
-            className="grid size-6 place-items-center rounded-md hover:bg-secondary"
-          >
-            <Copy className="size-3.5" />
-          </button>
-          <button
-            title="Excluir camada"
-            onClick={() => {
-              e.atualizarDocCanvas((d) => removerCamadaCanvas(d, paginaId, camadaId), "Apagou camada");
-              e.setCamadaCanvas(null);
-            }}
-            className="grid size-6 place-items-center rounded-md hover:bg-secondary"
-          >
-            <Trash2 className="size-3.5" />
-          </button>
-          <span className="mx-1 h-4 w-px bg-border" />
-          <button
-            onClick={() => e.enviarPedido(`Melhorar a camada ${camada.nome ?? camada.tipo}`)}
-            className="flex h-6 items-center gap-1 whitespace-nowrap rounded-md bg-accent px-2 text-[11px] font-medium text-accent-foreground"
-          >
-            <Sparkles className="size-3" /> Pedir ao assistente
-          </button>
-        </>
-      )}
-    />
+          </>
+        )}
+      />
+    </>
   );
 }
 
