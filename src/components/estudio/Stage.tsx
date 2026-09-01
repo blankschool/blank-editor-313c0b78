@@ -822,6 +822,30 @@ export function CanvasView({
                 );
               })}
 
+              {geoSel && selNaPagina && (
+                <div
+                  style={{
+                    position: "absolute",
+                    left: geoSel.x,
+                    top: geoSel.y - 14 / (escala || 1) - 8 / (escala || 1),
+                    transform: `scale(${1 / (escala || 1)})`,
+                    transformOrigin: "left bottom",
+                    background: "hsl(var(--accent))",
+                    color: "hsl(var(--accent-foreground))",
+                    fontSize: 10,
+                    fontWeight: 600,
+                    lineHeight: "14px",
+                    padding: "0 6px",
+                    borderRadius: 3,
+                    whiteSpace: "nowrap",
+                    pointerEvents: "none",
+                    zIndex: 70,
+                  }}
+                >
+                  {selNaPagina.nome ?? selNaPagina.tipo} · {Math.round(geoSel.w)}×{Math.round(geoSel.h)}
+                </div>
+              )}
+
               {alcas && geoSel && selNaPagina && (
                 <>
                   {(["nw", "ne", "sw", "se"] as const).map((m) => (
@@ -918,6 +942,81 @@ function CanvasComSelecao({ doc }: { doc: DocCanvas }) {
     },
     [e],
   );
+  useEffect(() => {
+    const emCampo = (t: EventTarget | null) => {
+      const el = t as HTMLElement | null;
+      if (!el) return false;
+      const tag = el.tagName;
+      return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || el.isContentEditable;
+    };
+    const onKey = (ev: KeyboardEvent) => {
+      if (emCampo(ev.target)) return;
+      const paginas = Array.isArray(doc.paginas) ? doc.paginas : [];
+      const pagina = paginas.find((p, i) => (p.id ?? `p${i + 1}`) === e.paginaCanvas) ?? paginas[0];
+      if (!pagina) return;
+      const pid = pagina.id ?? "p1";
+      const sel = e.camadaCanvas;
+      const k = ev.key;
+      const meta = ev.metaKey || ev.ctrlKey;
+
+      if (!meta && (k === "v" || k === "V")) return e.setFerramenta("cursor");
+      if (!meta && (k === "h" || k === "H")) return e.setFerramenta("mao");
+      if (!meta && (k === "t" || k === "T")) {
+        const nova = novaCamadaTexto(pagina);
+        e.atualizarDocCanvas((d) => adicionarCamadaCanvas(d, pid, nova), "Nova camada de texto");
+        e.setPaginaCanvas(pid);
+        e.setCamadaCanvas(nova.id!);
+        ev.preventDefault();
+        return;
+      }
+      if (!meta && (k === "r" || k === "R")) {
+        const nova = novaCamadaForma(pagina);
+        e.atualizarDocCanvas((d) => adicionarCamadaCanvas(d, pid, nova), "Nova forma");
+        e.setPaginaCanvas(pid);
+        e.setCamadaCanvas(nova.id!);
+        ev.preventDefault();
+        return;
+      }
+      if (!sel) return;
+      if (meta && (k === "d" || k === "D")) {
+        const achado = acharCamadaCanvas(doc, e.paginaCanvas, sel);
+        if (!achado) return;
+        const copia = duplicarCamadaCanvas(achado.camada);
+        e.atualizarDocCanvas((d) => adicionarCamadaCanvas(d, pid, copia), "Duplicou camada");
+        e.setCamadaCanvas(copia.id!);
+        ev.preventDefault();
+        return;
+      }
+      if (k === "Delete" || k === "Backspace") {
+        e.atualizarDocCanvas((d) => removerCamadaCanvas(d, pid, sel), "Apagou camada");
+        e.setCamadaCanvas(null);
+        ev.preventDefault();
+        return;
+      }
+      const passo = ev.shiftKey ? 10 : 1;
+      const delta: Record<string, [number, number]> = {
+        ArrowLeft: [-passo, 0],
+        ArrowRight: [passo, 0],
+        ArrowUp: [0, -passo],
+        ArrowDown: [0, passo],
+      };
+      const d2 = delta[k];
+      if (d2) {
+        e.atualizarDocCanvas(
+          (d) =>
+            comCamadaCanvas(d, pid, sel, (c) => {
+              c.x = (c.x ?? 0) + d2[0]!;
+              c.y = (c.y ?? 0) + d2[1]!;
+            }),
+          "Moveu camada",
+        );
+        ev.preventDefault();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [doc, e]);
+
   return (
     <CanvasView
       doc={doc}
@@ -1147,7 +1246,14 @@ function SelecaoOverlay({
         <span className="rounded px-1 py-0.5 font-semibold text-accent">{rotuloEl[alvo]}</span>
       </div>
 
-      <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-0.5 rounded-lg border border-border bg-popover p-1 shadow-[var(--shadow-panel)]">
+      <div
+        className="absolute flex items-center gap-0.5 rounded-lg border border-border bg-popover p-1 shadow-[var(--shadow-panel)]"
+        style={
+          caixa
+            ? { left: caixa.x, top: Math.max(4, caixa.y - 46), transform: "none" }
+            : { left: "50%", bottom: 12, transform: "translateX(-50%)" }
+        }
+      >
         {(
           [
             ["texto", Type, "Texto"],
