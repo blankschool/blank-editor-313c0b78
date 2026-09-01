@@ -18,6 +18,8 @@ import {
   RotateCcw,
   ArrowUp,
   ArrowDown,
+  Type,
+  Square,
 } from "lucide-react";
 import { useEstudio } from "./EstudioContext";
 import { Slider } from "@/components/ui/slider";
@@ -26,6 +28,7 @@ import { cn } from "@/lib/utils";
 import {
   aplicarVariante,
   camadasDoDoc,
+  camadasDaPaginaCanvas,
   comEstilo,
   paletaPorSistema,
   paletaProjeto,
@@ -413,7 +416,108 @@ function mover<T extends { ordem: ElId[] }>(d: T, alvo: ElId, dir: -1 | 1): T {
 }
 
 /* estrutura e camadas */
+function CamadasCanvasPanel() {
+  const e = useEstudio();
+  const doc = e.docCanvas!;
+  const paginas = Array.isArray(doc.paginas) ? doc.paginas : [];
+  const paginaAtual = paginas.find((p) => p.id === e.paginaCanvas) ?? paginas[0];
+  const camadas = camadasDaPaginaCanvas(paginaAtual);
+  const icone = (t: string) => (t === "texto" ? Type : t === "imagem" ? Image : Square);
+
+  if (!paginaAtual) {
+    return (
+      <Secao titulo="Camadas">
+        <p className="text-[11px] text-muted-foreground">Canvas sem páginas.</p>
+      </Secao>
+    );
+  }
+
+  return (
+    <>
+      {paginas.length > 1 && (
+        <Secao titulo="Página">
+          <div className="flex flex-wrap gap-1">
+            {paginas.map((p, i) => (
+              <button
+                key={p.id ?? i}
+                onClick={() => {
+                  e.setPaginaCanvas(p.id ?? null);
+                  e.setCamadaCanvas(null);
+                }}
+                className={cn(
+                  "h-6 min-w-6 rounded border px-1.5 text-[10px]",
+                  paginaAtual === p ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card",
+                )}
+              >
+                {i + 1}
+              </button>
+            ))}
+          </div>
+        </Secao>
+      )}
+      <Secao titulo={`Camadas · ${paginaAtual.nome ?? "página"}`}>
+        <div className="space-y-0.5">
+          {camadas.map((c) => {
+            const Icone = icone(c.tipo);
+            return (
+              <div
+                key={c.id}
+                className={cn(
+                  "flex items-center gap-1 rounded px-1 py-0.5 text-[11px] hover:bg-secondary",
+                  e.camadaCanvas === c.id && "bg-secondary",
+                )}
+              >
+                <Icone className="size-3 shrink-0 text-muted-foreground" />
+                <button
+                  onClick={() => {
+                    e.setPaginaCanvas(paginaAtual.id ?? null);
+                    e.setCamadaCanvas(c.id);
+                  }}
+                  className={cn("flex-1 truncate text-left", c.oculto && "text-muted-foreground line-through")}
+                  title={c.nome}
+                >
+                  {c.nome}
+                </button>
+                <span className="text-[9px] text-muted-foreground">{c.tipo}</span>
+                <button
+                  title="Mostrar/ocultar"
+                  onClick={() =>
+                    e.atualizarDocCanvas((d) => {
+                      const pg = d.paginas.find((p) => (p.id ?? "") === (paginaAtual.id ?? ""));
+                      const alvo = pg?.camadas[c.indice];
+                      if (alvo) alvo.oculto = !alvo.oculto;
+                      return d;
+                    }, `Alternou ${c.nome}`)
+                  }
+                >
+                  {c.oculto ? (
+                    <EyeOff className="size-3 text-muted-foreground" />
+                  ) : (
+                    <Eye className="size-3 text-muted-foreground" />
+                  )}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </Secao>
+    </>
+  );
+}
+
 export function LayersPanel() {
+  const e = useEstudio();
+  if (e.docCanvas) return <CamadasCanvasPanel />;
+  if (e.docHtml)
+    return (
+      <Secao titulo="Camadas">
+        <p className="text-[11px] text-muted-foreground">Preview, sem camadas.</p>
+      </Secao>
+    );
+  return <CamadasFluxoPanel />;
+}
+
+function CamadasFluxoPanel() {
   const e = useEstudio();
   const camadas = camadasDoDoc(e.doc);
   const alvo = e.selecionado;

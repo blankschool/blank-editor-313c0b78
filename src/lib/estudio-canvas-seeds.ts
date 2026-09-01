@@ -1,5 +1,6 @@
 /* Dados de canvas transcritos dos previews em public/previews.
-   Gerado a partir do HTML original; não é mock de UI. */
+   Gerado a partir do HTML original; não é mock de UI.
+   Cada camada tem id estável e nome curto para a árvore de camadas. */
 import type { DocCanvas } from "./estudio-doc";
 
 export const canvasBarretos: DocCanvas = {
@@ -25,7 +26,9 @@ export const canvasBarretos: DocCanvas = {
             "y": 0,
             "w": 1188,
             "h": 1584
-          }
+          },
+          "id": "p1-1",
+          "nome": "bg stadium"
         },
         {
           "tipo": "imagem",
@@ -40,7 +43,9 @@ export const canvasBarretos: DocCanvas = {
             "y": -145.66,
             "w": 609.58,
             "h": 761
-          }
+          },
+          "id": "p1-2",
+          "nome": "circle 1955 photo"
         },
         {
           "tipo": "forma",
@@ -52,7 +57,9 @@ export const canvasBarretos: DocCanvas = {
           "borda": {
             "largura": 4,
             "cor": "#4ADC75"
-          }
+          },
+          "id": "p1-3",
+          "nome": "anel"
         },
         {
           "tipo": "imagem",
@@ -67,7 +74,9 @@ export const canvasBarretos: DocCanvas = {
             "y": -282.23,
             "w": 937.21,
             "h": 1172.17
-          }
+          },
+          "id": "p1-4",
+          "nome": "circle festa logo"
         },
         {
           "tipo": "forma",
@@ -79,7 +88,9 @@ export const canvasBarretos: DocCanvas = {
           "borda": {
             "largura": 4,
             "cor": "#4ADC75"
-          }
+          },
+          "id": "p1-5",
+          "nome": "anel"
         },
         {
           "tipo": "imagem",
@@ -93,7 +104,9 @@ export const canvasBarretos: DocCanvas = {
             "y": 0,
             "w": 1188,
             "h": 1584
-          }
+          },
+          "id": "p1-6",
+          "nome": "woman cutout"
         },
         {
           "tipo": "imagem",
@@ -108,7 +121,9 @@ export const canvasBarretos: DocCanvas = {
             "w": 2076,
             "h": 892
           },
-          "espelhoY": true
+          "espelhoY": true,
+          "id": "p1-7",
+          "nome": "gradient scrim"
         },
         {
           "tipo": "texto",
@@ -119,7 +134,9 @@ export const canvasBarretos: DocCanvas = {
           "tamanho": 99.99,
           "entrelinha": 111.49,
           "cor": "#FFFFFF",
-          "texto": "AGRUM JORNAL"
+          "texto": "AGRUM JORNAL",
+          "id": "p1-8",
+          "nome": "AGRUM JORNAL"
         },
         {
           "tipo": "forma",
@@ -127,7 +144,9 @@ export const canvasBarretos: DocCanvas = {
           "y": 989.89,
           "w": 249.36,
           "h": 58.97,
-          "cor": "#4ADC75"
+          "cor": "#4ADC75",
+          "id": "p1-9",
+          "nome": "retângulo"
         },
         {
           "tipo": "texto",
@@ -139,7 +158,9 @@ export const canvasBarretos: DocCanvas = {
           "entrelinha": 35.46,
           "entreLetras": 5.85,
           "cor": "#002820",
-          "texto": "NEGÓCIOS"
+          "texto": "NEGÓCIOS",
+          "id": "p1-10",
+          "nome": "NEGÓCIOS"
         },
         {
           "tipo": "texto",
@@ -173,7 +194,9 @@ export const canvasBarretos: DocCanvas = {
             {
               "texto": "?"
             }
-          ]
+          ],
+          "id": "p1-11",
+          "nome": "Barretos: como uma lona de…"
         }
       ]
     }
@@ -204,7 +227,9 @@ export const canvasAgrum: DocCanvas = {
             "y": -113.8,
             "w": 1696,
             "h": 1554
-          }
+          },
+          "id": "p1-1",
+          "nome": "img207"
         },
         {
           "tipo": "imagem",
@@ -219,7 +244,9 @@ export const canvasAgrum: DocCanvas = {
             "w": 2076,
             "h": 892
           },
-          "espelhoY": true
+          "espelhoY": true,
+          "id": "p1-2",
+          "nome": "img210"
         },
         {
           "tipo": "forma",
@@ -227,7 +254,9 @@ export const canvasAgrum: DocCanvas = {
           "y": 996.41,
           "w": 238.87,
           "h": 58.97,
-          "cor": "#4ADC75"
+          "cor": "#4ADC75",
+          "id": "p1-3",
+          "nome": "retângulo"
         },
         {
           "tipo": "texto",
@@ -238,7 +267,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 99.99,
           "entrelinha": 111.49,
           "cor": "#FFFFFF",
-          "texto": "AGRUM JORNAL"
+          "texto": "AGRUM JORNAL",
+          "id": "p1-4",
+          "nome": "AGRUM JORNAL"
         },
         {
           "tipo": "texto",
@@ -249,7 +280,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 88.58,
           "entrelinha": 111.85,
           "cor": "#FFFFFF",
-          "texto": "O agro pode decidir "
+          "texto": "O agro pode decidir ",
+          "id": "p1-5",
+          "nome": "O agro pode decidir"
         },
         {
           "tipo": "texto",
@@ -260,7 +293,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 88.58,
           "entrelinha": 111.85,
           "cor": "#FFFFFF",
-          "texto": "a "
+          "texto": "a ",
+          "id": "p1-6",
+          "nome": "a"
         },
         {
           "tipo": "texto",
@@ -271,7 +306,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 88.58,
           "entrelinha": 111.85,
           "cor": "#4ADC75",
-          "texto": "eleição de 2026"
+          "texto": "eleição de 2026",
+          "id": "p1-7",
+          "nome": "eleição de 2026"
         },
         {
           "tipo": "texto",
@@ -282,7 +319,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 88.58,
           "entrelinha": 111.85,
           "cor": "#FFFFFF",
-          "texto": "?"
+          "texto": "?",
+          "id": "p1-8",
+          "nome": "?"
         },
         {
           "tipo": "texto",
@@ -294,7 +333,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 44.78,
           "cor": "#002820",
           "entreLetras": 5.85,
-          "texto": "POLÍTICA"
+          "texto": "POLÍTICA",
+          "id": "p1-9",
+          "nome": "POLÍTICA"
         }
       ]
     },
@@ -318,7 +359,9 @@ export const canvasAgrum: DocCanvas = {
             "y": -82.23,
             "w": 1813,
             "h": 1523
-          }
+          },
+          "id": "p2-1",
+          "nome": "img222"
         },
         {
           "tipo": "imagem",
@@ -333,7 +376,9 @@ export const canvasAgrum: DocCanvas = {
             "w": 2076,
             "h": 892
           },
-          "espelhoY": true
+          "espelhoY": true,
+          "id": "p2-2",
+          "nome": "img225"
         },
         {
           "tipo": "imagem",
@@ -348,7 +393,9 @@ export const canvasAgrum: DocCanvas = {
             "w": 2076,
             "h": 892
           },
-          "espelhoY": true
+          "espelhoY": true,
+          "id": "p2-3",
+          "nome": "img225"
         },
         {
           "tipo": "imagem",
@@ -363,7 +410,9 @@ export const canvasAgrum: DocCanvas = {
             "w": 2076,
             "h": 892
           },
-          "espelhoY": true
+          "espelhoY": true,
+          "id": "p2-4",
+          "nome": "img225"
         },
         {
           "tipo": "texto",
@@ -374,7 +423,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 99.99,
           "entrelinha": 111.49,
           "cor": "#FFFFFF",
-          "texto": "AGRUM JORNAL"
+          "texto": "AGRUM JORNAL",
+          "id": "p2-5",
+          "nome": "AGRUM JORNAL"
         },
         {
           "tipo": "texto",
@@ -386,7 +437,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 61.67,
           "cor": "#FFFFFF",
           "entreLetras": -0.01,
-          "texto": "Em 2022, Lula venceu Jair Bolsonaro "
+          "texto": "Em 2022, Lula venceu Jair Bolsonaro ",
+          "id": "p2-6",
+          "nome": "Em 2022, Lula venceu Jair …"
         },
         {
           "tipo": "texto",
@@ -397,7 +450,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 48.84,
           "entrelinha": 61.67,
           "cor": "#FFFFFF",
-          "texto": "por pouco mais de "
+          "texto": "por pouco mais de ",
+          "id": "p2-7",
+          "nome": "por pouco mais de"
         },
         {
           "tipo": "texto",
@@ -409,7 +464,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 61.67,
           "cor": "#4ADC75",
           "entreLetras": -0.02,
-          "texto": "2.1 milhões de votos"
+          "texto": "2.1 milhões de votos",
+          "id": "p2-8",
+          "nome": "2.1 milhões de votos"
         },
         {
           "tipo": "texto",
@@ -420,7 +477,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 48.84,
           "entrelinha": 61.67,
           "cor": "#FFFFFF",
-          "texto": "."
+          "texto": ".",
+          "id": "p2-9",
+          "nome": "."
         },
         {
           "tipo": "texto",
@@ -432,7 +491,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 61.67,
           "cor": "#FFFFFF",
           "entreLetras": -0.11,
-          "texto": "Foram 60.3 milhões contra 58.2 milhões."
+          "texto": "Foram 60.3 milhões contra 58.2 milhões.",
+          "id": "p2-10",
+          "nome": "Foram 60.3 milhões contra …"
         },
         {
           "tipo": "texto",
@@ -443,7 +504,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 48.84,
           "entrelinha": 61.67,
           "cor": "#FFFFFF",
-          "texto": "Em um país com mais de 118 milhões de"
+          "texto": "Em um país com mais de 118 milhões de",
+          "id": "p2-11",
+          "nome": "Em um país com mais de 118…"
         },
         {
           "tipo": "texto",
@@ -455,7 +518,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 61.67,
           "cor": "#FFFFFF",
           "entreLetras": -0.01,
-          "texto": "votos válidos, a diferença terminou em"
+          "texto": "votos válidos, a diferença terminou em",
+          "id": "p2-12",
+          "nome": "votos válidos, a diferença…"
         },
         {
           "tipo": "texto",
@@ -466,7 +531,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 48.84,
           "entrelinha": 61.67,
           "cor": "#4ADC75",
-          "texto": "apenas 1.8 ponto percentual"
+          "texto": "apenas 1.8 ponto percentual",
+          "id": "p2-13",
+          "nome": "apenas 1.8 ponto percentua…"
         },
         {
           "tipo": "texto",
@@ -477,7 +544,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 48.84,
           "entrelinha": 61.67,
           "cor": "#FFFFFF",
-          "texto": "."
+          "texto": ".",
+          "id": "p2-14",
+          "nome": "."
         }
       ]
     },
@@ -501,7 +570,9 @@ export const canvasAgrum: DocCanvas = {
             "y": -290.73,
             "w": 2311,
             "h": 1731
-          }
+          },
+          "id": "p3-1",
+          "nome": "img239"
         },
         {
           "tipo": "imagem",
@@ -516,7 +587,9 @@ export const canvasAgrum: DocCanvas = {
             "w": 2076,
             "h": 892
           },
-          "espelhoY": true
+          "espelhoY": true,
+          "id": "p3-2",
+          "nome": "img242"
         },
         {
           "tipo": "imagem",
@@ -531,7 +604,9 @@ export const canvasAgrum: DocCanvas = {
             "w": 2076,
             "h": 892
           },
-          "espelhoY": true
+          "espelhoY": true,
+          "id": "p3-3",
+          "nome": "img242"
         },
         {
           "tipo": "imagem",
@@ -546,7 +621,9 @@ export const canvasAgrum: DocCanvas = {
             "w": 2076,
             "h": 892
           },
-          "espelhoY": true
+          "espelhoY": true,
+          "id": "p3-4",
+          "nome": "img242"
         },
         {
           "tipo": "texto",
@@ -557,7 +634,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 99.99,
           "entrelinha": 111.49,
           "cor": "#FFFFFF",
-          "texto": "AGRUM JORNAL"
+          "texto": "AGRUM JORNAL",
+          "id": "p3-5",
+          "nome": "AGRUM JORNAL"
         },
         {
           "tipo": "texto",
@@ -569,7 +648,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 61.67,
           "cor": "#FFFFFF",
           "entreLetras": -0.03,
-          "texto": "No segundo turno, Bolsonaro venceu em"
+          "texto": "No segundo turno, Bolsonaro venceu em",
+          "id": "p3-6",
+          "nome": "No segundo turno, Bolsonar…"
         },
         {
           "tipo": "texto",
@@ -581,7 +662,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 61.67,
           "cor": "#FFFFFF",
           "entreLetras": -0.02,
-          "texto": "alguns dos principais estados produtores:"
+          "texto": "alguns dos principais estados produtores:",
+          "id": "p3-7",
+          "nome": "alguns dos principais esta…"
         },
         {
           "tipo": "texto",
@@ -593,7 +676,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 61.67,
           "cor": "#4ADC75",
           "entreLetras": -0.2,
-          "texto": "Mato Grosso"
+          "texto": "Mato Grosso",
+          "id": "p3-8",
+          "nome": "Mato Grosso"
         },
         {
           "tipo": "texto",
@@ -604,7 +689,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 48.84,
           "entrelinha": 61.67,
           "cor": "#FFFFFF",
-          "texto": ": 65,1%"
+          "texto": ": 65,1%",
+          "id": "p3-9",
+          "nome": ": 65,1%"
         },
         {
           "tipo": "texto",
@@ -616,7 +703,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 61.67,
           "cor": "#4ADC75",
           "entreLetras": -0.36,
-          "texto": "Paraná"
+          "texto": "Paraná",
+          "id": "p3-10",
+          "nome": "Paraná"
         },
         {
           "tipo": "texto",
@@ -627,7 +716,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 48.84,
           "entrelinha": 61.67,
           "cor": "#FFFFFF",
-          "texto": ": 62,4%"
+          "texto": ": 62,4%",
+          "id": "p3-11",
+          "nome": ": 62,4%"
         },
         {
           "tipo": "texto",
@@ -639,7 +730,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 61.67,
           "cor": "#4ADC75",
           "entreLetras": -0.12,
-          "texto": "Mato Grosso do Sul"
+          "texto": "Mato Grosso do Sul",
+          "id": "p3-12",
+          "nome": "Mato Grosso do Sul"
         },
         {
           "tipo": "texto",
@@ -650,7 +743,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 48.84,
           "entrelinha": 61.67,
           "cor": "#FFFFFF",
-          "texto": ": 59,5%"
+          "texto": ": 59,5%",
+          "id": "p3-13",
+          "nome": ": 59,5%"
         },
         {
           "tipo": "texto",
@@ -661,7 +756,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 48.84,
           "entrelinha": 61.67,
           "cor": "#4ADC75",
-          "texto": "Goiás"
+          "texto": "Goiás",
+          "id": "p3-14",
+          "nome": "Goiás"
         },
         {
           "tipo": "texto",
@@ -672,7 +769,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 48.84,
           "entrelinha": 61.67,
           "cor": "#FFFFFF",
-          "texto": ": 58,7%"
+          "texto": ": 58,7%",
+          "id": "p3-15",
+          "nome": ": 58,7%"
         }
       ]
     },
@@ -696,7 +795,9 @@ export const canvasAgrum: DocCanvas = {
             "y": -76.59,
             "w": 1490,
             "h": 1550
-          }
+          },
+          "id": "p4-1",
+          "nome": "img256"
         },
         {
           "tipo": "imagem",
@@ -711,7 +812,9 @@ export const canvasAgrum: DocCanvas = {
             "w": 2076,
             "h": 892
           },
-          "espelhoY": true
+          "espelhoY": true,
+          "id": "p4-2",
+          "nome": "img259"
         },
         {
           "tipo": "imagem",
@@ -726,7 +829,9 @@ export const canvasAgrum: DocCanvas = {
             "w": 2076,
             "h": 892
           },
-          "espelhoY": true
+          "espelhoY": true,
+          "id": "p4-3",
+          "nome": "img259"
         },
         {
           "tipo": "imagem",
@@ -741,7 +846,9 @@ export const canvasAgrum: DocCanvas = {
             "w": 2076,
             "h": 892
           },
-          "espelhoY": true
+          "espelhoY": true,
+          "id": "p4-4",
+          "nome": "img259"
         },
         {
           "tipo": "imagem",
@@ -756,7 +863,9 @@ export const canvasAgrum: DocCanvas = {
             "w": 2076,
             "h": 892
           },
-          "espelhoY": true
+          "espelhoY": true,
+          "id": "p4-5",
+          "nome": "img259"
         },
         {
           "tipo": "texto",
@@ -767,7 +876,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 99.99,
           "entrelinha": 111.49,
           "cor": "#FFFFFF",
-          "texto": "AGRUM JORNAL"
+          "texto": "AGRUM JORNAL",
+          "id": "p4-6",
+          "nome": "AGRUM JORNAL"
         },
         {
           "tipo": "texto",
@@ -779,7 +890,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 61.67,
           "cor": "#FFFFFF",
           "entreLetras": 0.02,
-          "texto": "Há uma coincidência importante entre"
+          "texto": "Há uma coincidência importante entre",
+          "id": "p4-7",
+          "nome": "Há uma coincidência import…"
         },
         {
           "tipo": "texto",
@@ -791,7 +904,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 61.67,
           "cor": "#FFFFFF",
           "entreLetras": 0.02,
-          "texto": "esse mapa eleitoral e uma parte"
+          "texto": "esse mapa eleitoral e uma parte",
+          "id": "p4-8",
+          "nome": "esse mapa eleitoral e uma …"
         },
         {
           "tipo": "texto",
@@ -803,7 +918,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 61.67,
           "cor": "#FFFFFF",
           "entreLetras": -0.02,
-          "texto": "relevante do mapa econômico do agro."
+          "texto": "relevante do mapa econômico do agro.",
+          "id": "p4-9",
+          "nome": "relevante do mapa econômic…"
         },
         {
           "tipo": "texto",
@@ -815,7 +932,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 61.67,
           "cor": "#FFFFFF",
           "entreLetras": -0.07,
-          "texto": "Mato Grosso lidera a produção nacional"
+          "texto": "Mato Grosso lidera a produção nacional",
+          "id": "p4-10",
+          "nome": "Mato Grosso lidera a produ…"
         },
         {
           "tipo": "texto",
@@ -826,7 +945,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 48.84,
           "entrelinha": 61.67,
           "cor": "#FFFFFF",
-          "texto": "de "
+          "texto": "de ",
+          "id": "p4-11",
+          "nome": "de"
         },
         {
           "tipo": "texto",
@@ -838,7 +959,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 61.67,
           "cor": "#4ADC75",
           "entreLetras": -0.09,
-          "texto": "grãos"
+          "texto": "grãos",
+          "id": "p4-12",
+          "nome": "grãos"
         },
         {
           "tipo": "texto",
@@ -850,7 +973,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 61.67,
           "cor": "#FFFFFF",
           "entreLetras": -0.09,
-          "texto": ". Paraná é uma potência em"
+          "texto": ". Paraná é uma potência em",
+          "id": "p4-13",
+          "nome": ". Paraná é uma potência em"
         },
         {
           "tipo": "texto",
@@ -862,7 +987,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 61.67,
           "cor": "#FFFFFF",
           "entreLetras": -0.05,
-          "texto": "grãos e "
+          "texto": "grãos e ",
+          "id": "p4-14",
+          "nome": "grãos e"
         },
         {
           "tipo": "texto",
@@ -874,7 +1001,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 61.67,
           "cor": "#4ADC75",
           "entreLetras": -0.02,
-          "texto": "proteína animal"
+          "texto": "proteína animal",
+          "id": "p4-15",
+          "nome": "proteína animal"
         },
         {
           "tipo": "texto",
@@ -886,7 +1015,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 61.67,
           "cor": "#FFFFFF",
           "entreLetras": -0.16,
-          "texto": ". Goiás e Mato"
+          "texto": ". Goiás e Mato",
+          "id": "p4-16",
+          "nome": ". Goiás e Mato"
         },
         {
           "tipo": "texto",
@@ -897,7 +1028,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 48.84,
           "entrelinha": 61.67,
           "cor": "#FFFFFF",
-          "texto": "Grosso do Sul também ocupam posições"
+          "texto": "Grosso do Sul também ocupam posições",
+          "id": "p4-17",
+          "nome": "Grosso do Sul também ocupa…"
         },
         {
           "tipo": "texto",
@@ -909,7 +1042,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 61.67,
           "cor": "#FFFFFF",
           "entreLetras": -0.04,
-          "texto": "centrais na "
+          "texto": "centrais na ",
+          "id": "p4-18",
+          "nome": "centrais na"
         },
         {
           "tipo": "texto",
@@ -921,7 +1056,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 61.67,
           "cor": "#4ADC75",
           "entreLetras": -0.04,
-          "texto": "agricultura"
+          "texto": "agricultura",
+          "id": "p4-19",
+          "nome": "agricultura"
         },
         {
           "tipo": "texto",
@@ -932,7 +1069,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 48.84,
           "entrelinha": 61.67,
           "cor": "#FFFFFF",
-          "texto": " e na "
+          "texto": " e na ",
+          "id": "p4-20",
+          "nome": "e na"
         },
         {
           "tipo": "texto",
@@ -943,7 +1082,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 48.84,
           "entrelinha": 61.67,
           "cor": "#4ADC75",
-          "texto": "pecuária"
+          "texto": "pecuária",
+          "id": "p4-21",
+          "nome": "pecuária"
         },
         {
           "tipo": "texto",
@@ -954,7 +1095,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 48.84,
           "entrelinha": 61.67,
           "cor": "#FFFFFF",
-          "texto": "."
+          "texto": ".",
+          "id": "p4-22",
+          "nome": "."
         }
       ]
     },
@@ -971,7 +1114,9 @@ export const canvasAgrum: DocCanvas = {
           "y": 274.89,
           "w": 864.31,
           "h": 601.26,
-          "cor": "#FFFFFF"
+          "cor": "#FFFFFF",
+          "id": "p5-1",
+          "nome": "retângulo"
         },
         {
           "tipo": "imagem",
@@ -985,7 +1130,9 @@ export const canvasAgrum: DocCanvas = {
             "y": -2.61,
             "w": 667,
             "h": 553
-          }
+          },
+          "id": "p5-2",
+          "nome": "img62"
         },
         {
           "tipo": "texto",
@@ -996,7 +1143,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 99.99,
           "entrelinha": 111.49,
           "cor": "#FFFFFF",
-          "texto": "AGRUM JORNAL"
+          "texto": "AGRUM JORNAL",
+          "id": "p5-3",
+          "nome": "AGRUM JORNAL"
         },
         {
           "tipo": "texto",
@@ -1008,7 +1157,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 61.67,
           "cor": "#FFFFFF",
           "entreLetras": -0.04,
-          "texto": "Essa proximidade política também"
+          "texto": "Essa proximidade política também",
+          "id": "p5-4",
+          "nome": "Essa proximidade política …"
         },
         {
           "tipo": "texto",
@@ -1020,7 +1171,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 61.67,
           "cor": "#FFFFFF",
           "entreLetras": -0.02,
-          "texto": "apareceu fora das urnas."
+          "texto": "apareceu fora das urnas.",
+          "id": "p5-5",
+          "nome": "apareceu fora das urnas."
         },
         {
           "tipo": "texto",
@@ -1032,7 +1185,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 61.67,
           "cor": "#FFFFFF",
           "entreLetras": 0.02,
-          "texto": "Segundo levantamento da "
+          "texto": "Segundo levantamento da ",
+          "id": "p5-6",
+          "nome": "Segundo levantamento da"
         },
         {
           "tipo": "texto",
@@ -1044,7 +1199,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 61.67,
           "cor": "#4ADC75",
           "entreLetras": -0.8,
-          "texto": "Folha"
+          "texto": "Folha",
+          "id": "p5-7",
+          "nome": "Folha"
         },
         {
           "tipo": "texto",
@@ -1055,7 +1212,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 48.84,
           "entrelinha": 61.67,
           "cor": "#FFFFFF",
-          "texto": ", feito a"
+          "texto": ", feito a",
+          "id": "p5-8",
+          "nome": ", feito a"
         },
         {
           "tipo": "texto",
@@ -1067,7 +1226,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 61.67,
           "cor": "#FFFFFF",
           "entreLetras": -0.09,
-          "texto": "partir de dados do TSE e da Receita"
+          "texto": "partir de dados do TSE e da Receita",
+          "id": "p5-9",
+          "nome": "partir de dados do TSE e d…"
         },
         {
           "tipo": "texto",
@@ -1079,7 +1240,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 61.67,
           "cor": "#FFFFFF",
           "entreLetras": -0.1,
-          "texto": "Federal, sócios de empresas ligadas ao"
+          "texto": "Federal, sócios de empresas ligadas ao",
+          "id": "p5-10",
+          "nome": "Federal, sócios de empresa…"
         },
         {
           "tipo": "texto",
@@ -1090,7 +1253,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 48.84,
           "entrelinha": 61.67,
           "cor": "#FFFFFF",
-          "texto": "agronegócio doaram "
+          "texto": "agronegócio doaram ",
+          "id": "p5-11",
+          "nome": "agronegócio doaram"
         },
         {
           "tipo": "texto",
@@ -1101,7 +1266,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 48.84,
           "entrelinha": 61.67,
           "cor": "#4ADC75",
-          "texto": "R$15.3 milhões"
+          "texto": "R$15.3 milhões",
+          "id": "p5-12",
+          "nome": "R$15.3 milhões"
         },
         {
           "tipo": "texto",
@@ -1113,7 +1280,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 61.67,
           "cor": "#4ADC75",
           "entreLetras": -0.02,
-          "texto": "para campanhas em 2022"
+          "texto": "para campanhas em 2022",
+          "id": "p5-13",
+          "nome": "para campanhas em 2022"
         },
         {
           "tipo": "texto",
@@ -1124,7 +1293,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 48.84,
           "entrelinha": 61.67,
           "cor": "#FFFFFF",
-          "texto": "."
+          "texto": ".",
+          "id": "p5-14",
+          "nome": "."
         }
       ]
     },
@@ -1148,7 +1319,9 @@ export const canvasAgrum: DocCanvas = {
             "y": 0,
             "w": 2176,
             "h": 1440
-          }
+          },
+          "id": "p6-1",
+          "nome": "img284"
         },
         {
           "tipo": "imagem",
@@ -1163,7 +1336,9 @@ export const canvasAgrum: DocCanvas = {
             "w": 2076,
             "h": 892
           },
-          "espelhoY": true
+          "espelhoY": true,
+          "id": "p6-2",
+          "nome": "img287"
         },
         {
           "tipo": "imagem",
@@ -1178,7 +1353,9 @@ export const canvasAgrum: DocCanvas = {
             "w": 2076,
             "h": 892
           },
-          "espelhoY": true
+          "espelhoY": true,
+          "id": "p6-3",
+          "nome": "img287"
         },
         {
           "tipo": "imagem",
@@ -1193,7 +1370,9 @@ export const canvasAgrum: DocCanvas = {
             "w": 2076,
             "h": 892
           },
-          "espelhoY": true
+          "espelhoY": true,
+          "id": "p6-4",
+          "nome": "img287"
         },
         {
           "tipo": "imagem",
@@ -1208,7 +1387,9 @@ export const canvasAgrum: DocCanvas = {
             "w": 2076,
             "h": 892
           },
-          "espelhoY": true
+          "espelhoY": true,
+          "id": "p6-5",
+          "nome": "img287"
         },
         {
           "tipo": "texto",
@@ -1219,7 +1400,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 99.99,
           "entrelinha": 111.49,
           "cor": "#FFFFFF",
-          "texto": "AGRUM JORNAL"
+          "texto": "AGRUM JORNAL",
+          "id": "p6-6",
+          "nome": "AGRUM JORNAL"
         },
         {
           "tipo": "texto",
@@ -1231,7 +1414,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 58.3,
           "cor": "#FFFFFF",
           "entreLetras": -0.02,
-          "texto": "Ainda segundo o levantamento, "
+          "texto": "Ainda segundo o levantamento, ",
+          "id": "p6-7",
+          "nome": "Ainda segundo o levantamen…"
         },
         {
           "tipo": "texto",
@@ -1243,7 +1428,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 58.3,
           "cor": "#4ADC75",
           "entreLetras": -0.03,
-          "texto": "candidatos"
+          "texto": "candidatos",
+          "id": "p6-8",
+          "nome": "candidatos"
         },
         {
           "tipo": "texto",
@@ -1255,7 +1442,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 58.3,
           "cor": "#4ADC75",
           "entreLetras": -0.02,
-          "texto": "do PL receberam 21 vezes mais recursos"
+          "texto": "do PL receberam 21 vezes mais recursos",
+          "id": "p6-9",
+          "nome": "do PL receberam 21 vezes m…"
         },
         {
           "tipo": "texto",
@@ -1267,7 +1456,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 58.3,
           "cor": "#FFFFFF",
           "entreLetras": -0.01,
-          "texto": "desses empresários do que candidatos do"
+          "texto": "desses empresários do que candidatos do",
+          "id": "p6-10",
+          "nome": "desses empresários do que …"
         },
         {
           "tipo": "texto",
@@ -1279,7 +1470,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 58.3,
           "cor": "#FFFFFF",
           "entreLetras": -0.21,
-          "texto": "PT. Bolsonaro recebeu sozinho "
+          "texto": "PT. Bolsonaro recebeu sozinho ",
+          "id": "p6-11",
+          "nome": "PT. Bolsonaro recebeu sozi…"
         },
         {
           "tipo": "texto",
@@ -1290,7 +1483,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 46.17,
           "entrelinha": 58.3,
           "cor": "#4ADC75",
-          "texto": "R$ 3.2"
+          "texto": "R$ 3.2",
+          "id": "p6-12",
+          "nome": "R$ 3.2"
         },
         {
           "tipo": "texto",
@@ -1301,7 +1496,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 46.17,
           "entrelinha": 58.3,
           "cor": "#4ADC75",
-          "texto": "milhões"
+          "texto": "milhões",
+          "id": "p6-13",
+          "nome": "milhões"
         },
         {
           "tipo": "texto",
@@ -1312,7 +1509,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 46.17,
           "entrelinha": 58.3,
           "cor": "#FFFFFF",
-          "texto": " e foi o candidato mais beneficiado"
+          "texto": " e foi o candidato mais beneficiado",
+          "id": "p6-14",
+          "nome": "e foi o candidato mais ben…"
         },
         {
           "tipo": "texto",
@@ -1324,7 +1523,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 58.3,
           "cor": "#FFFFFF",
           "entreLetras": -0.03,
-          "texto": "pelas doações desse grupo."
+          "texto": "pelas doações desse grupo.",
+          "id": "p6-15",
+          "nome": "pelas doações desse grupo."
         },
         {
           "tipo": "texto",
@@ -1335,7 +1536,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 46.17,
           "entrelinha": 58.3,
           "cor": "#FFFFFF",
-          "texto": "O dado indica uma "
+          "texto": "O dado indica uma ",
+          "id": "p6-16",
+          "nome": "O dado indica uma"
         },
         {
           "tipo": "texto",
@@ -1347,7 +1550,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 58.3,
           "cor": "#4ADC75",
           "entreLetras": -0.04,
-          "texto": "preferência clara"
+          "texto": "preferência clara",
+          "id": "p6-17",
+          "nome": "preferência clara"
         },
         {
           "tipo": "texto",
@@ -1359,7 +1564,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 58.3,
           "cor": "#FFFFFF",
           "entreLetras": -0.01,
-          "texto": "dentro de uma parcela empresarial do setor"
+          "texto": "dentro de uma parcela empresarial do setor",
+          "id": "p6-18",
+          "nome": "dentro de uma parcela empr…"
         },
         {
           "tipo": "texto",
@@ -1371,7 +1578,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 58.3,
           "cor": "#FFFFFF",
           "entreLetras": -0.02,
-          "texto": "naquele ciclo eleitoral."
+          "texto": "naquele ciclo eleitoral.",
+          "id": "p6-19",
+          "nome": "naquele ciclo eleitoral."
         }
       ]
     },
@@ -1395,7 +1604,9 @@ export const canvasAgrum: DocCanvas = {
             "y": -113.8,
             "w": 2335,
             "h": 1554
-          }
+          },
+          "id": "p7-1",
+          "nome": "img303"
         },
         {
           "tipo": "imagem",
@@ -1410,7 +1621,9 @@ export const canvasAgrum: DocCanvas = {
             "w": 2076,
             "h": 892
           },
-          "espelhoY": true
+          "espelhoY": true,
+          "id": "p7-2",
+          "nome": "img306"
         },
         {
           "tipo": "imagem",
@@ -1425,7 +1638,9 @@ export const canvasAgrum: DocCanvas = {
             "w": 2076,
             "h": 892
           },
-          "espelhoY": true
+          "espelhoY": true,
+          "id": "p7-3",
+          "nome": "img306"
         },
         {
           "tipo": "imagem",
@@ -1440,7 +1655,9 @@ export const canvasAgrum: DocCanvas = {
             "w": 2076,
             "h": 892
           },
-          "espelhoY": true
+          "espelhoY": true,
+          "id": "p7-4",
+          "nome": "img306"
         },
         {
           "tipo": "imagem",
@@ -1455,7 +1672,9 @@ export const canvasAgrum: DocCanvas = {
             "w": 2076,
             "h": 892
           },
-          "espelhoY": true
+          "espelhoY": true,
+          "id": "p7-5",
+          "nome": "img306"
         },
         {
           "tipo": "imagem",
@@ -1470,7 +1689,9 @@ export const canvasAgrum: DocCanvas = {
             "w": 2076,
             "h": 892
           },
-          "espelhoY": true
+          "espelhoY": true,
+          "id": "p7-6",
+          "nome": "img306"
         },
         {
           "tipo": "texto",
@@ -1481,7 +1702,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 99.99,
           "entrelinha": 111.49,
           "cor": "#FFFFFF",
-          "texto": "AGRUM JORNAL"
+          "texto": "AGRUM JORNAL",
+          "id": "p7-7",
+          "nome": "AGRUM JORNAL"
         },
         {
           "tipo": "texto",
@@ -1493,7 +1716,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 61.67,
           "cor": "#FFFFFF",
           "entreLetras": -0.02,
-          "texto": "Mas isso ainda não permite falar em um"
+          "texto": "Mas isso ainda não permite falar em um",
+          "id": "p7-8",
+          "nome": "Mas isso ainda não permite…"
         },
         {
           "tipo": "texto",
@@ -1505,7 +1730,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 61.67,
           "cor": "#FFFFFF",
           "entreLetras": -0.74,
-          "texto": "único “"
+          "texto": "único “",
+          "id": "p7-9",
+          "nome": "único “"
         },
         {
           "tipo": "texto",
@@ -1517,7 +1744,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 61.67,
           "cor": "#4ADC75",
           "entreLetras": -0.03,
-          "texto": "voto do agro"
+          "texto": "voto do agro",
+          "id": "p7-10",
+          "nome": "voto do agro"
         },
         {
           "tipo": "texto",
@@ -1529,7 +1758,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 61.67,
           "cor": "#FFFFFF",
           "entreLetras": -0.5,
-          "texto": "”. Um produtor de"
+          "texto": "”. Um produtor de",
+          "id": "p7-11",
+          "nome": "”. Um produtor de"
         },
         {
           "tipo": "texto",
@@ -1541,7 +1772,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 61.67,
           "cor": "#FFFFFF",
           "entreLetras": -0.01,
-          "texto": "soja em Sorriso, um funcionário de"
+          "texto": "soja em Sorriso, um funcionário de",
+          "id": "p7-12",
+          "nome": "soja em Sorriso, um funcio…"
         },
         {
           "tipo": "texto",
@@ -1553,7 +1786,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 61.67,
           "cor": "#FFFFFF",
           "entreLetras": -0.04,
-          "texto": "frigorífico em Goiás e um executivo de"
+          "texto": "frigorífico em Goiás e um executivo de",
+          "id": "p7-13",
+          "nome": "frigorífico em Goiás e um …"
         },
         {
           "tipo": "texto",
@@ -1565,7 +1800,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 61.67,
           "cor": "#FFFFFF",
           "entreLetras": -0.07,
-          "texto": "uma trading em São Paulo podem fazer"
+          "texto": "uma trading em São Paulo podem fazer",
+          "id": "p7-14",
+          "nome": "uma trading em São Paulo p…"
         },
         {
           "tipo": "texto",
@@ -1577,7 +1814,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 61.67,
           "cor": "#FFFFFF",
           "entreLetras": 0.04,
-          "texto": "parte da mesma cadeia."
+          "texto": "parte da mesma cadeia.",
+          "id": "p7-15",
+          "nome": "parte da mesma cadeia."
         },
         {
           "tipo": "texto",
@@ -1588,7 +1827,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 48.84,
           "entrelinha": 61.67,
           "cor": "#FFFFFF",
-          "texto": "Isso não significa que votem pelas"
+          "texto": "Isso não significa que votem pelas",
+          "id": "p7-16",
+          "nome": "Isso não significa que vot…"
         },
         {
           "tipo": "texto",
@@ -1600,7 +1841,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 61.67,
           "cor": "#FFFFFF",
           "entreLetras": -0.02,
-          "texto": "mesmas razões ou tenham as mesmas"
+          "texto": "mesmas razões ou tenham as mesmas",
+          "id": "p7-17",
+          "nome": "mesmas razões ou tenham as…"
         },
         {
           "tipo": "texto",
@@ -1612,7 +1855,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 61.67,
           "cor": "#FFFFFF",
           "entreLetras": -0.02,
-          "texto": "preferências políticas."
+          "texto": "preferências políticas.",
+          "id": "p7-18",
+          "nome": "preferências políticas."
         }
       ]
     },
@@ -1635,7 +1880,9 @@ export const canvasAgrum: DocCanvas = {
             "y": -403.14,
             "w": 2765,
             "h": 1843
-          }
+          },
+          "id": "p8-1",
+          "nome": "img86"
         },
         {
           "tipo": "imagem",
@@ -1650,7 +1897,9 @@ export const canvasAgrum: DocCanvas = {
             "w": 2076,
             "h": 892
           },
-          "espelhoY": true
+          "espelhoY": true,
+          "id": "p8-2",
+          "nome": "img324"
         },
         {
           "tipo": "imagem",
@@ -1665,7 +1914,9 @@ export const canvasAgrum: DocCanvas = {
             "w": 2076,
             "h": 892
           },
-          "espelhoY": true
+          "espelhoY": true,
+          "id": "p8-3",
+          "nome": "img324"
         },
         {
           "tipo": "imagem",
@@ -1680,7 +1931,9 @@ export const canvasAgrum: DocCanvas = {
             "w": 2076,
             "h": 892
           },
-          "espelhoY": true
+          "espelhoY": true,
+          "id": "p8-4",
+          "nome": "img324"
         },
         {
           "tipo": "imagem",
@@ -1695,7 +1948,9 @@ export const canvasAgrum: DocCanvas = {
             "w": 2076,
             "h": 892
           },
-          "espelhoY": true
+          "espelhoY": true,
+          "id": "p8-5",
+          "nome": "img324"
         },
         {
           "tipo": "imagem",
@@ -1710,7 +1965,9 @@ export const canvasAgrum: DocCanvas = {
             "w": 2076,
             "h": 892
           },
-          "espelhoY": true
+          "espelhoY": true,
+          "id": "p8-6",
+          "nome": "img324"
         },
         {
           "tipo": "texto",
@@ -1721,7 +1978,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 99.99,
           "entrelinha": 111.49,
           "cor": "#002820",
-          "texto": "AGRUM JORNAL"
+          "texto": "AGRUM JORNAL",
+          "id": "p8-7",
+          "nome": "AGRUM JORNAL"
         },
         {
           "tipo": "texto",
@@ -1733,7 +1992,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 59.98,
           "cor": "#FFFFFF",
           "entreLetras": -0.02,
-          "texto": "Nessas eleições, um candidato "
+          "texto": "Nessas eleições, um candidato ",
+          "id": "p8-8",
+          "nome": "Nessas eleições, um candid…"
         },
         {
           "tipo": "texto",
@@ -1744,7 +2005,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 47.5,
           "entrelinha": 59.98,
           "cor": "#4ADC75",
-          "texto": "não"
+          "texto": "não",
+          "id": "p8-9",
+          "nome": "não"
         },
         {
           "tipo": "texto",
@@ -1756,7 +2019,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 59.98,
           "cor": "#4ADC75",
           "entreLetras": -0.03,
-          "texto": "precisa vencer um grande estado"
+          "texto": "precisa vencer um grande estado",
+          "id": "p8-10",
+          "nome": "precisa vencer um grande e…"
         },
         {
           "tipo": "texto",
@@ -1768,7 +2033,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 59.98,
           "cor": "#FFFFFF",
           "entreLetras": -0.03,
-          "texto": "produtor para alterar o resultado nacional."
+          "texto": "produtor para alterar o resultado nacional.",
+          "id": "p8-11",
+          "nome": "produtor para alterar o re…"
         },
         {
           "tipo": "texto",
@@ -1780,7 +2047,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 59.98,
           "cor": "#FFFFFF",
           "entreLetras": -0.01,
-          "texto": "Se uma diferença estadual cai de 30 para"
+          "texto": "Se uma diferença estadual cai de 30 para",
+          "id": "p8-12",
+          "nome": "Se uma diferença estadual …"
         },
         {
           "tipo": "texto",
@@ -1792,7 +2061,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 59.98,
           "cor": "#FFFFFF",
           "entreLetras": 0.08,
-          "texto": "20 pontos, parte importante da vantagem"
+          "texto": "20 pontos, parte importante da vantagem",
+          "id": "p8-13",
+          "nome": "20 pontos, parte important…"
         },
         {
           "tipo": "texto",
@@ -1803,7 +2074,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 47.5,
           "entrelinha": 59.98,
           "cor": "#FFFFFF",
-          "texto": "acumulada pelo adversário desaparece."
+          "texto": "acumulada pelo adversário desaparece.",
+          "id": "p8-14",
+          "nome": "acumulada pelo adversário …"
         },
         {
           "tipo": "texto",
@@ -1815,7 +2088,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 59.98,
           "cor": "#FFFFFF",
           "entreLetras": 0.06,
-          "texto": "Em eleições apertadas, "
+          "texto": "Em eleições apertadas, ",
+          "id": "p8-15",
+          "nome": "Em eleições apertadas,"
         },
         {
           "tipo": "texto",
@@ -1827,7 +2102,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 59.98,
           "cor": "#4ADC75",
           "entreLetras": -0.02,
-          "texto": "reduzir derrotas"
+          "texto": "reduzir derrotas",
+          "id": "p8-16",
+          "nome": "reduzir derrotas"
         },
         {
           "tipo": "texto",
@@ -1839,7 +2116,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 59.98,
           "cor": "#4ADC75",
           "entreLetras": 0.07,
-          "texto": "também é importante"
+          "texto": "também é importante",
+          "id": "p8-17",
+          "nome": "também é importante"
         },
         {
           "tipo": "texto",
@@ -1850,7 +2129,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 47.5,
           "entrelinha": 59.98,
           "cor": "#FFFFFF",
-          "texto": "."
+          "texto": ".",
+          "id": "p8-18",
+          "nome": "."
         }
       ]
     },
@@ -1870,7 +2151,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 99.99,
           "entrelinha": 111.49,
           "cor": "#FFFFFF",
-          "texto": "AGRUM JORNAL"
+          "texto": "AGRUM JORNAL",
+          "id": "p9-1",
+          "nome": "AGRUM JORNAL"
         },
         {
           "tipo": "texto",
@@ -1881,7 +2164,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 47.5,
           "entrelinha": 59.98,
           "cor": "#FFFFFF",
-          "texto": "E 2026 voltou a apresentar uma disputa"
+          "texto": "E 2026 voltou a apresentar uma disputa",
+          "id": "p9-2",
+          "nome": "E 2026 voltou a apresentar…"
         },
         {
           "tipo": "texto",
@@ -1892,7 +2177,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 47.5,
           "entrelinha": 59.98,
           "cor": "#FFFFFF",
-          "texto": "bastante próxima. Segundo pesquisa"
+          "texto": "bastante próxima. Segundo pesquisa",
+          "id": "p9-3",
+          "nome": "bastante próxima. Segundo …"
         },
         {
           "tipo": "texto",
@@ -1904,7 +2191,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 59.98,
           "cor": "#FFFFFF",
           "entreLetras": -0.15,
-          "texto": "PoderData/Aya, realizada entre 23 e 26"
+          "texto": "PoderData/Aya, realizada entre 23 e 26",
+          "id": "p9-4",
+          "nome": "PoderData/Aya, realizada e…"
         },
         {
           "tipo": "texto",
@@ -1916,7 +2205,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 59.98,
           "cor": "#FFFFFF",
           "entreLetras": -0.14,
-          "texto": "de agosto, "
+          "texto": "de agosto, ",
+          "id": "p9-5",
+          "nome": "de agosto,"
         },
         {
           "tipo": "texto",
@@ -1927,7 +2218,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 47.5,
           "entrelinha": 59.98,
           "cor": "#4ADC75",
-          "texto": "Lula aparece com 45% e"
+          "texto": "Lula aparece com 45% e",
+          "id": "p9-6",
+          "nome": "Lula aparece com 45% e"
         },
         {
           "tipo": "texto",
@@ -1938,7 +2231,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 47.5,
           "entrelinha": 59.98,
           "cor": "#4ADC75",
-          "texto": "Flávio Bolsonaro com 44% em um"
+          "texto": "Flávio Bolsonaro com 44% em um",
+          "id": "p9-7",
+          "nome": "Flávio Bolsonaro com 44% e…"
         },
         {
           "tipo": "texto",
@@ -1950,7 +2245,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 59.98,
           "cor": "#4ADC75",
           "entreLetras": 0.03,
-          "texto": "eventual segundo turno"
+          "texto": "eventual segundo turno",
+          "id": "p9-8",
+          "nome": "eventual segundo turno"
         },
         {
           "tipo": "texto",
@@ -1961,7 +2258,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 47.5,
           "entrelinha": 59.98,
           "cor": "#FFFFFF",
-          "texto": "."
+          "texto": ".",
+          "id": "p9-9",
+          "nome": "."
         },
         {
           "tipo": "texto",
@@ -1973,7 +2272,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 59.98,
           "cor": "#FFFFFF",
           "entreLetras": -0.04,
-          "texto": "A diferença está dentro da margem de"
+          "texto": "A diferença está dentro da margem de",
+          "id": "p9-10",
+          "nome": "A diferença está dentro da…"
         },
         {
           "tipo": "texto",
@@ -1984,7 +2285,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 47.5,
           "entrelinha": 59.98,
           "cor": "#FFFFFF",
-          "texto": "erro de "
+          "texto": "erro de ",
+          "id": "p9-11",
+          "nome": "erro de"
         },
         {
           "tipo": "texto",
@@ -1995,7 +2298,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 47.5,
           "entrelinha": 59.98,
           "cor": "#4ADC75",
-          "texto": "dois pontos percentuais"
+          "texto": "dois pontos percentuais",
+          "id": "p9-12",
+          "nome": "dois pontos percentuais"
         },
         {
           "tipo": "texto",
@@ -2006,7 +2311,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 47.5,
           "entrelinha": 59.98,
           "cor": "#FFFFFF",
-          "texto": "."
+          "texto": ".",
+          "id": "p9-13",
+          "nome": "."
         }
       ]
     },
@@ -2029,7 +2336,9 @@ export const canvasAgrum: DocCanvas = {
             "y": 0,
             "w": 2880,
             "h": 1440
-          }
+          },
+          "id": "p10-1",
+          "nome": "img101"
         },
         {
           "tipo": "imagem",
@@ -2044,7 +2353,9 @@ export const canvasAgrum: DocCanvas = {
             "w": 2076,
             "h": 892
           },
-          "espelhoY": true
+          "espelhoY": true,
+          "id": "p10-2",
+          "nome": "img349"
         },
         {
           "tipo": "imagem",
@@ -2059,7 +2370,9 @@ export const canvasAgrum: DocCanvas = {
             "w": 2076,
             "h": 892
           },
-          "espelhoY": true
+          "espelhoY": true,
+          "id": "p10-3",
+          "nome": "img349"
         },
         {
           "tipo": "imagem",
@@ -2074,7 +2387,9 @@ export const canvasAgrum: DocCanvas = {
             "w": 2076,
             "h": 892
           },
-          "espelhoY": true
+          "espelhoY": true,
+          "id": "p10-4",
+          "nome": "img349"
         },
         {
           "tipo": "imagem",
@@ -2089,7 +2404,9 @@ export const canvasAgrum: DocCanvas = {
             "w": 2076,
             "h": 892
           },
-          "espelhoY": true
+          "espelhoY": true,
+          "id": "p10-5",
+          "nome": "img349"
         },
         {
           "tipo": "imagem",
@@ -2104,7 +2421,9 @@ export const canvasAgrum: DocCanvas = {
             "w": 2076,
             "h": 892
           },
-          "espelhoY": true
+          "espelhoY": true,
+          "id": "p10-6",
+          "nome": "img349"
         },
         {
           "tipo": "texto",
@@ -2115,7 +2434,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 99.99,
           "entrelinha": 111.49,
           "cor": "#FFFFFF",
-          "texto": "AGRUM JORNAL"
+          "texto": "AGRUM JORNAL",
+          "id": "p10-7",
+          "nome": "AGRUM JORNAL"
         },
         {
           "tipo": "texto",
@@ -2127,7 +2448,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 59.98,
           "cor": "#FFFFFF",
           "entreLetras": 0.02,
-          "texto": "É por isso que temas específicos do agro"
+          "texto": "É por isso que temas específicos do agro",
+          "id": "p10-8",
+          "nome": "É por isso que temas espec…"
         },
         {
           "tipo": "texto",
@@ -2139,7 +2462,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 59.98,
           "cor": "#FFFFFF",
           "entreLetras": -0.02,
-          "texto": "entram com força na disputa eleitoral."
+          "texto": "entram com força na disputa eleitoral.",
+          "id": "p10-9",
+          "nome": "entram com força na disput…"
         },
         {
           "tipo": "texto",
@@ -2151,7 +2476,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 59.98,
           "cor": "#FFFFFF",
           "entreLetras": -0.05,
-          "texto": "Crédito rural, juros, infraestrutura,"
+          "texto": "Crédito rural, juros, infraestrutura,",
+          "id": "p10-10",
+          "nome": "Crédito rural, juros, infr…"
         },
         {
           "tipo": "texto",
@@ -2163,7 +2490,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 59.98,
           "cor": "#FFFFFF",
           "entreLetras": -0.1,
-          "texto": "fertilizantes, comércio exterior, seguro,"
+          "texto": "fertilizantes, comércio exterior, seguro,",
+          "id": "p10-11",
+          "nome": "fertilizantes, comércio ex…"
         },
         {
           "tipo": "texto",
@@ -2175,7 +2504,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 59.98,
           "cor": "#FFFFFF",
           "entreLetras": -0.02,
-          "texto": "tributação, meio ambiente e segurança"
+          "texto": "tributação, meio ambiente e segurança",
+          "id": "p10-12",
+          "nome": "tributação, meio ambiente …"
         },
         {
           "tipo": "texto",
@@ -2186,7 +2517,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 47.5,
           "entrelinha": 59.98,
           "cor": "#FFFFFF",
-          "texto": "jurídica "
+          "texto": "jurídica ",
+          "id": "p10-13",
+          "nome": "jurídica"
         },
         {
           "tipo": "texto",
@@ -2198,7 +2531,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 59.98,
           "cor": "#4ADC75",
           "entreLetras": -0.04,
-          "texto": "afetam diretamente a renda"
+          "texto": "afetam diretamente a renda",
+          "id": "p10-14",
+          "nome": "afetam diretamente a renda"
         },
         {
           "tipo": "texto",
@@ -2209,7 +2544,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 47.5,
           "entrelinha": 59.98,
           "cor": "#FFFFFF",
-          "texto": " e o"
+          "texto": " e o",
+          "id": "p10-15",
+          "nome": "e o"
         },
         {
           "tipo": "texto",
@@ -2221,7 +2558,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 59.98,
           "cor": "#FFFFFF",
           "entreLetras": -0.12,
-          "texto": "investimento em regiões ligadas ao setor."
+          "texto": "investimento em regiões ligadas ao setor.",
+          "id": "p10-16",
+          "nome": "investimento em regiões li…"
         },
         {
           "tipo": "texto",
@@ -2232,7 +2571,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 47.5,
           "entrelinha": 59.98,
           "cor": "#FFFFFF",
-          "texto": "São decisões econômicas com"
+          "texto": "São decisões econômicas com",
+          "id": "p10-17",
+          "nome": "São decisões econômicas co…"
         },
         {
           "tipo": "texto",
@@ -2244,7 +2585,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 59.98,
           "cor": "#FFFFFF",
           "entreLetras": -0.02,
-          "texto": "consequência eleitoral."
+          "texto": "consequência eleitoral.",
+          "id": "p10-18",
+          "nome": "consequência eleitoral."
         }
       ]
     },
@@ -2267,7 +2610,9 @@ export const canvasAgrum: DocCanvas = {
             "y": -17.17,
             "w": 864,
             "h": 516
-          }
+          },
+          "id": "p11-1",
+          "nome": "img111"
         },
         {
           "tipo": "texto",
@@ -2278,7 +2623,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 99.99,
           "entrelinha": 111.49,
           "cor": "#FFFFFF",
-          "texto": "AGRUM JORNAL"
+          "texto": "AGRUM JORNAL",
+          "id": "p11-2",
+          "nome": "AGRUM JORNAL"
         },
         {
           "tipo": "texto",
@@ -2290,7 +2637,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 59.98,
           "cor": "#4ADC75",
           "entreLetras": -0.04,
-          "texto": "Então, o agro pode decidir 2026?"
+          "texto": "Então, o agro pode decidir 2026?",
+          "id": "p11-3",
+          "nome": "Então, o agro pode decidir…"
         },
         {
           "tipo": "texto",
@@ -2302,7 +2651,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 59.98,
           "cor": "#FFFFFF",
           "entreLetras": -1.28,
-          "texto": "Pode ter peso decisivo se a diferença"
+          "texto": "Pode ter peso decisivo se a diferença",
+          "id": "p11-4",
+          "nome": "Pode ter peso decisivo se …"
         },
         {
           "tipo": "texto",
@@ -2313,7 +2664,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 47.5,
           "entrelinha": 59.98,
           "cor": "#FFFFFF",
-          "texto": "nacional continuar pequena. "
+          "texto": "nacional continuar pequena. ",
+          "id": "p11-5",
+          "nome": "nacional continuar pequena…"
         },
         {
           "tipo": "texto",
@@ -2324,7 +2677,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 47.5,
           "entrelinha": 59.98,
           "cor": "#4ADC75",
-          "texto": "Os dados"
+          "texto": "Os dados",
+          "id": "p11-6",
+          "nome": "Os dados"
         },
         {
           "tipo": "texto",
@@ -2336,7 +2691,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 59.98,
           "cor": "#4ADC75",
           "entreLetras": -0.2,
-          "texto": "não mostram um único “voto do agro”"
+          "texto": "não mostram um único “voto do agro”",
+          "id": "p11-7",
+          "nome": "não mostram um único “voto…"
         },
         {
           "tipo": "texto",
@@ -2347,7 +2704,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 47.5,
           "entrelinha": 59.98,
           "cor": "#FFFFFF",
-          "texto": "."
+          "texto": ".",
+          "id": "p11-8",
+          "nome": "."
         },
         {
           "tipo": "texto",
@@ -2359,7 +2718,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 59.98,
           "cor": "#FFFFFF",
           "entreLetras": 0.02,
-          "texto": "Mostram, porém, que parte importante da"
+          "texto": "Mostram, porém, que parte importante da",
+          "id": "p11-9",
+          "nome": "Mostram, porém, que parte …"
         },
         {
           "tipo": "texto",
@@ -2371,7 +2732,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 59.98,
           "cor": "#FFFFFF",
           "entreLetras": -0.19,
-          "texto": "atividade agropecuária "
+          "texto": "atividade agropecuária ",
+          "id": "p11-10",
+          "nome": "atividade agropecuária"
         },
         {
           "tipo": "texto",
@@ -2383,7 +2746,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 59.98,
           "cor": "#4ADC75",
           "entreLetras": -0.07,
-          "texto": "está concentrada"
+          "texto": "está concentrada",
+          "id": "p11-11",
+          "nome": "está concentrada"
         },
         {
           "tipo": "texto",
@@ -2394,7 +2759,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 47.5,
           "entrelinha": 59.98,
           "cor": "#4ADC75",
-          "texto": "em territórios onde as diferenças"
+          "texto": "em territórios onde as diferenças",
+          "id": "p11-12",
+          "nome": "em territórios onde as dif…"
         },
         {
           "tipo": "texto",
@@ -2406,7 +2773,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 59.98,
           "cor": "#4ADC75",
           "entreLetras": -0.05,
-          "texto": "eleitorais foram expressivas em 2022"
+          "texto": "eleitorais foram expressivas em 2022",
+          "id": "p11-13",
+          "nome": "eleitorais foram expressiv…"
         },
         {
           "tipo": "texto",
@@ -2417,7 +2786,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 47.5,
           "entrelinha": 59.98,
           "cor": "#FFFFFF",
-          "texto": "."
+          "texto": ".",
+          "id": "p11-14",
+          "nome": "."
         }
       ]
     },
@@ -2440,7 +2811,9 @@ export const canvasAgrum: DocCanvas = {
             "y": 0,
             "w": 864,
             "h": 576
-          }
+          },
+          "id": "p12-1",
+          "nome": "img116"
         },
         {
           "tipo": "texto",
@@ -2451,7 +2824,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 99.99,
           "entrelinha": 111.49,
           "cor": "#FFFFFF",
-          "texto": "AGRUM JORNAL"
+          "texto": "AGRUM JORNAL",
+          "id": "p12-2",
+          "nome": "AGRUM JORNAL"
         },
         {
           "tipo": "texto",
@@ -2462,7 +2837,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 47.5,
           "entrelinha": 59.98,
           "cor": "#FFFFFF",
-          "texto": "Em uma eleição decidida nas "
+          "texto": "Em uma eleição decidida nas ",
+          "id": "p12-3",
+          "nome": "Em uma eleição decidida na…"
         },
         {
           "tipo": "texto",
@@ -2473,7 +2850,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 47.5,
           "entrelinha": 59.98,
           "cor": "#4ADC75",
-          "texto": "margens"
+          "texto": "margens",
+          "id": "p12-4",
+          "nome": "margens"
         },
         {
           "tipo": "texto",
@@ -2484,7 +2863,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 47.5,
           "entrelinha": 59.98,
           "cor": "#FFFFFF",
-          "texto": ","
+          "texto": ",",
+          "id": "p12-5",
+          "nome": ","
         },
         {
           "tipo": "texto",
@@ -2495,7 +2876,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 47.5,
           "entrelinha": 59.98,
           "cor": "#FFFFFF",
-          "texto": "mudanças nesses saldos podem afetar o"
+          "texto": "mudanças nesses saldos podem afetar o",
+          "id": "p12-6",
+          "nome": "mudanças nesses saldos pod…"
         },
         {
           "tipo": "texto",
@@ -2506,7 +2889,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 47.5,
           "entrelinha": 59.98,
           "cor": "#4ADC75",
-          "texto": "resultado nacional"
+          "texto": "resultado nacional",
+          "id": "p12-7",
+          "nome": "resultado nacional"
         },
         {
           "tipo": "texto",
@@ -2517,7 +2902,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 47.5,
           "entrelinha": 59.98,
           "cor": "#FFFFFF",
-          "texto": "."
+          "texto": ".",
+          "id": "p12-8",
+          "nome": "."
         },
         {
           "tipo": "texto",
@@ -2529,7 +2916,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 59.98,
           "cor": "#FFFFFF",
           "entreLetras": -0.02,
-          "texto": "Se você é do agro, comente "
+          "texto": "Se você é do agro, comente ",
+          "id": "p12-9",
+          "nome": "Se você é do agro, comente"
         },
         {
           "tipo": "texto",
@@ -2540,7 +2929,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 47.5,
           "entrelinha": 59.98,
           "cor": "#4ADC75",
-          "texto": "em quem"
+          "texto": "em quem",
+          "id": "p12-10",
+          "nome": "em quem"
         },
         {
           "tipo": "texto",
@@ -2552,7 +2943,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 59.98,
           "cor": "#4ADC75",
           "entreLetras": -0.04,
-          "texto": "pretende votar e porquê"
+          "texto": "pretende votar e porquê",
+          "id": "p12-11",
+          "nome": "pretende votar e porquê"
         },
         {
           "tipo": "texto",
@@ -2563,7 +2956,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 47.5,
           "entrelinha": 59.98,
           "cor": "#FFFFFF",
-          "texto": "."
+          "texto": ".",
+          "id": "p12-12",
+          "nome": "."
         },
         {
           "tipo": "texto",
@@ -2574,7 +2969,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 47.5,
           "entrelinha": 59.98,
           "cor": "#FFFFFF",
-          "texto": "O jornal "
+          "texto": "O jornal ",
+          "id": "p12-13",
+          "nome": "O jornal"
         },
         {
           "tipo": "texto",
@@ -2585,7 +2982,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 47.5,
           "entrelinha": 59.98,
           "cor": "#4ADC75",
-          "texto": "Agrum"
+          "texto": "Agrum",
+          "id": "p12-14",
+          "nome": "Agrum"
         },
         {
           "tipo": "texto",
@@ -2596,7 +2995,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 47.5,
           "entrelinha": 59.98,
           "cor": "#FFFFFF",
-          "texto": " é o espaço de quem"
+          "texto": " é o espaço de quem",
+          "id": "p12-15",
+          "nome": "é o espaço de quem"
         },
         {
           "tipo": "texto",
@@ -2608,7 +3009,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 59.98,
           "cor": "#FFFFFF",
           "entreLetras": -0.07,
-          "texto": "constrói o Brasil. "
+          "texto": "constrói o Brasil. ",
+          "id": "p12-16",
+          "nome": "constrói o Brasil."
         },
         {
           "tipo": "texto",
@@ -2620,7 +3023,9 @@ export const canvasAgrum: DocCanvas = {
           "entrelinha": 59.98,
           "cor": "#4ADC75",
           "entreLetras": -0.03,
-          "texto": "Siga-nos para mais"
+          "texto": "Siga-nos para mais",
+          "id": "p12-17",
+          "nome": "Siga-nos para mais"
         },
         {
           "tipo": "texto",
@@ -2631,7 +3036,9 @@ export const canvasAgrum: DocCanvas = {
           "tamanho": 47.5,
           "entrelinha": 59.98,
           "cor": "#FFFFFF",
-          "texto": "."
+          "texto": ".",
+          "id": "p12-18",
+          "nome": "."
         }
       ]
     }

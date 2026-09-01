@@ -106,6 +106,11 @@ interface EstudioState {
   novoDesign: (preset?: PresetNovo) => void;
   docHtml: DocHtml | null;
   docCanvas: DocCanvas | null;
+  paginaCanvas: string | null;
+  setPaginaCanvas: (v: string | null) => void;
+  camadaCanvas: string | null;
+  setCamadaCanvas: (v: string | null) => void;
+  atualizarDocCanvas: (fn: (d: DocCanvas) => DocCanvas, rotulo: string) => void;
   favoritar: (id: string) => void;
   zoom: number;
   setZoom: (v: number) => void;
@@ -274,6 +279,9 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
 
   /* ---------- documento vivo (espelho local + gravação com debounce) ---------- */
   const [docLocal, setDocLocal] = useState<DesignDoc | null>(null);
+  const [canvasLocal, setCanvasLocal] = useState<DocCanvas | null>(null);
+  const [paginaCanvas, setPaginaCanvas] = useState<string | null>(null);
+  const [camadaCanvas, setCamadaCanvas] = useState<string | null>(null);
   const [docId, setDocId] = useState("");
   const salvarTimer = useRef<number | null>(null);
 
@@ -285,6 +293,9 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
     }
     if (remoto.id !== docId) {
       setDocId(remoto.id);
+      setCanvasLocal(ehDocCanvas(remoto.doc) ? (remoto.doc as DocCanvas) : null);
+      setPaginaCanvas(null);
+      setCamadaCanvas(null);
       setDocLocal(
         remoto.doc && !ehDocHtml(remoto.doc) && !ehDocCanvas(remoto.doc) && Object.keys(remoto.doc).length
           ? (remoto.doc as DesignDoc)
@@ -295,7 +306,9 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
 
   const docRemoto = designQ.data?.doc;
   const docHtml = ehDocHtml(docRemoto) ? docRemoto : null;
-  const docCanvas = ehDocCanvas(docRemoto) ? docRemoto : null;
+  const docCanvas = canvasLocal ?? (ehDocCanvas(docRemoto) ? docRemoto : null);
+  const canvasRef = useRef<DocCanvas | null>(docCanvas);
+  canvasRef.current = docCanvas;
   const doc = docLocal ?? docPadrao(nomeAtivo);
   const docRef = useRef(doc);
   docRef.current = doc;
@@ -451,6 +464,19 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
       setDocLocal(novo);
       docRef.current = novo;
       agendarSalvar(abaAtiva, novo);
+      if (rotulo) registrar(autor, rotulo);
+    },
+    [abaAtiva, agendarSalvar, registrar, autor],
+  );
+
+  const atualizarDocCanvas = useCallback(
+    (fn: (d: DocCanvas) => DocCanvas, rotulo: string) => {
+      const atual = canvasRef.current;
+      if (!abaAtiva || !atual) return;
+      const novo = fn(JSON.parse(JSON.stringify(atual)) as DocCanvas);
+      setCanvasLocal(novo);
+      canvasRef.current = novo;
+      agendarSalvar(abaAtiva, novo as unknown as DesignDoc);
       if (rotulo) registrar(autor, rotulo);
     },
     [abaAtiva, agendarSalvar, registrar, autor],
@@ -964,6 +990,11 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
       apagarMensagem,
       docHtml,
       docCanvas,
+      paginaCanvas,
+      setPaginaCanvas,
+      camadaCanvas,
+      setCamadaCanvas,
+      atualizarDocCanvas,
       filtroComentarios,
       setFiltroComentarios,
       comentarioAtivo,
@@ -1047,6 +1078,11 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
       apagarMensagem,
       docHtml,
       docCanvas,
+      paginaCanvas,
+      setPaginaCanvas,
+      camadaCanvas,
+      setCamadaCanvas,
+      atualizarDocCanvas,
       filtroComentarios,
 
       comentarioAtivo,
