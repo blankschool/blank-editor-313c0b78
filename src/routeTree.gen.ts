@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DDesignIdRouteImport } from './routes/d.$designId'
 import { Route as DDesignIdIndexRouteImport } from './routes/d.$designId.index'
+import { Route as DDesignIdPainelRouteImport } from './routes/d.$designId.$painel'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -28,28 +29,37 @@ const DDesignIdIndexRoute = DDesignIdIndexRouteImport.update({
   path: '/',
   getParentRoute: () => DDesignIdRoute,
 } as any)
+const DDesignIdPainelRoute = DDesignIdPainelRouteImport.update({
+  id: '/$painel',
+  path: '/$painel',
+  getParentRoute: () => DDesignIdRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/d/$designId': typeof DDesignIdRouteWithChildren
+  '/d/$designId/$painel': typeof DDesignIdPainelRoute
   '/d/$designId/': typeof DDesignIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/d/$designId/$painel': typeof DDesignIdPainelRoute
   '/d/$designId': typeof DDesignIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/d/$designId': typeof DDesignIdRouteWithChildren
+  '/d/$designId/$painel': typeof DDesignIdPainelRoute
   '/d/$designId/': typeof DDesignIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/d/$designId' | '/d/$designId/'
+  fullPaths: '/' | '/d/$designId' | '/d/$designId/$painel' | '/d/$designId/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/d/$designId'
-  id: '__root__' | '/' | '/d/$designId' | '/d/$designId/'
+  to: '/' | '/d/$designId/$painel' | '/d/$designId'
+  id:
+    '__root__' | '/' | '/d/$designId' | '/d/$designId/$painel' | '/d/$designId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -80,14 +90,23 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DDesignIdIndexRouteImport
       parentRoute: typeof DDesignIdRoute
     }
+    '/d/$designId/$painel': {
+      id: '/d/$designId/$painel'
+      path: '/$painel'
+      fullPath: '/d/$designId/$painel'
+      preLoaderRoute: typeof DDesignIdPainelRouteImport
+      parentRoute: typeof DDesignIdRoute
+    }
   }
 }
 
 interface DDesignIdRouteChildren {
+  DDesignIdPainelRoute: typeof DDesignIdPainelRoute
   DDesignIdIndexRoute: typeof DDesignIdIndexRoute
 }
 
 const DDesignIdRouteChildren: DDesignIdRouteChildren = {
+  DDesignIdPainelRoute: DDesignIdPainelRoute,
   DDesignIdIndexRoute: DDesignIdIndexRoute,
 }
 
