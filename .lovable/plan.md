@@ -13,7 +13,7 @@ Cabeçalho fixo: título "Editar", **Descartar** e **Salvar** (Salvar só ativo 
 Corpo, na ordem, mostrando apenas o que o nó realmente tem:
 
 - **Aparência** — cor/preenchimento, opacidade, raio (forma e imagem).
-- **Texto** — só aparece se o nó tem texto: conteúdo, fonte, peso, tamanho, entrelinha, entre letras, alinhamento, cor. No canvas somam-se itálico, sublinhado e riscado (campos novos em `CanvasCamadaTexto`), caixa (`normal/maiúsculas/minúsculas`) e fundo com opção "Nenhum".
+- **Texto** — só aparece se o nó tem texto: conteúdo, fonte, peso, tamanho, entrelinha, entre letras, alinhamento, cor. No canvas somam-se itálico, sublinhado, riscado, caixa (`normal/maiúsculas/minúsculas`) e fundo com opção "Nenhum". Cada um desses campos novos só entra junto com o CSS correspondente em `CamadaCanvasView` (`fontStyle`, `textDecoration`, `textTransform`, `background` no div da camada) — controle sem pintura no palco não é desenhado. `partes` (spans) fica de fora: I/U/S valem para a camada inteira, como já acontece com peso e cor.
 - **Imagem** — `src` somente leitura, opacidade, raio, espelhar.
 - **Adicionar:** linha final com `sombra` e `borda` (borda só em forma). Cada item vira seção quando clicado, com "Remover" que apaga o campo — mesmo padrão que a sombra já usa. Sem transformação e sem filtro: não existem no modelo.
 - Cada seção traz **Redefinir**, que devolve os valores daquela seção ao estado salvo.
@@ -22,12 +22,14 @@ Corpo, na ordem, mostrando apenas o que o nó realmente tem:
 
 ## Rascunho, Descartar, Salvar
 
-Hoje toda edição grava no banco com debounce. Passa a existir um rascunho:
+Hoje toda edição grava no banco com debounce. Enquanto o inspector estiver aberto, **toda** mutação do documento fica no rascunho — inclusive geometria vinda do palco (arrastar, redimensionar, setas, duplicar, apagar), porque tudo passa pelo mesmo `atualizarDocCanvas` e o debounce mandaria o rascunho junto.
 
 - Ao abrir o inspector, guarda-se o documento salvo como base.
-- Edições feitas dentro do inspector atualizam o palco na hora, mas não vão ao banco.
-- **Salvar** grava e vira a nova base. **Descartar** volta à base.
-- Edições fora do inspector (arrastar no palco, painel Camadas) continuam gravando como hoje.
+- Toda edição atualiza o palco na hora e nada vai ao banco.
+- **Salvar** grava e vira a nova base. **Descartar** volta à base, posição e estilo incluídos.
+- Sair da rota de edição com alterações pendentes pergunta antes (Salvar / Descartar / Continuar editando); nada some silenciosamente.
+- Com o inspector fechado, a gravação com debounce segue como hoje.
+
 
 ## Pro
 
@@ -48,8 +50,10 @@ Nada de flex, justify, padding, Ajustar/Fixo/Preencher ou Em fluxo/Absoluta.
 
 ## Detalhes técnicos
 
-- `src/lib/estudio-doc.ts`: `CanvasCamadaTexto` ganha `italico?`, `sublinhado?`, `riscado?`, `caixa?`, `fundo?`; helper `moverCamadaCanvas(doc, paginaId, camadaId, dir|extremo)` para z-order; `camadaParaPng(nodeSelector, escala)` para exportar a seleção.
-- `src/components/estudio/EstudioContext.tsx`: estado de rascunho (`baseSalva`, `sujo`, `salvarRascunho`, `descartarRascunho`) reutilizando `agendarSalvar`; `atualizarDoc`/`atualizarDocCanvas` ganham um modo que só atualiza o local.
+- `src/lib/estudio-doc.ts`: `CanvasCamadaTexto` ganha `italico?`, `sublinhado?`, `riscado?`, `caixa?`, `fundo?`; helper `moverCamadaCanvas(doc, paginaId, camadaId, dir|extremo)` para z-order.
+- `src/lib/estudio-doc.ts`: `camadaParaPng(camadaId, escala)` clona o nó `[data-camada="…"]` do palco, remove o outline de seleção, mede em escala 1× (página 1080, ignorando o `transform: scale()` do palco) e só então rasteriza em 1× ou 2× com fundo transparente. Não toca em `docParaPng`.
+- `src/components/estudio/Stage.tsx`: `CamadaCanvasView` passa a aplicar `fontStyle`, `textDecoration`, `textTransform` e `background` da camada; a barra flutuante da seleção passa a abrir `editar/simples` (com atalho para `pro` na ação de árvore) em vez de `texto`/`cor`.
+- `src/components/estudio/EstudioContext.tsx`: estado de rascunho (`baseSalva`, `sujo`, `salvarRascunho`, `descartarRascunho`); enquanto o inspector estiver aberto, `atualizarDoc`/`atualizarDocCanvas` não chamam `agendarSalvar`, valendo para qualquer origem de mutação.
 - `src/components/estudio/EditPanels.tsx`: novo `InspectorPanel` com abas, montado sobre os subcomponentes já existentes (`TextPanelCanvas`, `ColorPanelCanvas`, `SelecaoCanvasPanel`, `CamadasCanvasPanel`); os antigos `TextPanel`/`ColorPanel`/`LayoutPanel`/`LayersPanel` continuam exportados para o trilho.
 - `src/routes/d.$designId.editar.$painel.tsx`: aceita `simples`/`pro`, redireciona os slugs antigos.
-- `src/components/estudio/Stage.tsx`: a barra flutuante da seleção aponta para `editar/simples`.
+
