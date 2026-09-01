@@ -50,8 +50,10 @@ Nada de flex, justify, padding, Ajustar/Fixo/Preencher ou Em fluxo/Absoluta.
 
 ## Detalhes técnicos
 
-- `src/lib/estudio-doc.ts`: `CanvasCamadaTexto` ganha `italico?`, `sublinhado?`, `riscado?`, `caixa?`, `fundo?`; helper `moverCamadaCanvas(doc, paginaId, camadaId, dir|extremo)` para z-order; `camadaParaPng(nodeSelector, escala)` para exportar a seleção.
-- `src/components/estudio/EstudioContext.tsx`: estado de rascunho (`baseSalva`, `sujo`, `salvarRascunho`, `descartarRascunho`) reutilizando `agendarSalvar`; `atualizarDoc`/`atualizarDocCanvas` ganham um modo que só atualiza o local.
+- `src/lib/estudio-doc.ts`: `CanvasCamadaTexto` ganha `italico?`, `sublinhado?`, `riscado?`, `caixa?`, `fundo?`; helper `moverCamadaCanvas(doc, paginaId, camadaId, dir|extremo)` para z-order.
+- `src/lib/estudio-doc.ts`: `camadaParaPng(camadaId, escala)` clona o nó `[data-camada="…"]` do palco, remove o outline de seleção, mede em escala 1× (página 1080, ignorando o `transform: scale()` do palco) e só então rasteriza em 1× ou 2× com fundo transparente. Não toca em `docParaPng`.
+- `src/components/estudio/Stage.tsx`: `CamadaCanvasView` passa a aplicar `fontStyle`, `textDecoration`, `textTransform` e `background` da camada; a barra flutuante da seleção passa a abrir `editar/simples` (com atalho para `pro` na ação de árvore) em vez de `texto`/`cor`.
+- `src/components/estudio/EstudioContext.tsx`: estado de rascunho (`baseSalva`, `sujo`, `salvarRascunho`, `descartarRascunho`); enquanto o inspector estiver aberto, `atualizarDoc`/`atualizarDocCanvas` não chamam `agendarSalvar`, valendo para qualquer origem de mutação.
 - `src/components/estudio/EditPanels.tsx`: novo `InspectorPanel` com abas, montado sobre os subcomponentes já existentes (`TextPanelCanvas`, `ColorPanelCanvas`, `SelecaoCanvasPanel`, `CamadasCanvasPanel`); os antigos `TextPanel`/`ColorPanel`/`LayoutPanel`/`LayersPanel` continuam exportados para o trilho.
 - `src/routes/d.$designId.editar.$painel.tsx`: aceita `simples`/`pro`, redireciona os slugs antigos.
-- `src/components/estudio/Stage.tsx`: a barra flutuante da seleção aponta para `editar/simples`.
+
