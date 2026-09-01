@@ -42,6 +42,7 @@ import {
   type DocHtml,
   type ElId,
   type EstiloEl,
+  idCamadaCanvas,
 } from "@/lib/estudio-doc";
 import { toast } from "sonner";
 
@@ -597,6 +598,20 @@ export function CanvasView({
   );
 }
 
+function CanvasComSelecao({ doc }: { doc: DocCanvas }) {
+  const e = useEstudio();
+  return (
+    <CanvasView
+      doc={doc}
+      selecionada={e.camadaCanvas}
+      onSelecionar={(pid, cid) => {
+        e.setPaginaCanvas(pid);
+        e.setCamadaCanvas(cid);
+      }}
+    />
+  );
+}
+
 export function Artboard({
   doc,
   selecionavel = false,
@@ -610,7 +625,7 @@ export function Artboard({
 }) {
   if (ehDocCanvas(doc)) {
     try {
-      return <CanvasView doc={doc} />;
+      return selecionavel ? <CanvasComSelecao doc={doc} /> : <CanvasView doc={doc} />;
     } catch {
       return (
         <div className="grid h-[1440px] w-[1080px] place-items-center text-sm text-muted-foreground">
