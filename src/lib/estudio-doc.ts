@@ -170,6 +170,7 @@ export interface CanvasCamadaTexto {
   riscado?: boolean;
   caixa?: "normal" | "uppercase" | "lowercase";
   fundo?: string;
+  raio?: number;
   sombra?: CanvasSombra;
 }
 
