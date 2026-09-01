@@ -459,7 +459,6 @@ function CamadaCanvasView({
         onSelecionar();
       }
     : undefined;
-  void onPointerDown;
   if (c.tipo === "imagem") {
     const inner = c.img ?? { x: 0, y: 0, w: c.w, h: c.h };
     return (
@@ -476,6 +475,7 @@ function CamadaCanvasView({
           ...marca,
         }}
         onClick={clique}
+        onPointerDown={onPointerDown}
       >
         <img
           src={c.src}
@@ -510,6 +510,7 @@ function CamadaCanvasView({
           ...marca,
         }}
         onClick={clique}
+        onPointerDown={onPointerDown}
       />
     );
   }
@@ -535,6 +536,7 @@ function CamadaCanvasView({
         ...marca,
       }}
       onClick={clique}
+      onPointerDown={onPointerDown}
     >
       {c.partes
         ? c.partes.map((p, i) => (
