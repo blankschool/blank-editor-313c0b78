@@ -1956,14 +1956,31 @@ function CanvasComSelecao({ doc }: { doc: DocCanvas }) {
                   </button>
                 )}
                 {camada.tipo === "imagem" ? (
-                  <button
-                    title="Trocar imagem"
-                    onClick={() => abrirUpload(paginaId, camadaId)}
-                    className="grid size-6 place-items-center rounded-md hover:bg-secondary"
-                  >
-                    <ImagePlus className="size-3.5" />
-                  </button>
+                  <>
+                    {camada.src && (
+                      <button
+                        title={recortando === camadaId ? "Concluir ajuste" : "Ajustar imagem (recorte e zoom)"}
+                        onClick={() =>
+                          setRecortando(recortando === camadaId ? null : camadaId)
+                        }
+                        className={cn(
+                          "grid size-6 place-items-center rounded-md hover:bg-secondary",
+                          recortando === camadaId && "bg-accent text-accent-foreground",
+                        )}
+                      >
+                        <Crop className="size-3.5" />
+                      </button>
+                    )}
+                    <button
+                      title="Trocar imagem"
+                      onClick={() => abrirUpload(paginaId, camadaId)}
+                      className="grid size-6 place-items-center rounded-md hover:bg-secondary"
+                    >
+                      <ImagePlus className="size-3.5" />
+                    </button>
+                  </>
                 ) : (
+
                   <button
                     title="Transformar em placeholder de imagem"
                     onClick={() => {
