@@ -358,7 +358,15 @@ export function substituirTextoPreservandoPartes(c: CanvasCamadaTexto, novo: str
   const partes = partesDaCamadaCanvas(c);
   const antigo = partes.map((p) => p.texto).join("");
   if (novo === antigo) return;
-  /* prefixo e sufixo iguais: o miolo é o que mudou */
+  /* estilo caractere a caractere */
+  const estilos: EstiloParte[] = [];
+  partes.forEach((p) => {
+    const est: EstiloParte = {};
+    CHAVES_PARTE.forEach((k) => {
+      if (p[k] !== undefined) (est as Record<string, unknown>)[k] = p[k];
+    });
+    for (let i = 0; i < p.texto.length; i++) estilos.push(est);
+  });
   let pre = 0;
   while (pre < antigo.length && pre < novo.length && antigo[pre] === novo[pre]) pre++;
   let suf = 0;
@@ -370,38 +378,13 @@ export function substituirTextoPreservandoPartes(c: CanvasCamadaTexto, novo: str
     suf++;
   const inserido = novo.slice(pre, novo.length - suf);
   const fimRemocao = antigo.length - suf;
+  const estiloInsercao = estilos[Math.max(0, pre - 1)] ?? estilos[0] ?? {};
 
   const saida: CanvasParteTexto[] = [];
-  let pos = 0;
-  let estiloInsercao: CanvasParteTexto | null = null;
-  partes.forEach((p) => {
-    const ini = pos;
-    const f = pos + p.texto.length;
-    pos = f;
-    const antes = p.texto.slice(0, Math.max(0, Math.min(p.texto.length, pre - ini)));
-    const depois = p.texto.slice(Math.max(0, Math.min(p.texto.length, fimRemocao - ini)));
-    if (antes) {
-      saida.push({ ...p, texto: antes });
-      estiloInsercao = p;
-    }
-    if (ini <= pre && f >= pre && !estiloInsercao) estiloInsercao = p;
-    if (depois) saida.push({ ...p, texto: depois, __depois: true } as CanvasParteTexto);
-  });
-  /* insere o texto novo na fronteira certa */
-  const finais: CanvasParteTexto[] = [];
-  let inseriu = false;
-  saida.forEach((p) => {
-    const marcado = (p as CanvasParteTexto & { __depois?: boolean }).__depois;
-    if (marcado && !inseriu) {
-      if (inserido) finais.push({ ...(estiloInsercao ?? p), texto: inserido });
-      inseriu = true;
-    }
-    const limpo = { ...p } as CanvasParteTexto & { __depois?: boolean };
-    delete limpo.__depois;
-    finais.push(limpo);
-  });
-  if (!inseriu && inserido) finais.push({ ...(estiloInsercao ?? partes[0] ?? { texto: "" }), texto: inserido });
-  gravarPartesNaCamada(c, finais);
+  for (let i = 0; i < pre; i++) saida.push({ ...(estilos[i] ?? {}), texto: antigo[i]! });
+  for (const ch of inserido) saida.push({ ...estiloInsercao, texto: ch });
+  for (let i = fimRemocao; i < antigo.length; i++) saida.push({ ...(estilos[i] ?? {}), texto: antigo[i]! });
+  gravarPartesNaCamada(c, saida);
 }
 
 /* --------- placeholder de imagem --------- */
