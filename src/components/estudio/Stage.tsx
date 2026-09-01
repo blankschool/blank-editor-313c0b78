@@ -32,7 +32,8 @@ import {
   Italic,
   Underline,
   Strikethrough,
-  Frame,
+  Crop,
+  ImageUp,
 } from "lucide-react";
 import { useEstudio } from "./EstudioContext";
 import { cn } from "@/lib/utils";
@@ -63,6 +64,8 @@ import {
   estiloDoTrecho,
   substituirTextoPreservandoPartes,
   virarPlaceholderImagem,
+  limitarImg,
+  type CaixaImg,
 } from "@/lib/estudio-doc";
 import {
   offsetsDaSelecao,
@@ -2001,7 +2004,7 @@ function CanvasComSelecao({ doc }: { doc: DocCanvas }) {
                     }}
                     className="grid size-6 place-items-center rounded-md hover:bg-secondary"
                   >
-                    <Frame className="size-3.5" />
+                    <ImageUp className="size-3.5" />
                   </button>
                 )}
                 <button
