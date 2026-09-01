@@ -549,16 +549,212 @@ function CamadaCanvasView({
   );
 }
 
+interface Geo {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+type ModoArraste = "mover" | "nw" | "ne" | "sw" | "se";
+
+const MARGEM_PRANCHETA = 108;
+const TOLERANCIA_SNAP = 4;
+
+function geoDaCamada(c: CanvasCamada): Geo {
+  return { x: c.x, y: c.y, w: (c as { w?: number }).w ?? 0, h: (c as { h?: number }).h ?? 0 };
+}
+
+function alvosGuias(pagina: CanvasPagina, ignorar: string): { v: number[]; h: number[] } {
+  const L = pagina.largura || 1080;
+  const H = pagina.altura || 1440;
+  const v = [MARGEM_PRANCHETA, L - MARGEM_PRANCHETA, L / 2];
+  const h = [MARGEM_PRANCHETA, H - MARGEM_PRANCHETA, H / 2];
+  (pagina.camadas ?? []).forEach((c, j) => {
+    const cid = idCamadaCanvas(c, j, pagina.id ?? "p");
+    if (cid === ignorar || c.oculto) return;
+    const g = geoDaCamada(c);
+    v.push(g.x, g.x + g.w / 2, g.x + g.w);
+    h.push(g.y, g.y + g.h / 2, g.y + g.h);
+  });
+  return { v, h };
+}
+
+function encaixar(
+  geo: Geo,
+  pagina: CanvasPagina,
+  ignorar: string,
+  modo: ModoArraste,
+): { geo: Geo; guias: { v: number[]; h: number[] } } {
+  const alvos = alvosGuias(pagina, ignorar);
+  const guias: { v: number[]; h: number[] } = { v: [], h: [] };
+  const out: Geo = { ...geo };
+
+  const bordasV: Array<[number, number]> =
+    modo === "mover"
+      ? [
+          [geo.x, 0],
+          [geo.x + geo.w / 2, geo.w / 2],
+          [geo.x + geo.w, geo.w],
+        ]
+      : modo === "nw" || modo === "sw"
+        ? [[geo.x, 0]]
+        : [[geo.x + geo.w, geo.w]];
+  let melhorV: { delta: number; linha: number } | null = null;
+  bordasV.forEach(([pos]) => {
+    alvos.v.forEach((t) => {
+      const d = t - pos;
+      if (Math.abs(d) <= TOLERANCIA_SNAP && (!melhorV || Math.abs(d) < Math.abs(melhorV.delta)))
+        melhorV = { delta: d, linha: t };
+    });
+  });
+  if (melhorV) {
+    const mv = melhorV as { delta: number; linha: number };
+    if (modo === "mover") out.x += mv.delta;
+    else if (modo === "nw" || modo === "sw") {
+      out.x += mv.delta;
+      out.w -= mv.delta;
+    } else out.w += mv.delta;
+    guias.v.push(mv.linha);
+  }
+
+  const bordasH: Array<[number, number]> =
+    modo === "mover"
+      ? [
+          [geo.y, 0],
+          [geo.y + geo.h / 2, geo.h / 2],
+          [geo.y + geo.h, geo.h],
+        ]
+      : modo === "nw" || modo === "ne"
+        ? [[geo.y, 0]]
+        : [[geo.y + geo.h, geo.h]];
+  let melhorH: { delta: number; linha: number } | null = null;
+  bordasH.forEach(([pos]) => {
+    alvos.h.forEach((t) => {
+      const d = t - pos;
+      if (Math.abs(d) <= TOLERANCIA_SNAP && (!melhorH || Math.abs(d) < Math.abs(melhorH.delta)))
+        melhorH = { delta: d, linha: t };
+    });
+  });
+  if (melhorH) {
+    const mh = melhorH as { delta: number; linha: number };
+    if (modo === "mover") out.y += mh.delta;
+    else if (modo === "nw" || modo === "ne") {
+      out.y += mh.delta;
+      out.h -= mh.delta;
+    } else out.h += mh.delta;
+    guias.h.push(mh.linha);
+  }
+
+  return { geo: out, guias };
+}
+
 export function CanvasView({
   doc,
   selecionada = null,
   onSelecionar,
+  escala = 1,
+  arrastavel = false,
+  onGeometria,
 }: {
   doc: DocCanvas;
   selecionada?: string | null;
   onSelecionar?: ((paginaId: string, camadaId: string) => void) | undefined;
+  escala?: number;
+  arrastavel?: boolean;
+  onGeometria?: ((paginaId: string, camadaId: string, geo: Geo, modo: ModoArraste) => void) | undefined;
 }) {
+  const [arraste, setArraste] = useState<{
+    paginaId: string;
+    camadaId: string;
+    modo: ModoArraste;
+    geo: Geo;
+    guias: { v: number[]; h: number[] };
+  } | null>(null);
+  const refArraste = useRef<{
+    paginaId: string;
+    camadaId: string;
+    modo: ModoArraste;
+    inicio: Geo;
+    px: number;
+    py: number;
+    pagina: CanvasPagina;
+    atual: Geo;
+  } | null>(null);
+
   const paginas = Array.isArray(doc.paginas) ? doc.paginas : [];
+
+  useEffect(() => {
+    if (!arraste) return;
+    const mover = (ev: PointerEvent) => {
+      const st = refArraste.current;
+      if (!st) return;
+      const dx = (ev.clientX - st.px) / (escala || 1);
+      const dy = (ev.clientY - st.py) / (escala || 1);
+      let bruto: Geo;
+      if (st.modo === "mover") {
+        bruto = { ...st.inicio, x: st.inicio.x + dx, y: st.inicio.y + dy };
+      } else {
+        const esq = st.modo === "nw" || st.modo === "sw";
+        const topo = st.modo === "nw" || st.modo === "ne";
+        const w = Math.max(8, st.inicio.w + (esq ? -dx : dx));
+        const h = Math.max(8, st.inicio.h + (topo ? -dy : dy));
+        bruto = {
+          x: esq ? st.inicio.x + (st.inicio.w - w) : st.inicio.x,
+          y: topo ? st.inicio.y + (st.inicio.h - h) : st.inicio.y,
+          w,
+          h,
+        };
+      }
+      const { geo, guias } = encaixar(bruto, st.pagina, st.camadaId, st.modo);
+      const arredondado: Geo = {
+        x: Math.round(geo.x),
+        y: Math.round(geo.y),
+        w: Math.round(geo.w),
+        h: Math.round(geo.h),
+      };
+      st.atual = arredondado;
+      setArraste({ paginaId: st.paginaId, camadaId: st.camadaId, modo: st.modo, geo: arredondado, guias });
+    };
+    const soltar = () => {
+      const st = refArraste.current;
+      refArraste.current = null;
+      setArraste(null);
+      if (st && onGeometria) onGeometria(st.paginaId, st.camadaId, st.atual, st.modo);
+    };
+    window.addEventListener("pointermove", mover);
+    window.addEventListener("pointerup", soltar);
+    return () => {
+      window.removeEventListener("pointermove", mover);
+      window.removeEventListener("pointerup", soltar);
+    };
+  }, [arraste !== null, escala, onGeometria]);
+
+  const iniciar = (
+    ev: React.PointerEvent,
+    pagina: CanvasPagina,
+    paginaId: string,
+    camadaId: string,
+    camada: CanvasCamada,
+    modo: ModoArraste,
+  ) => {
+    if (!arrastavel || ev.button !== 0) return;
+    ev.preventDefault();
+    ev.stopPropagation();
+    const inicio = geoDaCamada(camada);
+    refArraste.current = {
+      paginaId,
+      camadaId,
+      modo,
+      inicio,
+      px: ev.clientX,
+      py: ev.clientY,
+      pagina,
+      atual: inicio,
+    };
+    setArraste({ paginaId, camadaId, modo, geo: inicio, guias: { v: [], h: [] } });
+  };
+
   if (!paginas.length) {
     return (
       <div className="grid h-[1440px] w-[1080px] place-items-center text-sm text-muted-foreground">
@@ -568,47 +764,152 @@ export function CanvasView({
   }
   return (
     <div className="flex flex-col items-center gap-10">
-      {paginas.map((p, i) => (
-        <div key={p.id ?? i} className="relative">
-          {paginas.length > 1 && (
-            <span className="absolute -top-7 left-0 text-[11px] font-medium text-muted-foreground">
-              {p.nome ?? `Página ${i + 1}`} · {i + 1}/{paginas.length}
-            </span>
-          )}
-          <div
-            style={{
-              position: "relative",
-              width: p.largura || 1080,
-              height: p.altura || 1440,
-              overflow: "hidden",
-              background: p.fundo ?? "#ffffff",
-              textRendering: "geometricPrecision",
-            }}
-          >
-            {(p.camadas ?? []).map((c, j) => {
-              const cid = idCamadaCanvas(c, j, p.id ?? `p${i + 1}`);
-              return (
-                <CamadaCanvasView
-                  key={cid}
-                  c={c}
-                  selecionada={selecionada === cid}
-                  onSelecionar={onSelecionar ? () => onSelecionar(p.id ?? `p${i + 1}`, cid) : undefined}
-                />
-              );
-            })}
+      {paginas.map((p, i) => {
+        const pid = p.id ?? `p${i + 1}`;
+        const selNaPagina = (p.camadas ?? []).find(
+          (c, j) => idCamadaCanvas(c, j, pid) === selecionada && !c.oculto,
+        );
+        const geoSel = selNaPagina
+          ? arraste && arraste.camadaId === selecionada
+            ? arraste.geo
+            : geoDaCamada(selNaPagina)
+          : null;
+        const alcas = selNaPagina && selNaPagina.tipo !== "texto";
+        const lado = 10 / (escala || 1);
+        return (
+          <div key={pid} className="relative">
+            {paginas.length > 1 && (
+              <span className="absolute -top-7 left-0 text-[11px] font-medium text-muted-foreground">
+                {p.nome ?? `Página ${i + 1}`} · {i + 1}/{paginas.length}
+              </span>
+            )}
+            <div
+              style={{
+                position: "relative",
+                width: p.largura || 1080,
+                height: p.altura || 1440,
+                overflow: "hidden",
+                background: p.fundo ?? "#ffffff",
+                textRendering: "geometricPrecision",
+              }}
+            >
+              {(p.camadas ?? []).map((c, j) => {
+                const cid = idCamadaCanvas(c, j, pid);
+                const vivo =
+                  arraste && arraste.camadaId === cid
+                    ? ({ ...c, x: arraste.geo.x, y: arraste.geo.y, ...(c.tipo === "texto" ? {} : { w: arraste.geo.w, h: arraste.geo.h }) } as CanvasCamada)
+                    : c;
+                return (
+                  <CamadaCanvasView
+                    key={cid}
+                    c={vivo}
+                    selecionada={selecionada === cid}
+                    onSelecionar={onSelecionar ? () => onSelecionar(pid, cid) : undefined}
+                    onPointerDown={
+                      arrastavel
+                        ? (ev) => {
+                            onSelecionar?.(pid, cid);
+                            iniciar(ev, p, pid, cid, c, "mover");
+                          }
+                        : undefined
+                    }
+                  />
+                );
+              })}
+
+              {alcas && geoSel && selNaPagina && (
+                <>
+                  {(["nw", "ne", "sw", "se"] as const).map((m) => (
+                    <div
+                      key={m}
+                      onPointerDown={(ev) => iniciar(ev, p, pid, selecionada!, selNaPagina, m)}
+                      style={{
+                        position: "absolute",
+                        width: lado,
+                        height: lado,
+                        left: (m === "nw" || m === "sw" ? geoSel.x : geoSel.x + geoSel.w) - lado / 2,
+                        top: (m === "nw" || m === "ne" ? geoSel.y : geoSel.y + geoSel.h) - lado / 2,
+                        background: "hsl(var(--accent))",
+                        border: `${1 / (escala || 1)}px solid #fff`,
+                        borderRadius: lado / 2,
+                        cursor: m === "nw" || m === "se" ? "nwse-resize" : "nesw-resize",
+                        zIndex: 50,
+                      }}
+                    />
+                  ))}
+                </>
+              )}
+
+              {arraste && arraste.paginaId === pid && (
+                <>
+                  {arraste.guias.v.map((x) => (
+                    <div
+                      key={`v${x}`}
+                      style={{
+                        position: "absolute",
+                        left: x,
+                        top: 0,
+                        bottom: 0,
+                        width: 1 / (escala || 1),
+                        background: "hsl(var(--accent))",
+                        pointerEvents: "none",
+                        zIndex: 60,
+                      }}
+                    />
+                  ))}
+                  {arraste.guias.h.map((y) => (
+                    <div
+                      key={`h${y}`}
+                      style={{
+                        position: "absolute",
+                        top: y,
+                        left: 0,
+                        right: 0,
+                        height: 1 / (escala || 1),
+                        background: "hsl(var(--accent))",
+                        pointerEvents: "none",
+                        zIndex: 60,
+                      }}
+                    />
+                  ))}
+                </>
+              )}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
 
 function CanvasComSelecao({ doc }: { doc: DocCanvas }) {
   const e = useEstudio();
+  const escala = (e.zoom / 100) * (larguras[e.viewport] / 1080);
+  const podeArrastar = e.ferramenta === "cursor";
+  const gravar = useCallback(
+    (pid: string, cid: string, geo: { x: number; y: number; w: number; h: number }, modo: string) => {
+      e.atualizarDocCanvas(
+        (d) =>
+          comCamadaCanvas(d, pid, cid, (c) => {
+            c.x = geo.x;
+            c.y = geo.y;
+            if (modo !== "mover" && c.tipo !== "texto") {
+              c.w = geo.w;
+              c.h = geo.h;
+            }
+          }),
+        modo === "mover" ? "Moveu camada" : "Redimensionou camada",
+      );
+    },
+    [e],
+  );
   return (
     <CanvasView
       doc={doc}
       selecionada={e.camadaCanvas}
+      escala={escala}
+      arrastavel={podeArrastar}
+      onGeometria={gravar}
       onSelecionar={(pid, cid) => {
         e.setPaginaCanvas(pid);
         e.setCamadaCanvas(cid);
