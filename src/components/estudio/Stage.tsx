@@ -447,11 +447,13 @@ function estiloCss(s: EstiloEl | undefined): React.CSSProperties {
 
 function CamadaCanvasView({
   c,
+  cid,
   selecionada,
   onSelecionar,
   onPointerDown,
 }: {
   c: CanvasCamada;
+  cid?: string;
   selecionada?: boolean;
   onSelecionar?: (() => void) | undefined;
   onPointerDown?: ((ev: React.PointerEvent) => void) | undefined;
@@ -484,6 +486,7 @@ function CamadaCanvasView({
         }}
         onClick={clique}
         onPointerDown={onPointerDown}
+        data-camada={cid}
       >
         <img
           src={c.src}
@@ -520,6 +523,7 @@ function CamadaCanvasView({
         }}
         onClick={clique}
         onPointerDown={onPointerDown}
+        data-camada={cid}
       />
     );
   }
@@ -547,6 +551,7 @@ function CamadaCanvasView({
       }}
       onClick={clique}
       onPointerDown={onPointerDown}
+      data-camada={cid}
     >
       {c.partes
         ? c.partes.map((p, i) => (
@@ -666,6 +671,7 @@ export function CanvasView({
   escala = 1,
   arrastavel = false,
   onGeometria,
+  acoes,
 }: {
   doc: DocCanvas;
   selecionada?: string | null;
@@ -673,7 +679,31 @@ export function CanvasView({
   escala?: number;
   arrastavel?: boolean;
   onGeometria?: ((paginaId: string, camadaId: string, geo: Geo, modo: ModoArraste) => void) | undefined;
+  acoes?: ((ctx: { paginaId: string; camadaId: string; camada: CanvasCamada }) => React.ReactNode) | undefined;
 }) {
+  const refPaginas = useRef<HTMLDivElement | null>(null);
+  const refBarra = useRef<HTMLDivElement | null>(null);
+  const [barraW, setBarraW] = useState(0);
+  const [medida, setMedida] = useState<{ w: number; h: number } | null>(null);
+
+  useLayoutEffect(() => {
+    const el = refBarra.current;
+    if (!el) return setBarraW(0);
+    const aplicar = () => setBarraW(el.getBoundingClientRect().width);
+    aplicar();
+    const ro = new ResizeObserver(aplicar);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [selecionada, escala]);
+
+  useLayoutEffect(() => {
+    if (!selecionada) return setMedida(null);
+    const el = refPaginas.current?.querySelector<HTMLElement>(`[data-camada="${selecionada}"]`);
+    if (!el) return setMedida(null);
+    const r = el.getBoundingClientRect();
+    setMedida({ w: r.width / (escala || 1), h: r.height / (escala || 1) });
+  }, [selecionada, escala, doc]);
+
   const [arraste, setArraste] = useState<{
     paginaId: string;
     camadaId: string;
@@ -773,7 +803,7 @@ export function CanvasView({
     );
   }
   return (
-    <div className="flex flex-col items-center gap-10">
+    <div ref={refPaginas} className="flex flex-col items-center gap-10">
       {paginas.map((p, i) => {
         const pid = p.id ?? `p${i + 1}`;
         const selNaPagina = (p.camadas ?? []).find(
@@ -786,6 +816,25 @@ export function CanvasView({
           : null;
         const alcas = selNaPagina && selNaPagina.tipo !== "texto";
         const lado = 10 / (escala || 1);
+        const larguraPag = p.largura || 1080;
+        const esc = escala || 1;
+        const dimSel =
+          geoSel && (geoSel.w > 0 || geoSel.h > 0)
+            ? { w: geoSel.w, h: geoSel.h }
+            : (medida ?? { w: 0, h: 0 });
+        const alturaBarra = 30 / esc;
+        const folga = 12 / esc;
+        const alturaSel = geoSel ? (geoSel.h > 0 ? geoSel.h : dimSel.h) : 0;
+        const acimaCabe = geoSel ? geoSel.y - alturaBarra - folga >= 0 : false;
+        const topoBarra = geoSel
+          ? acimaCabe
+            ? geoSel.y - alturaBarra - folga
+            : geoSel.y + alturaSel + folga
+          : 0;
+        const larguraBarra = barraW / esc;
+        const esqBarra = geoSel
+          ? Math.max(0, Math.min(geoSel.x, Math.max(0, larguraPag - larguraBarra)))
+          : 0;
         return (
           <div key={pid} className="relative">
             {paginas.length > 1 && (
@@ -813,6 +862,7 @@ export function CanvasView({
                   <CamadaCanvasView
                     key={cid}
                     c={vivo}
+                    cid={cid}
                     selecionada={selecionada === cid}
                     onSelecionar={onSelecionar ? () => onSelecionar(pid, cid) : undefined}
                     onPointerDown={
@@ -827,29 +877,32 @@ export function CanvasView({
                 );
               })}
 
-              {geoSel && selNaPagina && (
+              {geoSel && selNaPagina && selecionada && (
                 <div
+                  ref={refBarra}
                   style={{
                     position: "absolute",
-                    left: geoSel.x,
-                    top: geoSel.y - 14 / (escala || 1) - 8 / (escala || 1),
-                    transform: `scale(${1 / (escala || 1)})`,
-                    transformOrigin: "left bottom",
-                    background: "hsl(var(--accent))",
-                    color: "hsl(var(--accent-foreground))",
-                    fontSize: 10,
-                    fontWeight: 600,
-                    lineHeight: "14px",
-                    padding: "0 6px",
-                    borderRadius: 3,
-                    whiteSpace: "nowrap",
-                    pointerEvents: "none",
+                    left: esqBarra,
+                    top: topoBarra,
+                    transform: `scale(${1 / esc})`,
+                    transformOrigin: "left top",
                     zIndex: 70,
                   }}
                 >
-                  {selNaPagina.nome ?? selNaPagina.tipo} · {Math.round(geoSel.w)}×{Math.round(geoSel.h)}
+                  <div className="flex items-center gap-0.5 rounded-lg border border-border bg-popover p-1 shadow-[var(--shadow-panel)]">
+                    <span className="whitespace-nowrap px-1 text-[10px] font-semibold text-accent">
+                      {selNaPagina.nome ?? selNaPagina.tipo} · {Math.round(dimSel.w)}×{Math.round(dimSel.h)}
+                    </span>
+                    {acoes && (
+                      <>
+                        <span className="mx-1 h-4 w-px bg-border" />
+                        {acoes({ paginaId: pid, camadaId: selecionada, camada: selNaPagina })}
+                      </>
+                    )}
+                  </div>
                 </div>
               )}
+
 
               {alcas && geoSel && selNaPagina && (
                 <>
@@ -1033,6 +1086,61 @@ function CanvasComSelecao({ doc }: { doc: DocCanvas }) {
         e.setPaginaCanvas(pid);
         e.setCamadaCanvas(cid);
       }}
+      acoes={({ paginaId, camadaId, camada }) => (
+        <>
+          {camada.tipo === "texto" && (
+            <button
+              title="Texto"
+              onClick={() => e.setPainelEdicao("texto")}
+              className={cn(
+                "flex h-6 items-center gap-1 rounded-md px-1.5 text-[11px]",
+                e.painelEdicao === "texto" ? "bg-primary text-primary-foreground" : "hover:bg-secondary",
+              )}
+            >
+              <Type className="size-3.5" /> Texto
+            </button>
+          )}
+          <button
+            title="Cor"
+            onClick={() => e.setPainelEdicao("cor")}
+            className={cn(
+              "flex h-6 items-center gap-1 rounded-md px-1.5 text-[11px]",
+              e.painelEdicao === "cor" ? "bg-primary text-primary-foreground" : "hover:bg-secondary",
+            )}
+          >
+            <Palette className="size-3.5" /> Cor
+          </button>
+          <span className="mx-1 h-4 w-px bg-border" />
+          <button
+            title="Duplicar camada"
+            onClick={() => {
+              const copia = duplicarCamadaCanvas(camada);
+              e.atualizarDocCanvas((d) => adicionarCamadaCanvas(d, paginaId, copia), "Duplicou camada");
+              e.setCamadaCanvas(copia.id!);
+            }}
+            className="grid size-6 place-items-center rounded-md hover:bg-secondary"
+          >
+            <Copy className="size-3.5" />
+          </button>
+          <button
+            title="Excluir camada"
+            onClick={() => {
+              e.atualizarDocCanvas((d) => removerCamadaCanvas(d, paginaId, camadaId), "Apagou camada");
+              e.setCamadaCanvas(null);
+            }}
+            className="grid size-6 place-items-center rounded-md hover:bg-secondary"
+          >
+            <Trash2 className="size-3.5" />
+          </button>
+          <span className="mx-1 h-4 w-px bg-border" />
+          <button
+            onClick={() => e.enviarPedido(`Melhorar a camada ${camada.nome ?? camada.tipo}`)}
+            className="flex h-6 items-center gap-1 whitespace-nowrap rounded-md bg-accent px-2 text-[11px] font-medium text-accent-foreground"
+          >
+            <Sparkles className="size-3" /> Pedir ao assistente
+          </button>
+        </>
+      )}
     />
   );
 }
