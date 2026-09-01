@@ -41,8 +41,11 @@ import {
   paletaProjeto,
   rotuloEl,
   textoDaCamadaCanvas,
+  type CanvasCamada,
   type CanvasCamadaForma,
+  type CanvasCamadaImagem,
   type CanvasCamadaTexto,
+  type CanvasSombra,
   type ElId,
   type Variante,
 } from "@/lib/estudio-doc";
