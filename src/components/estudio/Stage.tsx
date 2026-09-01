@@ -2070,8 +2070,9 @@ function CanvasComSelecao({ doc }: { doc: DocCanvas }) {
               if (c.tipo === "imagem" && c.img && c.w && c.h) {
                 /* reenquadra sem achatar: a foto acompanha o maior fator */
                 const k = Math.max(geo.w / c.w, geo.h / c.h);
-                c.img = limitarImg(
+                c.img = ajustarImgRot(
                   { x: c.img.x * k, y: c.img.y * k, w: c.img.w * k, h: c.img.h * k },
+                  c.imgRot ?? 0,
                   geo.w,
                   geo.h,
                 );
