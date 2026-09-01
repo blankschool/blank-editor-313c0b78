@@ -58,7 +58,7 @@ import { slugPainel } from "@/lib/estudio-paineis";
 export type Viewport = "mobile" | "tablet" | "desktop";
 export type Ferramenta = "cursor" | "mao" | "regua" | "grade";
 export type PainelDireito = "props" | "camadas" | "versoes" | "comentarios" | "codigo" | null;
-export type PainelEdicao = "texto" | "cor" | "layout" | "estrutura" | null;
+export type PainelEdicao = "simples" | "pro" | null;
 export type FiltroBiblioteca = "recentes" | "favoritos" | "tipo";
 
 export interface VersaoDoc {
@@ -111,6 +111,12 @@ interface EstudioState {
   camadaCanvas: string | null;
   setCamadaCanvas: (v: string | null) => void;
   atualizarDocCanvas: (fn: (d: DocCanvas) => DocCanvas, rotulo: string) => void;
+  /* rascunho do inspector Editar */
+  sujo: boolean;
+  docSalvo: DesignDoc;
+  canvasSalvo: DocCanvas | null;
+  salvarRascunho: () => void;
+  descartarRascunho: () => void;
   favoritar: (id: string) => void;
   zoom: number;
   setZoom: (v: number) => void;
@@ -210,7 +216,7 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
   const sub = partes[0] === "d" ? (partes[3] ?? "") : "";
 
   const modoEdicao = secao === "editar";
-  const painelEdicao = (modoEdicao ? ((sub || "texto") as PainelEdicao) : null) as PainelEdicao;
+  const painelEdicao: PainelEdicao = modoEdicao ? (sub === "pro" ? "pro" : "simples") : null;
   const painelDireito: PainelDireito = painelPorSlug[secao] ?? null;
   const apresentando = secao === "apresentar";
 
@@ -284,6 +290,12 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
   const [camadaCanvas, setCamadaCanvas] = useState<string | null>(null);
   const [docId, setDocId] = useState("");
   const salvarTimer = useRef<number | null>(null);
+  /* rascunho: enquanto o inspector Editar está aberto nada vai ao banco */
+  const [baseDoc, setBaseDoc] = useState<DesignDoc | null>(null);
+  const [baseCanvas, setBaseCanvas] = useState<DocCanvas | null>(null);
+  const [sujo, setSujo] = useState(false);
+  const modoEdicaoRef = useRef(modoEdicao);
+  modoEdicaoRef.current = modoEdicao;
 
   useEffect(() => {
     const remoto = designQ.data;
@@ -296,6 +308,9 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
       setCanvasLocal(ehDocCanvas(remoto.doc) ? (remoto.doc as DocCanvas) : null);
       setPaginaCanvas(null);
       setCamadaCanvas(null);
+      setBaseDoc(null);
+      setBaseCanvas(null);
+      setSujo(false);
       setDocLocal(
         remoto.doc && !ehDocHtml(remoto.doc) && !ehDocCanvas(remoto.doc) && Object.keys(remoto.doc).length
           ? (remoto.doc as DesignDoc)
@@ -460,10 +475,16 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
   const atualizarDoc = useCallback(
     (fn: (d: DesignDoc) => DesignDoc, rotulo: string) => {
       if (!abaAtiva) return;
-      const novo = fn(clonarDoc(docRef.current));
+      const anterior = docRef.current;
+      const novo = fn(clonarDoc(anterior));
       setDocLocal(novo);
       docRef.current = novo;
-      agendarSalvar(abaAtiva, novo);
+      if (modoEdicaoRef.current) {
+        setBaseDoc((b) => b ?? clonarDoc(anterior));
+        setSujo(true);
+      } else {
+        agendarSalvar(abaAtiva, novo);
+      }
       if (rotulo) registrar(autor, rotulo);
     },
     [abaAtiva, agendarSalvar, registrar, autor],
@@ -476,11 +497,46 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
       const novo = fn(JSON.parse(JSON.stringify(atual)) as DocCanvas);
       setCanvasLocal(novo);
       canvasRef.current = novo;
-      agendarSalvar(abaAtiva, novo as unknown as DesignDoc);
+      if (modoEdicaoRef.current) {
+        setBaseCanvas((b) => b ?? (JSON.parse(JSON.stringify(atual)) as DocCanvas));
+        setSujo(true);
+      } else {
+        agendarSalvar(abaAtiva, novo as unknown as DesignDoc);
+      }
       if (rotulo) registrar(autor, rotulo);
     },
     [abaAtiva, agendarSalvar, registrar, autor],
   );
+
+  const salvarRascunho = useCallback(() => {
+    if (!abaAtiva) return;
+    const atual = (canvasRef.current ?? docRef.current) as unknown as DesignDoc;
+    void salvarDoc(abaAtiva, atual)
+      .then(() => qc.invalidateQueries({ queryKey: ["designs", user?.id] }))
+      .catch(() => undefined);
+    setBaseDoc(null);
+    setBaseCanvas(null);
+    setSujo(false);
+    registrar(autor, "Salvou a edição");
+  }, [abaAtiva, qc, user?.id, registrar, autor]);
+
+  const descartarRascunho = useCallback(() => {
+    if (baseCanvas) {
+      const copia = JSON.parse(JSON.stringify(baseCanvas)) as DocCanvas;
+      setCanvasLocal(copia);
+      canvasRef.current = copia;
+    }
+    if (baseDoc) {
+      const copia = clonarDoc(baseDoc);
+      setDocLocal(copia);
+      docRef.current = copia;
+    }
+    setBaseDoc(null);
+    setBaseCanvas(null);
+    setSujo(false);
+    registrar(autor, "Descartou a edição");
+  }, [baseCanvas, baseDoc, registrar, autor]);
+
 
   const recarregarDoc = useCallback(() => {
     void qc.invalidateQueries({ queryKey: ["design", abaAtiva] });
@@ -669,7 +725,7 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
       if (!abaAtiva) return;
       void navigate({
         to: "/d/$designId/editar/$painel",
-        params: { designId: abaAtiva, painel: v ?? "texto" },
+        params: { designId: abaAtiva, painel: v ?? "simples" },
       });
     },
     [abaAtiva, navigate],
@@ -679,7 +735,7 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
     (v: boolean) => {
       if (!abaAtiva) return;
       if (v) {
-        void navigate({ to: "/d/$designId/editar/$painel", params: { designId: abaAtiva, painel: "texto" } });
+        void navigate({ to: "/d/$designId/editar/$painel", params: { designId: abaAtiva, painel: "simples" } });
       } else {
         void navigate({ to: "/d/$designId", params: { designId: abaAtiva } });
       }
@@ -997,6 +1053,11 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
       camadaCanvas,
       setCamadaCanvas,
       atualizarDocCanvas,
+      sujo,
+      docSalvo: baseDoc ?? doc,
+      canvasSalvo: baseCanvas ?? docCanvas,
+      salvarRascunho,
+      descartarRascunho,
       filtroComentarios,
       setFiltroComentarios,
       comentarioAtivo,
@@ -1085,6 +1146,11 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
       camadaCanvas,
       setCamadaCanvas,
       atualizarDocCanvas,
+      sujo,
+      baseDoc,
+      baseCanvas,
+      salvarRascunho,
+      descartarRascunho,
       filtroComentarios,
 
       comentarioAtivo,

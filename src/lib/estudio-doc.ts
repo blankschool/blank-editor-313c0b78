@@ -161,6 +161,11 @@ export interface CanvasCamadaTexto {
   alinhamento?: "left" | "center" | "right";
   quebra?: boolean;
   opacidade?: number;
+  italico?: boolean;
+  sublinhado?: boolean;
+  riscado?: boolean;
+  caixa?: "normal" | "uppercase" | "lowercase";
+  fundo?: string;
   sombra?: CanvasSombra;
 }
 
@@ -358,6 +363,126 @@ export function removerCamadaCanvas(doc: DocCanvas, paginaId: string | null, cam
   });
   return doc;
 }
+
+/** z-order: ordem de pintura dentro da página (o último é o de cima) */
+export function moverCamadaCanvas(
+  doc: DocCanvas,
+  paginaId: string | null,
+  camadaId: string,
+  destino: -1 | 1 | "topo" | "fundo",
+): DocCanvas {
+  doc.paginas.forEach((p, i) => {
+    const pid = p.id ?? `p${i + 1}`;
+    if (paginaId && pid !== paginaId) return;
+    const camadas = [...(p.camadas ?? [])];
+    const idx = camadas.findIndex((c, j) => idCamadaCanvas(c, j, pid) === camadaId);
+    if (idx < 0) return;
+    const item = camadas.splice(idx, 1)[0]!;
+    const alvo =
+      destino === "topo"
+        ? camadas.length
+        : destino === "fundo"
+          ? 0
+          : Math.max(0, Math.min(camadas.length, idx + destino));
+    camadas.splice(alvo, 0, item);
+    p.camadas = camadas;
+  });
+  return doc;
+}
+
+/* --------- exportar a camada selecionada como PNG (só canvas) --------- */
+
+const PROPS_PNG = [
+  "position",
+  "left",
+  "top",
+  "width",
+  "height",
+  "display",
+  "overflow",
+  "box-sizing",
+  "background",
+  "background-color",
+  "border",
+  "border-radius",
+  "box-shadow",
+  "opacity",
+  "color",
+  "font-family",
+  "font-size",
+  "font-style",
+  "font-weight",
+  "line-height",
+  "letter-spacing",
+  "text-align",
+  "text-decoration",
+  "text-transform",
+  "text-shadow",
+  "white-space",
+  "transform",
+  "object-fit",
+];
+
+function inlinar(origem: Element, destino: HTMLElement) {
+  const cs = window.getComputedStyle(origem);
+  const partes: string[] = [];
+  PROPS_PNG.forEach((p) => {
+    const v = cs.getPropertyValue(p);
+    if (v) partes.push(`${p}:${v}`);
+  });
+  destino.setAttribute("style", partes.join(";"));
+  const filhosO = Array.from(origem.children);
+  const filhosD = Array.from(destino.children);
+  filhosO.forEach((f, i) => {
+    const d = filhosD[i];
+    if (d instanceof HTMLElement) inlinar(f, d);
+  });
+}
+
+/**
+ * Rasteriza o nó `[data-camada="id"]` do palco em tamanho 1× (px do documento),
+ * sem o contorno de seleção, com fundo transparente.
+ */
+export async function camadaParaPng(camadaId: string, escala: 1 | 2 = 1): Promise<Blob | null> {
+  const no = document.querySelector<HTMLElement>(`[data-camada="${CSS.escape(camadaId)}"]`);
+  if (!no) return null;
+  // offsetWidth/Height ignoram o transform: scale() do palco — já é 1×
+  const w = Math.max(1, Math.round(no.offsetWidth));
+  const h = Math.max(1, Math.round(no.offsetHeight));
+
+  const clone = no.cloneNode(true) as HTMLElement;
+  inlinar(no, clone);
+  clone.style.position = "static";
+  clone.style.left = "0";
+  clone.style.top = "0";
+  clone.style.width = `${w}px`;
+  clone.style.height = `${h}px`;
+  clone.style.outline = "none";
+  clone.style.transform = "none";
+
+  const html = new XMLSerializer().serializeToString(clone);
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><foreignObject width="100%" height="100%"><div xmlns="http://www.w3.org/1999/xhtml">${html}</div></foreignObject></svg>`;
+  const url = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+
+  const img = new window.Image();
+  const carregou = await new Promise<boolean>((resolve) => {
+    img.onload = () => resolve(true);
+    img.onerror = () => resolve(false);
+    img.src = url;
+  });
+  if (!carregou) return null;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = w * escala;
+  canvas.height = h * escala;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+  ctx.scale(escala, escala);
+  ctx.drawImage(img, 0, 0, w, h);
+  return await new Promise<Blob | null>((resolve) => canvas.toBlob((b) => resolve(b), "image/png"));
+}
+
+
 
 export function ehDocCanvas(d: unknown): d is DocCanvas {
   return (
