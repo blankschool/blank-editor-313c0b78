@@ -1495,7 +1495,7 @@ export function CanvasView({
                     selecionada={selecionada === cid}
                     onSelecionar={onSelecionar ? () => onSelecionar(pid, cid) : undefined}
                     onPointerDown={
-                      arrastavel && editando !== cid
+                      arrastavel && editando !== cid && recortando !== cid
                         ? (ev) => {
                             onSelecionar?.(pid, cid);
                             iniciar(ev, p, pid, cid, c, "mover");
@@ -1506,7 +1506,11 @@ export function CanvasView({
                     onTextoInput={onTextoInput}
                     onSelecaoTexto={onSelecaoTexto}
                     onDuploClique={onDuploClique ? () => onDuploClique(pid, cid, c) : undefined}
+                    recortando={recortando === cid}
+                    escala={escala}
+                    onRecorte={onRecorte ? (img) => onRecorte(pid, cid, img) : undefined}
                   />
+
                 );
               })}
 
