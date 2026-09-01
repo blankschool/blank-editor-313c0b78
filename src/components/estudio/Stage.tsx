@@ -31,7 +31,18 @@ import {
 } from "lucide-react";
 import { useEstudio } from "./EstudioContext";
 import { cn } from "@/lib/utils";
-import { ehDocHtml, rotuloEl, tipoEl, type DesignDoc, type DocHtml, type ElId, type EstiloEl } from "@/lib/estudio-doc";
+import {
+  ehDocCanvas,
+  ehDocHtml,
+  rotuloEl,
+  tipoEl,
+  type CanvasCamada,
+  type DesignDoc,
+  type DocCanvas,
+  type DocHtml,
+  type ElId,
+  type EstiloEl,
+} from "@/lib/estudio-doc";
 import { toast } from "sonner";
 
 export const larguras = { mobile: 340, tablet: 620, desktop: 880 } as const;
@@ -153,7 +164,15 @@ export function Stage() {
             id="artboard-vivo"
             className="relative shrink-0 shadow-[var(--shadow-panel)] transition-[width,transform] duration-200"
             style={
-              e.docHtml
+              e.docCanvas
+                ? {
+                    width: 1080,
+                    transform: `scale(${(e.zoom / 100) * (larguras[e.viewport] / 1080)})`,
+                    transformOrigin: "center",
+                    background: "transparent",
+                    boxShadow: "none",
+                  }
+                : e.docHtml
                 ? {
                     width: 1080,
                     height: 1440,
@@ -170,7 +189,9 @@ export function Stage() {
                   }
             }
           >
-            {e.docHtml ? (
+            {e.docCanvas ? (
+              <Artboard doc={e.docCanvas} />
+            ) : e.docHtml ? (
               <Artboard doc={e.docHtml} />
             ) : (
               <Artboard doc={e.doc} selecionavel selecionado={e.selecionado} onSelecionar={e.setSelecionado} />
