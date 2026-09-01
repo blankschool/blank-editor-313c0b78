@@ -26,13 +26,18 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import {
+  acharCamadaCanvas,
   aplicarVariante,
   camadasDoDoc,
   camadasDaPaginaCanvas,
+  comCamadaCanvas,
   comEstilo,
   paletaPorSistema,
   paletaProjeto,
   rotuloEl,
+  textoDaCamadaCanvas,
+  type CanvasCamadaForma,
+  type CanvasCamadaTexto,
   type ElId,
   type Variante,
 } from "@/lib/estudio-doc";
@@ -67,6 +72,145 @@ function useAlvo(): ElId {
 
 /* texto e tipografia */
 export function TextPanel() {
+  const e = useEstudio();
+  if (e.docCanvas) return <TextPanelCanvas />;
+  if (e.docHtml)
+    return (
+      <Secao titulo="Texto">
+        <p className="text-[11px] text-muted-foreground">Preview em HTML, somente leitura.</p>
+      </Secao>
+    );
+  return <TextPanelFluxo />;
+}
+
+function TextPanelCanvas() {
+  const e = useEstudio();
+  const achado = acharCamadaCanvas(e.docCanvas, e.paginaCanvas, e.camadaCanvas);
+
+  if (!achado)
+    return (
+      <Secao titulo="Texto">
+        <p className="text-[11px] text-muted-foreground">Selecione uma camada de texto no palco ou em Camadas.</p>
+      </Secao>
+    );
+
+  const { camada } = achado;
+  const nome = camada.nome ?? camada.tipo;
+
+  if (camada.tipo === "imagem")
+    return (
+      <Secao titulo={`Imagem · ${nome}`}>
+        <p className="text-[11px] text-muted-foreground">Camada de imagem — sem texto.</p>
+        <input readOnly value={camada.src} className="h-6 w-full rounded border border-border bg-secondary px-1.5 text-[11px] text-muted-foreground" />
+      </Secao>
+    );
+
+  if (camada.tipo === "forma")
+    return (
+      <Secao titulo={`Forma · ${nome}`}>
+        <p className="text-[11px] text-muted-foreground">Camada de forma — sem texto. Use o painel Cor.</p>
+      </Secao>
+    );
+
+  const id = e.camadaCanvas!;
+  const patch = (fn: (c: CanvasCamadaTexto) => void, rotulo: string) =>
+    e.atualizarDocCanvas(
+      (d) => comCamadaCanvas(d, e.paginaCanvas, id, (c) => fn(c as CanvasCamadaTexto)),
+      rotulo,
+    );
+
+  return (
+    <>
+      <Secao titulo={`Texto · ${nome}`}>
+        <textarea
+          value={textoDaCamadaCanvas(camada)}
+          onChange={(ev) => {
+            const v = ev.target.value;
+            patch((c) => {
+              c.texto = v;
+              delete c.partes;
+            }, "");
+          }}
+          className="h-24 w-full resize-none rounded border border-border bg-card p-2 text-[11px] outline-none focus:ring-1 focus:ring-ring"
+        />
+        <div className="flex gap-1">
+          {(
+            [
+              ["left", AlignLeft],
+              ["center", AlignCenter],
+              ["right", AlignRight],
+            ] as const
+          ).map(([a, Icon]) => (
+            <button
+              key={a}
+              onClick={() => patch((c) => void (c.alinhamento = a), "Alinhou o texto")}
+              className={cn(
+                "grid size-6 place-items-center rounded border border-border hover:bg-secondary",
+                camada.alinhamento === a ? "bg-primary text-primary-foreground" : "bg-card",
+              )}
+            >
+              <Icon className="size-3" />
+            </button>
+          ))}
+        </div>
+      </Secao>
+      <Secao titulo="Tipografia">
+        <Campo rotulo="Fonte">
+          <input
+            className={inputCls}
+            value={camada.fonte ?? ""}
+            placeholder="herdada"
+            onChange={(ev) => {
+              const v = ev.target.value;
+              patch((c) => {
+                if (v) c.fonte = v;
+                else delete c.fonte;
+              }, "");
+            }}
+          />
+        </Campo>
+        <Campo rotulo="Peso">
+          <input
+            type="number"
+            step={100}
+            min={100}
+            max={900}
+            className={inputCls}
+            value={camada.peso ?? 400}
+            onChange={(ev) => patch((c) => void (c.peso = Number(ev.target.value)), "")}
+          />
+        </Campo>
+        <Campo rotulo="Tamanho">
+          <input
+            type="number"
+            className={inputCls}
+            value={camada.tamanho ?? 16}
+            onChange={(ev) => patch((c) => void (c.tamanho = Number(ev.target.value)), "")}
+          />
+        </Campo>
+        <Campo rotulo="Entrelinha (px)">
+          <input
+            type="number"
+            className={inputCls}
+            value={camada.entrelinha ?? camada.tamanho ?? 16}
+            onChange={(ev) => patch((c) => void (c.entrelinha = Number(ev.target.value)), "")}
+          />
+        </Campo>
+        <Campo rotulo="Entre letras (px)">
+          <input
+            type="number"
+            step="0.1"
+            className={inputCls}
+            value={camada.entreLetras ?? 0}
+            onChange={(ev) => patch((c) => void (c.entreLetras = Number(ev.target.value)), "")}
+          />
+        </Campo>
+      </Secao>
+    </>
+  );
+}
+
+function TextPanelFluxo() {
   const e = useEstudio();
   const alvo = useAlvo();
   const s = e.doc.estilos[alvo] ?? {};
@@ -221,6 +365,81 @@ export function TextPanel() {
 
 /* cor e preenchimento */
 export function ColorPanel() {
+  const e = useEstudio();
+  if (e.docCanvas) return <ColorPanelCanvas />;
+  if (e.docHtml)
+    return (
+      <Secao titulo="Cor">
+        <p className="text-[11px] text-muted-foreground">Preview em HTML, somente leitura.</p>
+      </Secao>
+    );
+  return <ColorPanelFluxo />;
+}
+
+function ColorPanelCanvas() {
+  const e = useEstudio();
+  const paleta = paletaPorSistema[e.sistemaAtivo] ?? paletaProjeto;
+  const achado = acharCamadaCanvas(e.docCanvas, e.paginaCanvas, e.camadaCanvas);
+
+  if (!achado || achado.camada.tipo === "imagem")
+    return (
+      <Secao titulo="Cor">
+        <p className="text-[11px] text-muted-foreground">
+          {achado ? "Camada de imagem — sem cor nesta etapa." : "Selecione uma camada de texto ou forma."}
+        </p>
+      </Secao>
+    );
+
+  const camada = achado.camada as CanvasCamadaTexto | CanvasCamadaForma;
+  const id = e.camadaCanvas!;
+  const patch = (fn: (c: CanvasCamadaTexto | CanvasCamadaForma) => void, rotulo: string) =>
+    e.atualizarDocCanvas(
+      (d) => comCamadaCanvas(d, e.paginaCanvas, id, (c) => fn(c as CanvasCamadaTexto | CanvasCamadaForma)),
+      rotulo,
+    );
+  const pintar = (c: string) => patch((x) => void (x.cor = c), `Pintou ${camada.nome ?? camada.tipo}`);
+
+  return (
+    <>
+      <Secao titulo={`${camada.tipo === "texto" ? "Cor do texto" : "Preenchimento"} · ${camada.nome ?? camada.tipo}`}>
+        <div className="grid grid-cols-6 gap-1.5">
+          {[...paleta, ...paletaProjeto].slice(0, 12).map((c, i) => (
+            <button
+              key={`${c}-${i}`}
+              onClick={() => pintar(c)}
+              className="size-7 rounded border border-border"
+              style={{ background: c }}
+            />
+          ))}
+        </div>
+        <Campo rotulo="Amostra livre">
+          <input
+            type="color"
+            className={cn(inputCls, "p-0")}
+            value={/^#/.test(camada.cor ?? "") ? (camada.cor as string) : "#000000"}
+            onChange={(ev) => pintar(ev.target.value)}
+          />
+        </Campo>
+        <button
+          onClick={() => patch((c) => void delete c.cor, "Limpou a cor")}
+          className="h-6 w-full rounded border border-border bg-card text-[11px] hover:bg-secondary"
+        >
+          Limpar cor
+        </button>
+      </Secao>
+      <Secao titulo={`Opacidade · ${Math.round((camada.opacidade ?? 1) * 100)}%`}>
+        <Slider
+          value={[Math.round((camada.opacidade ?? 1) * 100)]}
+          max={100}
+          step={1}
+          onValueChange={(v) => patch((c) => void (c.opacidade = (v[0] ?? 100) / 100), "")}
+        />
+      </Secao>
+    </>
+  );
+}
+
+function ColorPanelFluxo() {
   const e = useEstudio();
   const alvo = useAlvo();
   const s = e.doc.estilos[alvo] ?? {};
