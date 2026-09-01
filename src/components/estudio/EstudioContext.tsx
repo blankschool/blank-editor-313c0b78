@@ -211,7 +211,7 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
 
   const modoEdicao = secao === "editar";
   const painelEdicao = (modoEdicao ? ((sub || "texto") as PainelEdicao) : null) as PainelEdicao;
-  const painelDireito: PainelDireito = modoEdicao ? "props" : (painelPorSlug[secao] ?? null);
+  const painelDireito: PainelDireito = painelPorSlug[secao] ?? null;
   const apresentando = secao === "apresentar";
 
   /* ---------- sessão ---------- */
@@ -545,6 +545,8 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
         void navigate({ to: "/biblioteca" });
         return;
       }
+      setBibliotecaAberta(false);
+      setConversaAberta(false);
       void navigate({ to: "/d/$designId", params: { designId: id } });
     },
     [navigate],

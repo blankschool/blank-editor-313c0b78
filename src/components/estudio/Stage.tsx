@@ -395,7 +395,7 @@ export function Stage() {
           onClick={() => {
             const proximo = !e.modoEdicao;
             if (proximo) {
-              e.setSelecionado(e.selecionado ?? "titulo");
+              if (!e.docCanvas && !e.docHtml && !e.selecionado) e.setSelecionado("titulo");
               e.setPainelEdicao("texto");
             } else {
               e.setModoEdicao(false);
