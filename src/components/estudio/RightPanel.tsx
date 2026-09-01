@@ -1,6 +1,7 @@
+import type { ReactNode } from "react";
+import { Link } from "@tanstack/react-router";
 import { Settings2, Layers, History, MessageSquare, Code2, X, Check } from "lucide-react";
-import { useEstudio, type PainelDireito } from "./EstudioContext";
-import { LayersPanel, PropsPanel, TextPanel, ColorPanel, LayoutPanel } from "./EditPanels";
+import { useEstudio, slugPainel, type PainelDireito } from "./EstudioContext";
 import { historico, mapaCodigo, versoes } from "@/lib/estudio-mock";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
@@ -13,42 +14,60 @@ const guias: { id: Exclude<PainelDireito, null>; icone: typeof Settings2; titulo
   { id: "codigo", icone: Code2, titulo: "Código" },
 ];
 
-export function RightPanel() {
+/* trilho de ícones — sempre visível; cada painel é uma rota */
+export function PanelRail() {
+  const e = useEstudio();
+
+  return (
+    <nav
+      aria-label="Painéis"
+      className="flex w-10 shrink-0 flex-col items-center gap-1 border-l border-border bg-sidebar py-2"
+    >
+      {guias.map((g) => {
+        const ativo = e.painelDireito === g.id;
+        return ativo ? (
+          <Link
+            key={g.id}
+            title={g.titulo}
+            to="/d/$designId"
+            params={{ designId: e.abaAtiva }}
+            className="grid size-7 place-items-center rounded-md bg-primary text-primary-foreground"
+          >
+            <g.icone className="size-3.5" />
+          </Link>
+        ) : (
+          <Link
+            key={g.id}
+            title={g.titulo}
+            to="/d/$designId/$painel"
+            params={{ designId: e.abaAtiva, painel: slugPainel[g.id] }}
+            className="grid size-7 place-items-center rounded-md hover:bg-secondary"
+          >
+            <g.icone className="size-3.5" />
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
+
+export function PanelSurface({ titulo, children }: { titulo: string; children: ReactNode }) {
   const e = useEstudio();
 
   return (
     <aside className="flex w-[280px] shrink-0 flex-col border-l border-border bg-sidebar">
-      <div className="flex h-9 shrink-0 items-center gap-0.5 border-b border-border px-1.5">
-        {guias.map((g) => (
-          <button
-            key={g.id}
-            title={g.titulo}
-            onClick={() => e.setPainelDireito(g.id)}
-            className={cn(
-              "grid size-7 place-items-center rounded-md",
-              e.painelDireito === g.id ? "bg-primary text-primary-foreground" : "hover:bg-secondary",
-            )}
-          >
-            <g.icone className="size-3.5" />
-          </button>
-        ))}
+      <div className="flex h-9 shrink-0 items-center justify-between border-b border-border px-3">
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{titulo}</p>
+        <Link
+          to="/d/$designId"
+          params={{ designId: e.abaAtiva }}
+          title="Fechar painel"
+          className="grid size-6 place-items-center rounded hover:bg-secondary"
+        >
+          <X className="size-3.5" />
+        </Link>
       </div>
-
-      <ScrollArea className="flex-1">
-        {e.painelDireito === "props" && (
-          <>
-            {e.modoEdicao && e.painelEdicao === "texto" && <TextPanel />}
-            {e.modoEdicao && e.painelEdicao === "cor" && <ColorPanel />}
-            {e.modoEdicao && e.painelEdicao === "layout" && <LayoutPanel />}
-            {e.modoEdicao && e.painelEdicao === "estrutura" && <LayersPanel />}
-            {(!e.modoEdicao || !e.painelEdicao) && <PropsPanel />}
-          </>
-        )}
-        {e.painelDireito === "camadas" && <LayersPanel />}
-        {e.painelDireito === "versoes" && <VersoesPanel />}
-        {e.painelDireito === "comentarios" && <ComentariosPanel />}
-        {e.painelDireito === "codigo" && <CodigoPanel />}
-      </ScrollArea>
+      <ScrollArea className="flex-1">{children}</ScrollArea>
     </aside>
   );
 }
@@ -63,7 +82,7 @@ function Bloco({ titulo, children }: { titulo: string; children: React.ReactNode
 }
 
 /* 1k — versões e histórico */
-function VersoesPanel() {
+export function VersoesPanel() {
   return (
     <>
       <Bloco titulo="Versões deste design">
@@ -110,7 +129,7 @@ function VersoesPanel() {
 }
 
 /* 1l — comentários */
-function ComentariosPanel() {
+export function ComentariosPanel() {
   const e = useEstudio();
   const lista = e.comentarios.filter((c) => (e.filtroComentarios === "abertos" ? !c.resolvido : c.resolvido));
 
@@ -175,7 +194,7 @@ function ComentariosPanel() {
 }
 
 /* 1o — código e sincronização */
-function CodigoPanel() {
+export function CodigoPanel() {
   return (
     <>
       <Bloco titulo="Repositório conectado">
