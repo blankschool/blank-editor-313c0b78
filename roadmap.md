@@ -8,12 +8,12 @@
 - [x] trilho: ativo só pela rota; reclique fecha
 
 ## Handles + imagem no placeholder (2026-09-01)
-- [ ] cover/contain: imagem nunca achatada (upload, resize, seeds)
-- [ ] modo recorte: arrastar e zoom da foto dentro da moldura
-- [ ] alças com hit area 20px, cursor por posição, alça de rotação isolada
-- [ ] rotação no modelo (`rotacao`) + inspector Pro
-- [ ] alças também no texto
-- [ ] ícone de "virar placeholder" trocado (sai o Frame/grid)
+- [x] cover/contain: imagem nunca achatada (upload, resize, seeds)
+- [x] modo recorte: arrastar e zoom da foto dentro da moldura
+- [x] alças com hit area 20px, cursor por posição, alça de rotação isolada
+- [x] rotação no modelo (`rotacao`) + inspector Pro
+- [x] alças também no texto
+- [x] ícone de "virar placeholder" trocado (sai o Frame/grid)
 
 ## Canvas ↔ preview HTML real (pedido 2026-09-01 16:46)
 - [ ] rota que renderiza o canvas como HTML real (mesmas camadas/posições)
