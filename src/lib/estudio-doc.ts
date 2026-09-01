@@ -106,9 +106,35 @@ export function docPadrao(nome: string): DesignDoc {
   };
 }
 
-export function clonarDoc(d: DesignDoc): DesignDoc {
-  return JSON.parse(JSON.stringify(d)) as DesignDoc;
+export function clonarDoc<T>(d: T): T {
+  return JSON.parse(JSON.stringify(d)) as T;
 }
+
+/* --------- documento de preview em HTML (sem edição) --------- */
+
+export interface DocHtml {
+  kind: "html";
+  src: string;
+}
+
+export type DocSalvo = DesignDoc | DocHtml;
+
+export function ehDocHtml(d: unknown): d is DocHtml {
+  return (
+    !!d &&
+    typeof d === "object" &&
+    (d as { kind?: unknown }).kind === "html" &&
+    typeof (d as { src?: unknown }).src === "string"
+  );
+}
+
+export const previewsHtml = {
+  agrum: { nome: "Agrum Eleição", src: "/previews/agrum-eleicao/index.html" },
+  barretos: { nome: "Barretos", src: "/previews/barretos/index.html" },
+} as const;
+
+export type PresetNovo = "branco" | keyof typeof previewsHtml;
+
 
 export function comEstilo(doc: DesignDoc, el: ElId, patch: Partial<EstiloEl>): DesignDoc {
   return { ...doc, estilos: { ...doc.estilos, [el]: { ...(doc.estilos[el] ?? {}), ...patch } } };
