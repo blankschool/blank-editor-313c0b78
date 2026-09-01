@@ -22,6 +22,8 @@ import {
   Square,
   Underline,
   Strikethrough,
+  ImagePlus,
+  Loader2,
 } from "lucide-react";
 import { useEstudio } from "./EstudioContext";
 import { Slider } from "@/components/ui/slider";
@@ -46,6 +48,12 @@ import {
   paletaProjeto,
   rotuloEl,
   textoDaCamadaCanvas,
+  partesDaCamadaCanvas,
+  aplicarEstiloEmTrecho,
+  estiloDoTrecho,
+  substituirTextoPreservandoPartes,
+  virarPlaceholderImagem,
+  type CanvasParteTexto,
   type CanvasCamada,
   type CanvasCamadaForma,
   type CanvasCamadaImagem,
@@ -57,6 +65,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { enviarImagemCanvas } from "@/lib/estudio-db";
+import { offsetsDaSelecao, partesParaHtml, restaurarOffsets, textoDoElemento } from "@/lib/texto-rico";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -1680,6 +1689,170 @@ function PropsPanelFluxo() {
           </button>
         </div>
       </Secao>
+    </>
+  );
+}
+
+
+/* ---- conteúdo com trechos formatáveis (canvas) ---- */
+type EstiloTrecho = { [K in keyof Omit<CanvasParteTexto, "texto">]?: CanvasParteTexto[K] | undefined };
+
+function ConteudoRico({
+  camada,
+  onTexto,
+  onTrecho,
+}: {
+  camada: CanvasCamadaTexto;
+  onTexto: (v: string) => void;
+  onTrecho: (inicio: number, fim: number, est: EstiloTrecho, rotulo: string) => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const digitando = useRef(false);
+  const [sel, setSel] = useState<{ inicio: number; fim: number } | null>(null);
+  const html = partesParaHtml(partesDaCamadaCanvas(camada));
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    if (digitando.current) {
+      digitando.current = false;
+      return;
+    }
+    if (el.innerHTML === html) return;
+    const s = offsetsDaSelecao(el);
+    el.innerHTML = html;
+    if (s && document.activeElement === el) restaurarOffsets(el, s.inicio, s.fim);
+  }, [html]);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const onSel = () => {
+      if (document.activeElement === el) setSel(offsetsDaSelecao(el));
+    };
+    document.addEventListener("selectionchange", onSel);
+    return () => document.removeEventListener("selectionchange", onSel);
+  }, []);
+
+  const temTrecho = !!(sel && sel.fim > sel.inicio);
+  const est = temTrecho ? estiloDoTrecho(camada, sel!.inicio, sel!.fim) : {};
+  const aplicar = (patch: EstiloTrecho, rotulo: string) => {
+    if (!temTrecho) return;
+    onTrecho(sel!.inicio, sel!.fim, patch, rotulo);
+  };
+
+  return (
+    <>
+      <div
+        ref={ref}
+        contentEditable
+        suppressContentEditableWarning
+        spellCheck={false}
+        onInput={() => {
+          const el = ref.current;
+          if (!el) return;
+          digitando.current = true;
+          onTexto(textoDoElemento(el));
+        }}
+        className="min-h-20 w-full whitespace-pre-wrap rounded border border-border bg-card p-2 text-[11px] outline-none focus:ring-1 focus:ring-ring"
+      />
+      <div className="flex items-center gap-1">
+        {(
+          [
+            ["Negrito", Bold, () => ({ peso: est.peso === 700 ? undefined : 700 }), est.peso === 700],
+            ["Itálico", Italic, () => ({ italico: est.italico ? undefined : true }), !!est.italico],
+            ["Sublinhado", Underline, () => ({ sublinhado: est.sublinhado ? undefined : true }), !!est.sublinhado],
+            ["Riscado", Strikethrough, () => ({ riscado: est.riscado ? undefined : true }), !!est.riscado],
+          ] as const
+        ).map(([titulo, Icon, calc, ativo]) => (
+          <button
+            key={titulo}
+            title={`${titulo} no trecho selecionado`}
+            disabled={!temTrecho}
+            onMouseDown={(ev) => ev.preventDefault()}
+            onClick={() => aplicar(calc(), `Aplicou ${titulo.toLowerCase()} no trecho`)}
+            className={cn(
+              "grid size-6 place-items-center rounded border border-border hover:bg-secondary disabled:opacity-40",
+              ativo ? "bg-primary text-primary-foreground" : "bg-card",
+            )}
+          >
+            <Icon className="size-3" />
+          </button>
+        ))}
+        <input
+          type="color"
+          title="Cor do trecho selecionado"
+          disabled={!temTrecho}
+          onMouseDown={(ev) => ev.preventDefault()}
+          value={/^#[0-9a-f]{6}$/i.test(est.cor ?? "") ? est.cor! : "#000000"}
+          onChange={(ev) => aplicar({ cor: ev.target.value }, "Pintou o trecho")}
+          className="h-6 w-10 rounded border border-border bg-card p-0 disabled:opacity-40"
+        />
+        <span className="ml-1 text-[10px] text-muted-foreground">
+          {temTrecho ? "trecho selecionado" : "selecione um trecho"}
+        </span>
+      </div>
+    </>
+  );
+}
+
+/* ---- imagem da camada: enviar, trocar, virar placeholder ---- */
+function ImagemDaCamada({
+  src,
+  onEscolher,
+  onLimpar,
+}: {
+  src?: string | undefined;
+  onEscolher: (url: string) => void;
+  onLimpar?: (() => void) | undefined;
+}) {
+  const [ocupado, setOcupado] = useState(false);
+  const input = useRef<HTMLInputElement>(null);
+  return (
+    <>
+      <input
+        ref={input}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={async (ev) => {
+          const f = ev.target.files?.[0];
+          ev.target.value = "";
+          if (!f) return;
+          setOcupado(true);
+          try {
+            onEscolher(await enviarImagemCanvas(f));
+            toast.success("Imagem aplicada.");
+          } catch (err) {
+            toast.error(err instanceof Error ? err.message : "Falha ao enviar a imagem.");
+          } finally {
+            setOcupado(false);
+          }
+        }}
+      />
+      <input
+        readOnly
+        value={src ?? "sem imagem (placeholder)"}
+        className="h-6 w-full rounded border border-border bg-secondary px-1.5 text-[11px] text-muted-foreground"
+      />
+      <div className="grid grid-cols-2 gap-1">
+        <button
+          disabled={ocupado}
+          onClick={() => input.current?.click()}
+          className="flex h-6 items-center justify-center gap-1 rounded border border-border bg-card text-[11px] hover:bg-secondary disabled:opacity-50"
+        >
+          {ocupado ? <Loader2 className="size-3 animate-spin" /> : <ImagePlus className="size-3" />}
+          {src ? "Trocar imagem" : "Enviar imagem"}
+        </button>
+        {onLimpar && (
+          <button
+            onClick={onLimpar}
+            className="h-6 rounded border border-border bg-card text-[11px] hover:bg-secondary"
+          >
+            Virar placeholder
+          </button>
+        )}
+      </div>
     </>
   );
 }
