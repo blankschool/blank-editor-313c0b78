@@ -20,7 +20,7 @@ export const canvasBarretos: DocCanvas = {
           "y": -144.13,
           "w": 1188,
           "h": 1584,
-          "src": "/previews/barretos/assets/01-bg-stadium.jpg",
+          "src": "https://sites-blank-editor-supabase.ickanz.easypanel.host/storage/v1/object/public/templates/barretos/01-bg-stadium.jpg",
           "img": {
             "x": 0,
             "y": 0,
@@ -37,7 +37,7 @@ export const canvasBarretos: DocCanvas = {
           "w": 334.16,
           "h": 334.16,
           "raio": 9999,
-          "src": "/previews/barretos/assets/02-circle-1955-photo.jpg",
+          "src": "https://sites-blank-editor-supabase.ickanz.easypanel.host/storage/v1/object/public/templates/barretos/02-circle-1955-photo.jpg",
           "img": {
             "x": -201.41,
             "y": -145.66,
@@ -68,7 +68,7 @@ export const canvasBarretos: DocCanvas = {
           "w": 334.16,
           "h": 334.16,
           "raio": 9999,
-          "src": "/previews/barretos/assets/03-circle-festa-logo.jpg",
+          "src": "https://sites-blank-editor-supabase.ickanz.easypanel.host/storage/v1/object/public/templates/barretos/03-circle-festa-logo.jpg",
           "img": {
             "x": -294.23,
             "y": -282.23,
@@ -98,7 +98,7 @@ export const canvasBarretos: DocCanvas = {
           "y": -144.13,
           "w": 1188,
           "h": 1584,
-          "src": "/previews/barretos/assets/04-woman-cutout.png",
+          "src": "https://sites-blank-editor-supabase.ickanz.easypanel.host/storage/v1/object/public/templates/barretos/04-woman-cutout.png",
           "img": {
             "x": 0,
             "y": 0,
@@ -114,7 +114,7 @@ export const canvasBarretos: DocCanvas = {
           "y": 580.65,
           "w": 2076,
           "h": 892,
-          "src": "/previews/barretos/assets/05-gradient-scrim.png",
+          "src": "https://sites-blank-editor-supabase.ickanz.easypanel.host/storage/v1/object/public/templates/barretos/05-gradient-scrim.png",
           "img": {
             "x": 0,
             "y": 0,
@@ -221,7 +221,7 @@ export const canvasAgrum: DocCanvas = {
           "w": 1080.64,
           "h": 1440.2,
           "opacidade": 0.9,
-          "src": "/previews/agrum-eleicao/assets/img207.jpg",
+          "src": "https://sites-blank-editor-supabase.ickanz.easypanel.host/storage/v1/object/public/templates/agrum-eleicao/img207.jpg",
           "img": {
             "x": -256.64,
             "y": -113.8,
@@ -237,7 +237,7 @@ export const canvasAgrum: DocCanvas = {
           "y": 580.65,
           "w": 1080.64,
           "h": 859.67,
-          "src": "/previews/agrum-eleicao/assets/img210.png",
+          "src": "https://sites-blank-editor-supabase.ickanz.easypanel.host/storage/v1/object/public/templates/agrum-eleicao/img210.png",
           "img": {
             "x": -497.45,
             "y": 0,
@@ -353,7 +353,7 @@ export const canvasAgrum: DocCanvas = {
           "w": 1080.64,
           "h": 1440.64,
           "opacidade": 0.9,
-          "src": "/previews/agrum-eleicao/assets/img222.jpg",
+          "src": "https://sites-blank-editor-supabase.ickanz.easypanel.host/storage/v1/object/public/templates/agrum-eleicao/img222.jpg",
           "img": {
             "x": -403.35,
             "y": -82.23,
@@ -369,7 +369,7 @@ export const canvasAgrum: DocCanvas = {
           "y": 580.65,
           "w": 1080.64,
           "h": 859.67,
-          "src": "/previews/agrum-eleicao/assets/img225.png",
+          "src": "https://sites-blank-editor-supabase.ickanz.easypanel.host/storage/v1/object/public/templates/agrum-eleicao/img225.png",
           "img": {
             "x": -497.45,
             "y": 0,
@@ -386,7 +386,7 @@ export const canvasAgrum: DocCanvas = {
           "y": 580.65,
           "w": 1080.64,
           "h": 859.67,
-          "src": "/previews/agrum-eleicao/assets/img225.png",
+          "src": "https://sites-blank-editor-supabase.ickanz.easypanel.host/storage/v1/object/public/templates/agrum-eleicao/img225.png",
           "img": {
             "x": -497.45,
             "y": 0,
@@ -403,7 +403,7 @@ export const canvasAgrum: DocCanvas = {
           "y": 587.3,
           "w": 1080.64,
           "h": 853.02,
-          "src": "/previews/agrum-eleicao/assets/img225.png",
+          "src": "https://sites-blank-editor-supabase.ickanz.easypanel.host/storage/v1/object/public/templates/agrum-eleicao/img225.png",
           "img": {
             "x": -497.45,
             "y": 0,
@@ -564,7 +564,7 @@ export const canvasAgrum: DocCanvas = {
           "w": 1080.64,
           "h": 1440.27,
           "opacidade": 0.9,
-          "src": "/previews/agrum-eleicao/assets/img239.jpg",
+          "src": "https://sites-blank-editor-supabase.ickanz.easypanel.host/storage/v1/object/public/templates/agrum-eleicao/img239.jpg",
           "img": {
             "x": -467.5,
             "y": -290.73,
@@ -580,7 +580,7 @@ export const canvasAgrum: DocCanvas = {
           "y": 580.65,
           "w": 1080.64,
           "h": 859.67,
-          "src": "/previews/agrum-eleicao/assets/img242.png",
+          "src": "https://sites-blank-editor-supabase.ickanz.easypanel.host/storage/v1/object/public/templates/agrum-eleicao/img242.png",
           "img": {
             "x": -497.45,
             "y": 0,
@@ -597,7 +597,7 @@ export const canvasAgrum: DocCanvas = {
           "y": 580.65,
           "w": 1080.64,
           "h": 859.67,
-          "src": "/previews/agrum-eleicao/assets/img242.png",
+          "src": "https://sites-blank-editor-supabase.ickanz.easypanel.host/storage/v1/object/public/templates/agrum-eleicao/img242.png",
           "img": {
             "x": -497.45,
             "y": 0,
@@ -614,7 +614,7 @@ export const canvasAgrum: DocCanvas = {
           "y": 587.3,
           "w": 1080.64,
           "h": 853.02,
-          "src": "/previews/agrum-eleicao/assets/img242.png",
+          "src": "https://sites-blank-editor-supabase.ickanz.easypanel.host/storage/v1/object/public/templates/agrum-eleicao/img242.png",
           "img": {
             "x": -497.45,
             "y": 0,
@@ -789,7 +789,7 @@ export const canvasAgrum: DocCanvas = {
           "w": 1080.64,
           "h": 1440.64,
           "opacidade": 0.9,
-          "src": "/previews/agrum-eleicao/assets/img256.jpg",
+          "src": "https://sites-blank-editor-supabase.ickanz.easypanel.host/storage/v1/object/public/templates/agrum-eleicao/img256.jpg",
           "img": {
             "x": -214.74,
             "y": -76.59,
@@ -805,7 +805,7 @@ export const canvasAgrum: DocCanvas = {
           "y": 580.65,
           "w": 1080.64,
           "h": 859.67,
-          "src": "/previews/agrum-eleicao/assets/img259.png",
+          "src": "https://sites-blank-editor-supabase.ickanz.easypanel.host/storage/v1/object/public/templates/agrum-eleicao/img259.png",
           "img": {
             "x": -497.45,
             "y": 0,
@@ -822,7 +822,7 @@ export const canvasAgrum: DocCanvas = {
           "y": 580.65,
           "w": 1080.64,
           "h": 859.67,
-          "src": "/previews/agrum-eleicao/assets/img259.png",
+          "src": "https://sites-blank-editor-supabase.ickanz.easypanel.host/storage/v1/object/public/templates/agrum-eleicao/img259.png",
           "img": {
             "x": -497.45,
             "y": 0,
@@ -839,7 +839,7 @@ export const canvasAgrum: DocCanvas = {
           "y": 580.65,
           "w": 1080.64,
           "h": 859.67,
-          "src": "/previews/agrum-eleicao/assets/img259.png",
+          "src": "https://sites-blank-editor-supabase.ickanz.easypanel.host/storage/v1/object/public/templates/agrum-eleicao/img259.png",
           "img": {
             "x": -497.45,
             "y": 0,
@@ -856,7 +856,7 @@ export const canvasAgrum: DocCanvas = {
           "y": 587.3,
           "w": 1080.64,
           "h": 853.02,
-          "src": "/previews/agrum-eleicao/assets/img259.png",
+          "src": "https://sites-blank-editor-supabase.ickanz.easypanel.host/storage/v1/object/public/templates/agrum-eleicao/img259.png",
           "img": {
             "x": -497.45,
             "y": 0,
@@ -1124,7 +1124,7 @@ export const canvasAgrum: DocCanvas = {
           "y": 301.56,
           "w": 667,
           "h": 548,
-          "src": "/previews/agrum-eleicao/assets/img62.jpg",
+          "src": "https://sites-blank-editor-supabase.ickanz.easypanel.host/storage/v1/object/public/templates/agrum-eleicao/img62.jpg",
           "img": {
             "x": 0,
             "y": -2.61,
@@ -1313,7 +1313,7 @@ export const canvasAgrum: DocCanvas = {
           "w": 1080.64,
           "h": 1440,
           "opacidade": 0.9,
-          "src": "/previews/agrum-eleicao/assets/img284.jpg",
+          "src": "https://sites-blank-editor-supabase.ickanz.easypanel.host/storage/v1/object/public/templates/agrum-eleicao/img284.jpg",
           "img": {
             "x": -740.7,
             "y": 0,
@@ -1329,7 +1329,7 @@ export const canvasAgrum: DocCanvas = {
           "y": 580.65,
           "w": 1080.64,
           "h": 859.67,
-          "src": "/previews/agrum-eleicao/assets/img287.png",
+          "src": "https://sites-blank-editor-supabase.ickanz.easypanel.host/storage/v1/object/public/templates/agrum-eleicao/img287.png",
           "img": {
             "x": -497.45,
             "y": 0,
@@ -1346,7 +1346,7 @@ export const canvasAgrum: DocCanvas = {
           "y": 580.65,
           "w": 1080.64,
           "h": 859.67,
-          "src": "/previews/agrum-eleicao/assets/img287.png",
+          "src": "https://sites-blank-editor-supabase.ickanz.easypanel.host/storage/v1/object/public/templates/agrum-eleicao/img287.png",
           "img": {
             "x": -497.45,
             "y": 0,
@@ -1363,7 +1363,7 @@ export const canvasAgrum: DocCanvas = {
           "y": 580.65,
           "w": 1080.64,
           "h": 859.67,
-          "src": "/previews/agrum-eleicao/assets/img287.png",
+          "src": "https://sites-blank-editor-supabase.ickanz.easypanel.host/storage/v1/object/public/templates/agrum-eleicao/img287.png",
           "img": {
             "x": -497.45,
             "y": 0,
@@ -1380,7 +1380,7 @@ export const canvasAgrum: DocCanvas = {
           "y": 587.3,
           "w": 1080.64,
           "h": 853.02,
-          "src": "/previews/agrum-eleicao/assets/img287.png",
+          "src": "https://sites-blank-editor-supabase.ickanz.easypanel.host/storage/v1/object/public/templates/agrum-eleicao/img287.png",
           "img": {
             "x": -497.45,
             "y": 0,
@@ -1598,7 +1598,7 @@ export const canvasAgrum: DocCanvas = {
           "w": 1080.64,
           "h": 1440.2,
           "opacidade": 0.9,
-          "src": "/previews/agrum-eleicao/assets/img303.jpg",
+          "src": "https://sites-blank-editor-supabase.ickanz.easypanel.host/storage/v1/object/public/templates/agrum-eleicao/img303.jpg",
           "img": {
             "x": -263.67,
             "y": -113.8,
@@ -1614,7 +1614,7 @@ export const canvasAgrum: DocCanvas = {
           "y": 580.65,
           "w": 1080.64,
           "h": 859.67,
-          "src": "/previews/agrum-eleicao/assets/img306.png",
+          "src": "https://sites-blank-editor-supabase.ickanz.easypanel.host/storage/v1/object/public/templates/agrum-eleicao/img306.png",
           "img": {
             "x": -497.45,
             "y": 0,
@@ -1631,7 +1631,7 @@ export const canvasAgrum: DocCanvas = {
           "y": 580.65,
           "w": 1080.64,
           "h": 859.67,
-          "src": "/previews/agrum-eleicao/assets/img306.png",
+          "src": "https://sites-blank-editor-supabase.ickanz.easypanel.host/storage/v1/object/public/templates/agrum-eleicao/img306.png",
           "img": {
             "x": -497.45,
             "y": 0,
@@ -1648,7 +1648,7 @@ export const canvasAgrum: DocCanvas = {
           "y": 580.65,
           "w": 1080.64,
           "h": 859.67,
-          "src": "/previews/agrum-eleicao/assets/img306.png",
+          "src": "https://sites-blank-editor-supabase.ickanz.easypanel.host/storage/v1/object/public/templates/agrum-eleicao/img306.png",
           "img": {
             "x": -497.45,
             "y": 0,
@@ -1665,7 +1665,7 @@ export const canvasAgrum: DocCanvas = {
           "y": 587.3,
           "w": 1080.64,
           "h": 853.02,
-          "src": "/previews/agrum-eleicao/assets/img306.png",
+          "src": "https://sites-blank-editor-supabase.ickanz.easypanel.host/storage/v1/object/public/templates/agrum-eleicao/img306.png",
           "img": {
             "x": -497.45,
             "y": 0,
@@ -1682,7 +1682,7 @@ export const canvasAgrum: DocCanvas = {
           "y": 603.3,
           "w": 1080.64,
           "h": 837.02,
-          "src": "/previews/agrum-eleicao/assets/img306.png",
+          "src": "https://sites-blank-editor-supabase.ickanz.easypanel.host/storage/v1/object/public/templates/agrum-eleicao/img306.png",
           "img": {
             "x": -481.45,
             "y": 0,
@@ -1874,7 +1874,7 @@ export const canvasAgrum: DocCanvas = {
           "y": 0,
           "w": 1079.65,
           "h": 1439.86,
-          "src": "/previews/agrum-eleicao/assets/img86.png",
+          "src": "https://sites-blank-editor-supabase.ickanz.easypanel.host/storage/v1/object/public/templates/agrum-eleicao/img86.png",
           "img": {
             "x": -993.53,
             "y": -403.14,
@@ -1890,7 +1890,7 @@ export const canvasAgrum: DocCanvas = {
           "y": 580.65,
           "w": 1080.64,
           "h": 859.67,
-          "src": "/previews/agrum-eleicao/assets/img324.png",
+          "src": "https://sites-blank-editor-supabase.ickanz.easypanel.host/storage/v1/object/public/templates/agrum-eleicao/img324.png",
           "img": {
             "x": -497.45,
             "y": 0,
@@ -1907,7 +1907,7 @@ export const canvasAgrum: DocCanvas = {
           "y": 580.65,
           "w": 1080.64,
           "h": 859.67,
-          "src": "/previews/agrum-eleicao/assets/img324.png",
+          "src": "https://sites-blank-editor-supabase.ickanz.easypanel.host/storage/v1/object/public/templates/agrum-eleicao/img324.png",
           "img": {
             "x": -497.45,
             "y": 0,
@@ -1924,7 +1924,7 @@ export const canvasAgrum: DocCanvas = {
           "y": 580.65,
           "w": 1080.64,
           "h": 859.67,
-          "src": "/previews/agrum-eleicao/assets/img324.png",
+          "src": "https://sites-blank-editor-supabase.ickanz.easypanel.host/storage/v1/object/public/templates/agrum-eleicao/img324.png",
           "img": {
             "x": -497.45,
             "y": 0,
@@ -1941,7 +1941,7 @@ export const canvasAgrum: DocCanvas = {
           "y": 587.3,
           "w": 1080.64,
           "h": 853.02,
-          "src": "/previews/agrum-eleicao/assets/img324.png",
+          "src": "https://sites-blank-editor-supabase.ickanz.easypanel.host/storage/v1/object/public/templates/agrum-eleicao/img324.png",
           "img": {
             "x": -497.45,
             "y": 0,
@@ -1958,7 +1958,7 @@ export const canvasAgrum: DocCanvas = {
           "y": 603.3,
           "w": 1080.64,
           "h": 837.02,
-          "src": "/previews/agrum-eleicao/assets/img324.png",
+          "src": "https://sites-blank-editor-supabase.ickanz.easypanel.host/storage/v1/object/public/templates/agrum-eleicao/img324.png",
           "img": {
             "x": -481.45,
             "y": 0,
@@ -2330,7 +2330,7 @@ export const canvasAgrum: DocCanvas = {
           "y": 0,
           "w": 1080,
           "h": 1440,
-          "src": "/previews/agrum-eleicao/assets/img101.jpg",
+          "src": "https://sites-blank-editor-supabase.ickanz.easypanel.host/storage/v1/object/public/templates/agrum-eleicao/img101.jpg",
           "img": {
             "x": -724.6,
             "y": 0,
@@ -2346,7 +2346,7 @@ export const canvasAgrum: DocCanvas = {
           "y": 580.65,
           "w": 1080.64,
           "h": 859.67,
-          "src": "/previews/agrum-eleicao/assets/img349.png",
+          "src": "https://sites-blank-editor-supabase.ickanz.easypanel.host/storage/v1/object/public/templates/agrum-eleicao/img349.png",
           "img": {
             "x": -497.45,
             "y": 0,
@@ -2363,7 +2363,7 @@ export const canvasAgrum: DocCanvas = {
           "y": 580.65,
           "w": 1080.64,
           "h": 859.67,
-          "src": "/previews/agrum-eleicao/assets/img349.png",
+          "src": "https://sites-blank-editor-supabase.ickanz.easypanel.host/storage/v1/object/public/templates/agrum-eleicao/img349.png",
           "img": {
             "x": -497.45,
             "y": 0,
@@ -2380,7 +2380,7 @@ export const canvasAgrum: DocCanvas = {
           "y": 580.65,
           "w": 1080.64,
           "h": 859.67,
-          "src": "/previews/agrum-eleicao/assets/img349.png",
+          "src": "https://sites-blank-editor-supabase.ickanz.easypanel.host/storage/v1/object/public/templates/agrum-eleicao/img349.png",
           "img": {
             "x": -497.45,
             "y": 0,
@@ -2397,7 +2397,7 @@ export const canvasAgrum: DocCanvas = {
           "y": 587.3,
           "w": 1080.64,
           "h": 853.02,
-          "src": "/previews/agrum-eleicao/assets/img349.png",
+          "src": "https://sites-blank-editor-supabase.ickanz.easypanel.host/storage/v1/object/public/templates/agrum-eleicao/img349.png",
           "img": {
             "x": -497.45,
             "y": 0,
@@ -2414,7 +2414,7 @@ export const canvasAgrum: DocCanvas = {
           "y": 603.3,
           "w": 1080.64,
           "h": 837.02,
-          "src": "/previews/agrum-eleicao/assets/img349.png",
+          "src": "https://sites-blank-editor-supabase.ickanz.easypanel.host/storage/v1/object/public/templates/agrum-eleicao/img349.png",
           "img": {
             "x": -481.45,
             "y": 0,
@@ -2604,7 +2604,7 @@ export const canvasAgrum: DocCanvas = {
           "y": 266.86,
           "w": 864,
           "h": 439,
-          "src": "/previews/agrum-eleicao/assets/img111.jpg",
+          "src": "https://sites-blank-editor-supabase.ickanz.easypanel.host/storage/v1/object/public/templates/agrum-eleicao/img111.jpg",
           "img": {
             "x": 0,
             "y": -17.17,
@@ -2805,7 +2805,7 @@ export const canvasAgrum: DocCanvas = {
           "y": 253.58,
           "w": 864,
           "h": 466,
-          "src": "/previews/agrum-eleicao/assets/img116.png",
+          "src": "https://sites-blank-editor-supabase.ickanz.easypanel.host/storage/v1/object/public/templates/agrum-eleicao/img116.png",
           "img": {
             "x": 0,
             "y": 0,
