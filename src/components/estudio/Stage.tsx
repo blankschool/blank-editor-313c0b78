@@ -538,12 +538,13 @@ function CamadaCanvasView({
           width: c.w,
           height: c.h,
           overflow: "hidden",
-          borderRadius: c.raio,
+          borderRadius: c.raio !== undefined ? Math.min(c.raio, Math.min(c.w, c.h) / 2) : undefined,
           opacity: c.opacidade,
           boxShadow: c.sombra ? `${c.sombra.x}px ${c.sombra.y}px ${c.sombra.blur}px ${c.sombra.cor}` : undefined,
           ...marca,
         }}
         onClick={clique}
+        onDoubleClick={duplo}
         onPointerDown={onPointerDown}
         data-camada={cid}
       >
