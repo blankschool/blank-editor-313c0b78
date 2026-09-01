@@ -183,7 +183,8 @@ export interface CanvasCamadaImagem {
   y: number;
   w: number;
   h: number;
-  src: string;
+  /** vazio ou ausente = placeholder de imagem */
+  src?: string;
   img?: { x: number; y: number; w: number; h: number };
   raio?: number;
   opacidade?: number;
