@@ -919,7 +919,8 @@ function TextoEditavelPalco({
       spellCheck={false}
       style={estilo}
       data-camada={cid}
-      data-rotacao={(c as { rotacao?: number }).rotacao || undefined}
+      data-rotacao={(camada as { rotacao?: number }).rotacao || undefined}
+
       onPointerDown={(ev) => ev.stopPropagation()}
       onClick={(ev) => ev.stopPropagation()}
       onInput={() => {
