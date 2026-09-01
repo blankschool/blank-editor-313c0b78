@@ -35,7 +35,6 @@ import {
   ehDocCanvas,
   ehDocHtml,
   rotuloEl,
-  tipoEl,
   type CanvasCamada,
   type CanvasPagina,
   comCamadaCanvas,
