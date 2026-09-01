@@ -26,13 +26,18 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import {
+  acharCamadaCanvas,
   aplicarVariante,
   camadasDoDoc,
   camadasDaPaginaCanvas,
+  comCamadaCanvas,
   comEstilo,
   paletaPorSistema,
   paletaProjeto,
   rotuloEl,
+  textoDaCamadaCanvas,
+  type CanvasCamadaForma,
+  type CanvasCamadaTexto,
   type ElId,
   type Variante,
 } from "@/lib/estudio-doc";
