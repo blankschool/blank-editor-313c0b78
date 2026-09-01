@@ -671,6 +671,7 @@ export function CanvasView({
   escala = 1,
   arrastavel = false,
   onGeometria,
+  acoes,
 }: {
   doc: DocCanvas;
   selecionada?: string | null;
@@ -678,7 +679,19 @@ export function CanvasView({
   escala?: number;
   arrastavel?: boolean;
   onGeometria?: ((paginaId: string, camadaId: string, geo: Geo, modo: ModoArraste) => void) | undefined;
+  acoes?: ((ctx: { paginaId: string; camadaId: string; camada: CanvasCamada }) => React.ReactNode) | undefined;
 }) {
+  const refPaginas = useRef<HTMLDivElement | null>(null);
+  const [medida, setMedida] = useState<{ w: number; h: number } | null>(null);
+
+  useLayoutEffect(() => {
+    if (!selecionada) return setMedida(null);
+    const el = refPaginas.current?.querySelector<HTMLElement>(`[data-camada="${selecionada}"]`);
+    if (!el) return setMedida(null);
+    const r = el.getBoundingClientRect();
+    setMedida({ w: r.width / (escala || 1), h: r.height / (escala || 1) });
+  }, [selecionada, escala, doc]);
+
   const [arraste, setArraste] = useState<{
     paginaId: string;
     camadaId: string;
