@@ -11,14 +11,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-interface Props {
-  onExportar: () => void;
-  onCompartilhar: () => void;
-  onSistema: () => void;
-}
-
-export function TopBar({ onExportar, onCompartilhar, onSistema }: Props) {
-  const { projeto, setProjeto, setPainelDireito } = useEstudio();
+export function TopBar() {
+  const { projeto, setProjeto, abaAtiva } = useEstudio();
   const [editando, setEditando] = useState(false);
   const [rascunho, setRascunho] = useState(projeto);
 
