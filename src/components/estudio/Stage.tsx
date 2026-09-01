@@ -64,7 +64,6 @@ import {
   estiloDoTrecho,
   substituirTextoPreservandoPartes,
   virarPlaceholderImagem,
-  limitarImg,
   ajustarImgRot,
   coverImg,
   containImg,
