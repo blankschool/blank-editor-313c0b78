@@ -1,6 +1,6 @@
 import { Outlet, createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
-import { PanelLeftOpen, MessageSquare } from "lucide-react";
+import { PanelLeftOpen } from "lucide-react";
 import { TopBar } from "@/components/estudio/TopBar";
 import { LibrarySidebar } from "@/components/estudio/LibrarySidebar";
 import { Stage } from "@/components/estudio/Stage";
@@ -109,19 +109,8 @@ function WorkspaceLayout() {
           )}
         </ResizablePanelGroup>
 
-        <PanelRail />
+<PanelRail />
       </div>
-
-
-      {!e.conversaAberta && (
-        <button
-          onClick={() => e.setConversaAberta(true)}
-          title="Abrir conversa"
-          className="fixed bottom-3 right-14 z-20 flex h-8 items-center gap-1.5 rounded-full border border-border bg-card px-3 text-[12px] font-medium shadow-[var(--shadow-panel)] hover:bg-secondary"
-        >
-          <MessageSquare className="size-3.5" /> Conversa
-        </button>
-      )}
     </main>
   );
 }

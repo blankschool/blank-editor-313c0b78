@@ -26,6 +26,7 @@ import {
   Trash2,
   Sparkles,
   MoreHorizontal,
+  MessageSquare,
 
 } from "lucide-react";
 import { useEstudio } from "./EstudioContext";
@@ -369,6 +370,14 @@ export function Stage() {
         >
           <Pencil className="size-3.5" /> {e.modoEdicao ? "Sair da edição" : "Editar"}
         </button>
+        {!e.conversaAberta && (
+          <button
+            onClick={() => e.setConversaAberta(true)}
+            className="flex h-6 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md border border-border bg-card px-2 text-[11px] font-medium hover:bg-secondary"
+          >
+            <MessageSquare className="size-3.5" /> Conversa
+          </button>
+        )}
       </div>
     </section>
   );
