@@ -96,7 +96,7 @@ export function VersoesPanel() {
         <button
           onClick={() => {
             const v = e.criarVersao("");
-            toast.success(`Versão ${v.rotulo} criada a partir do palco.`);
+            toast.success(`Versão ${v} criada a partir do palco.`);
           }}
           className="h-7 w-full rounded bg-primary text-[11px] font-medium text-primary-foreground"
         >
