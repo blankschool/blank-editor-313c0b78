@@ -351,9 +351,15 @@ export function ehDocCanvas(d: unknown): d is DocCanvas {
 
 export type DocSalvo = DesignDoc | DocHtml | DocCanvas;
 
+const TEMPLATES_BASE =
+  "https://sites-blank-editor-supabase.ickanz.easypanel.host/storage/v1/object/public/templates";
+
 export const previewsHtml = {
-  agrum: { nome: "Agrum Eleição", src: "/previews/agrum-eleicao/index.html" },
-  barretos: { nome: "Barretos", src: "/previews/barretos/index.html" },
+  agrum: {
+    nome: "Agrum Eleição",
+    src: `${TEMPLATES_BASE}/agrum-eleicao/index.html`,
+  },
+  barretos: { nome: "Barretos", src: `${TEMPLATES_BASE}/barretos/index.html` },
 } as const;
 
 export type PresetNovo = "branco" | keyof typeof previewsHtml;
