@@ -307,7 +307,7 @@ export async function enviarImagemCanvas(file: File): Promise<string> {
   if (!user) throw new Error("Entre na sua conta para enviar imagens.");
   const path = `${user.id}/${crypto.randomUUID()}-${file.name}`;
   const { error } = await supabase.storage.from("uploads").upload(path, file, {
-    contentType: file.type || undefined,
+    ...(file.type ? { contentType: file.type } : {}),
     upsert: false,
   });
   if (error) throw error;
