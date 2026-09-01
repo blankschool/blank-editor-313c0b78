@@ -65,6 +65,7 @@ import {
   substituirTextoPreservandoPartes,
   virarPlaceholderImagem,
   limitarImg,
+  ajustarImgRot,
   coverImg,
   containImg,
   medirImagem,
