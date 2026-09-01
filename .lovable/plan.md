@@ -13,7 +13,7 @@ Cabeçalho fixo: título "Editar", **Descartar** e **Salvar** (Salvar só ativo 
 Corpo, na ordem, mostrando apenas o que o nó realmente tem:
 
 - **Aparência** — cor/preenchimento, opacidade, raio (forma e imagem).
-- **Texto** — só aparece se o nó tem texto: conteúdo, fonte, peso, tamanho, entrelinha, entre letras, alinhamento, cor. No canvas somam-se itálico, sublinhado e riscado (campos novos em `CanvasCamadaTexto`), caixa (`normal/maiúsculas/minúsculas`) e fundo com opção "Nenhum".
+- **Texto** — só aparece se o nó tem texto: conteúdo, fonte, peso, tamanho, entrelinha, entre letras, alinhamento, cor. No canvas somam-se itálico, sublinhado, riscado, caixa (`normal/maiúsculas/minúsculas`) e fundo com opção "Nenhum". Cada um desses campos novos só entra junto com o CSS correspondente em `CamadaCanvasView` (`fontStyle`, `textDecoration`, `textTransform`, `background` no div da camada) — controle sem pintura no palco não é desenhado. `partes` (spans) fica de fora: I/U/S valem para a camada inteira, como já acontece com peso e cor.
 - **Imagem** — `src` somente leitura, opacidade, raio, espelhar.
 - **Adicionar:** linha final com `sombra` e `borda` (borda só em forma). Cada item vira seção quando clicado, com "Remover" que apaga o campo — mesmo padrão que a sombra já usa. Sem transformação e sem filtro: não existem no modelo.
 - Cada seção traz **Redefinir**, que devolve os valores daquela seção ao estado salvo.
@@ -22,12 +22,14 @@ Corpo, na ordem, mostrando apenas o que o nó realmente tem:
 
 ## Rascunho, Descartar, Salvar
 
-Hoje toda edição grava no banco com debounce. Passa a existir um rascunho:
+Hoje toda edição grava no banco com debounce. Enquanto o inspector estiver aberto, **toda** mutação do documento fica no rascunho — inclusive geometria vinda do palco (arrastar, redimensionar, setas, duplicar, apagar), porque tudo passa pelo mesmo `atualizarDocCanvas` e o debounce mandaria o rascunho junto.
 
 - Ao abrir o inspector, guarda-se o documento salvo como base.
-- Edições feitas dentro do inspector atualizam o palco na hora, mas não vão ao banco.
-- **Salvar** grava e vira a nova base. **Descartar** volta à base.
-- Edições fora do inspector (arrastar no palco, painel Camadas) continuam gravando como hoje.
+- Toda edição atualiza o palco na hora e nada vai ao banco.
+- **Salvar** grava e vira a nova base. **Descartar** volta à base, posição e estilo incluídos.
+- Sair da rota de edição com alterações pendentes pergunta antes (Salvar / Descartar / Continuar editando); nada some silenciosamente.
+- Com o inspector fechado, a gravação com debounce segue como hoje.
+
 
 ## Pro
 
