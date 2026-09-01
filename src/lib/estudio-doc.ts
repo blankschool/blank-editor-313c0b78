@@ -117,6 +117,15 @@ export interface DocHtml {
   src: string;
 }
 
+export function ehDocHtml(d: unknown): d is DocHtml {
+  return (
+    !!d &&
+    typeof d === "object" &&
+    (d as { kind?: unknown }).kind === "html" &&
+    typeof (d as { src?: unknown }).src === "string"
+  );
+}
+
 /* --------- documento canvas (páginas 1080x1440, sem edição ainda) --------- */
 
 export interface CanvasParteTexto {
