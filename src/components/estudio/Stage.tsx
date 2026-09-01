@@ -1667,33 +1667,45 @@ function CanvasComSelecao({ doc }: { doc: DocCanvas }) {
     (
       pid: string,
       cid: string,
-      geo: { x: number; y: number; w: number; h: number },
+      geo: { x: number; y: number; w: number; h: number; r?: number },
       modo: string,
     ) => {
       e.atualizarDocCanvas(
         (d) =>
           comCamadaCanvas(d, pid, cid, (c) => {
+            if (modo === "girar") {
+              const r = Math.round(geo.r ?? 0);
+              if (r) (c as { rotacao?: number }).rotacao = r;
+              else delete (c as { rotacao?: number }).rotacao;
+              return;
+            }
             c.x = geo.x;
             c.y = geo.y;
-            if (modo !== "mover" && c.tipo !== "texto") {
+            if (modo !== "mover") {
               if (c.tipo === "imagem" && c.img && c.w && c.h) {
-                const rx = geo.w / c.w;
-                const ry = geo.h / c.h;
-                c.img = {
-                  x: c.img.x * rx,
-                  y: c.img.y * ry,
-                  w: c.img.w * rx,
-                  h: c.img.h * ry,
-                };
+                /* reenquadra sem achatar: a foto acompanha o maior fator */
+                const k = Math.max(geo.w / c.w, geo.h / c.h);
+                c.img = limitarImg(
+                  { x: c.img.x * k, y: c.img.y * k, w: c.img.w * k, h: c.img.h * k },
+                  geo.w,
+                  geo.h,
+                );
               }
               c.w = geo.w;
-              c.h = geo.h;
+              if (c.tipo === "texto") {
+                if (geo.h > 0) c.h = geo.h;
+              } else c.h = geo.h;
             }
           }),
-        modo === "mover" ? "Moveu camada" : "Redimensionou camada",
+        modo === "mover"
+          ? "Moveu camada"
+          : modo === "girar"
+            ? "Girou camada"
+            : "Redimensionou camada",
       );
     },
     [e],
+
   );
   useEffect(() => {
     const emCampo = (t: EventTarget | null) => {
