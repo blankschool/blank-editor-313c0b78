@@ -194,6 +194,12 @@ interface EstudioState {
   setConversaAberta: (v: boolean) => void;
 }
 
+/** instantâneo do documento para desfazer/refazer */
+interface Instantaneo {
+  doc: DesignDoc | null;
+  canvas: DocCanvas | null;
+}
+
 const Ctx = createContext<EstudioState | null>(null);
 
 let seq = 100;
