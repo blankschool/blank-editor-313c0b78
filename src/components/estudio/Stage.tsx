@@ -1765,13 +1765,16 @@ function CanvasComSelecao({ doc }: { doc: DocCanvas }) {
     if (!alvo) return;
     try {
       const url = await enviarImagemCanvas(file);
+      const nat = await medirImagem(url);
       patchCamada(
         alvo.pid,
         alvo.cid,
         (c) => {
           if (c.tipo !== "imagem") return;
           c.src = url;
-          delete c.img;
+          /* enquadra em cover com a proporção real do arquivo (nunca deforma) */
+          if (nat.w && nat.h) c.img = coverImg(c.w, c.h, nat.w, nat.h);
+          else delete c.img;
         },
         "Trocou a imagem",
       );
