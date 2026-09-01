@@ -15,7 +15,9 @@ export function estiloDaParte(p: CanvasParteTexto): string {
   if (p.cor) css.push(`color:${p.cor}`);
   if (p.tamanho !== undefined) css.push(`font-size:${p.tamanho}px`);
   if (p.italico) css.push("font-style:italic");
-  const dec = [p.sublinhado ? "underline" : "", p.riscado ? "line-through" : ""].filter(Boolean).join(" ");
+  const dec = [p.sublinhado ? "underline" : "", p.riscado ? "line-through" : ""]
+    .filter(Boolean)
+    .join(" ");
   if (dec) css.push(`text-decoration:${dec}`);
   return css.join(";");
 }

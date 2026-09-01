@@ -1,4 +1,5 @@
-export type ElId = "topo" | "titulo" | "subtitulo" | "cta" | "ctaSecundario" | "midia" | "prova" | "rodape";
+export type ElId =
+  "topo" | "titulo" | "subtitulo" | "cta" | "ctaSecundario" | "midia" | "prova" | "rodape";
 
 export type Variante = "Calmo" | "Produto" | "Ousado";
 
@@ -98,10 +99,24 @@ export function docPadrao(nome: string): DesignDoc {
     densidade: 56,
     ordem: ["topo", "titulo", "subtitulo", "cta", "midia", "prova", "rodape"],
     estilos: {
-      titulo: { tamanho: 32, peso: "600", alinhamento: "left", entrelinha: 1.15, entreLetras: -0.02 },
+      titulo: {
+        tamanho: 32,
+        peso: "600",
+        alinhamento: "left",
+        entrelinha: 1.15,
+        entreLetras: -0.02,
+      },
       subtitulo: { tamanho: 13, alinhamento: "left", entrelinha: 1.5 },
     },
-    layout: { direcao: "coluna", gap: 12, padding: 32, raio: 8, borda: 0, sombra: "suave", largura: "auto" },
+    layout: {
+      direcao: "coluna",
+      gap: 12,
+      padding: 32,
+      raio: 8,
+      borda: 0,
+      sombra: "suave",
+      largura: "auto",
+    },
     fundo: "var(--card)",
   };
 }
@@ -255,9 +270,18 @@ export function textoDaCamadaCanvas(c: CanvasCamadaTexto): string {
 
 /* --------- texto rico: trechos (partes) --------- */
 
-type EstiloParte = { [K in keyof Omit<CanvasParteTexto, "texto">]?: CanvasParteTexto[K] | undefined };
+type EstiloParte = {
+  [K in keyof Omit<CanvasParteTexto, "texto">]?: CanvasParteTexto[K] | undefined;
+};
 
-const CHAVES_PARTE: Array<keyof EstiloParte> = ["peso", "cor", "italico", "sublinhado", "riscado", "tamanho"];
+const CHAVES_PARTE: Array<keyof EstiloParte> = [
+  "peso",
+  "cor",
+  "italico",
+  "sublinhado",
+  "riscado",
+  "tamanho",
+];
 
 function mesmoEstilo(a: CanvasParteTexto, b: CanvasParteTexto): boolean {
   return CHAVES_PARTE.every((k) => a[k] === b[k]);
@@ -348,7 +372,8 @@ export function estiloDoTrecho(c: CanvasCamadaTexto, inicio: number, fim: number
   const out: EstiloParte = {};
   CHAVES_PARTE.forEach((k) => {
     const v = tocados[0]![k];
-    if (tocados.every((p) => p[k] === v) && v !== undefined) (out as Record<string, unknown>)[k] = v;
+    if (tocados.every((p) => p[k] === v) && v !== undefined)
+      (out as Record<string, unknown>)[k] = v;
   });
   return out;
 }
@@ -383,7 +408,8 @@ export function substituirTextoPreservandoPartes(c: CanvasCamadaTexto, novo: str
   const saida: CanvasParteTexto[] = [];
   for (let i = 0; i < pre; i++) saida.push({ ...(estilos[i] ?? {}), texto: antigo[i]! });
   for (const ch of inserido) saida.push({ ...estiloInsercao, texto: ch });
-  for (let i = fimRemocao; i < antigo.length; i++) saida.push({ ...(estilos[i] ?? {}), texto: antigo[i]! });
+  for (let i = fimRemocao; i < antigo.length; i++)
+    saida.push({ ...(estilos[i] ?? {}), texto: antigo[i]! });
   gravarPartesNaCamada(c, saida);
 }
 
@@ -414,7 +440,6 @@ export function virarPlaceholderImagem(c: CanvasCamada): CanvasCamadaImagem {
   if (sombra) base.sombra = sombra;
   return base;
 }
-
 
 export function acharCamadaCanvas(
   doc: DocCanvas | null | undefined,
@@ -492,7 +517,11 @@ export function novaCamadaForma(pagina: CanvasPagina): CanvasCamadaForma {
   };
 }
 
-export function novaCamadaImagem(pagina: CanvasPagina, src: string, nome: string): CanvasCamadaImagem {
+export function novaCamadaImagem(
+  pagina: CanvasPagina,
+  src: string,
+  nome: string,
+): CanvasCamadaImagem {
   const w = 600;
   const h = 400;
   return {
@@ -509,14 +538,20 @@ export function novaCamadaImagem(pagina: CanvasPagina, src: string, nome: string
 
 export function duplicarCamadaCanvas(camada: CanvasCamada, dx = 16, dy = 16): CanvasCamada {
   const copia = JSON.parse(JSON.stringify(camada)) as CanvasCamada;
-  copia.id = novoIdCamada(camada.tipo === "texto" ? "txt" : camada.tipo === "imagem" ? "img" : "frm");
+  copia.id = novoIdCamada(
+    camada.tipo === "texto" ? "txt" : camada.tipo === "imagem" ? "img" : "frm",
+  );
   copia.nome = `${camada.nome ?? camada.tipo} cópia`;
   copia.x = (camada.x ?? 0) + dx;
   copia.y = (camada.y ?? 0) + dy;
   return copia;
 }
 
-export function adicionarCamadaCanvas(doc: DocCanvas, paginaId: string | null, camada: CanvasCamada): DocCanvas {
+export function adicionarCamadaCanvas(
+  doc: DocCanvas,
+  paginaId: string | null,
+  camada: CanvasCamada,
+): DocCanvas {
   const pg = doc.paginas.find((p, i) => (p.id ?? `p${i + 1}`) === paginaId) ?? doc.paginas[0];
   if (pg) {
     pg.camadas = [...(pg.camadas ?? []), camada];
@@ -524,7 +559,11 @@ export function adicionarCamadaCanvas(doc: DocCanvas, paginaId: string | null, c
   return doc;
 }
 
-export function removerCamadaCanvas(doc: DocCanvas, paginaId: string | null, camadaId: string): DocCanvas {
+export function removerCamadaCanvas(
+  doc: DocCanvas,
+  paginaId: string | null,
+  camadaId: string,
+): DocCanvas {
   doc.paginas.forEach((p, i) => {
     const pid = p.id ?? `p${i + 1}`;
     if (paginaId && pid !== paginaId) return;
@@ -651,8 +690,6 @@ export async function camadaParaPng(camadaId: string, escala: 1 | 2 = 1): Promis
   return await new Promise<Blob | null>((resolve) => canvas.toBlob((b) => resolve(b), "image/png"));
 }
 
-
-
 export function ehDocCanvas(d: unknown): d is DocCanvas {
   return (
     !!d &&
@@ -677,8 +714,6 @@ export const previewsHtml = {
 
 export type PresetNovo = "branco" | keyof typeof previewsHtml;
 
-
-
 export function comEstilo(doc: DesignDoc, el: ElId, patch: Partial<EstiloEl>): DesignDoc {
   return { ...doc, estilos: { ...doc.estilos, [el]: { ...(doc.estilos[el] ?? {}), ...patch } } };
 }
@@ -699,7 +734,8 @@ export function camadasDoDoc(doc: DesignDoc): CamadaDoc[] {
 }
 
 export function caminhoEl(id: ElId): string {
-  const g = id === "topo" ? "Topo" : id === "prova" ? "Prova social" : id === "rodape" ? "Rodapé" : "Herói";
+  const g =
+    id === "topo" ? "Topo" : id === "prova" ? "Prova social" : id === "rodape" ? "Rodapé" : "Herói";
   return `${g} › ${rotuloEl[id]}`;
 }
 
@@ -722,14 +758,22 @@ export function diffDocs(a: DesignDoc, b: DesignDoc): Diferenca[] {
     if (sx !== sy) out.push({ campo, antes: sx, depois: sy });
   };
   push("variante", a.variante, b.variante);
-  (Object.keys(a.textos) as ElId[]).forEach((k) => push(`texto · ${rotuloEl[k]}`, a.textos[k], b.textos[k]));
+  (Object.keys(a.textos) as ElId[]).forEach((k) =>
+    push(`texto · ${rotuloEl[k]}`, a.textos[k], b.textos[k]),
+  );
   push("logos", a.logos.join(", "), b.logos.join(", "));
-  push("prova social", a.provaSocial ? "ligada" : "desligada", b.provaSocial ? "ligada" : "desligada");
+  push(
+    "prova social",
+    a.provaSocial ? "ligada" : "desligada",
+    b.provaSocial ? "ligada" : "desligada",
+  );
   push("herói em tela cheia", a.heroiCheio, b.heroiCheio);
   push("densidade", a.densidade, b.densidade);
   push("ordem", a.ordem.join(" → "), b.ordem.join(" → "));
   push("fundo", a.fundo, b.fundo);
-  (Object.keys(b.layout) as (keyof LayoutDoc)[]).forEach((k) => push(`layout · ${k}`, a.layout[k], b.layout[k]));
+  (Object.keys(b.layout) as (keyof LayoutDoc)[]).forEach((k) =>
+    push(`layout · ${k}`, a.layout[k], b.layout[k]),
+  );
   const els = new Set([...Object.keys(a.estilos), ...Object.keys(b.estilos)]) as Set<ElId>;
   els.forEach((el) => {
     const ea = a.estilos[el] ?? {};
@@ -803,7 +847,9 @@ export function interpretarPedido(pedido: string, ctx: ContextoPedido): Plano {
   // cor
   const corNome = Object.keys(cores).find((c) => t.includes(c));
   if (corNome || /cor|paleta|tom/.test(t)) {
-    const paleta = ctx.temChipSistema ? (paletaPorSistema[ctx.sistemaAtivo] ?? paletaProjeto) : paletaProjeto;
+    const paleta = ctx.temChipSistema
+      ? (paletaPorSistema[ctx.sistemaAtivo] ?? paletaProjeto)
+      : paletaProjeto;
     const cor = corNome ? cores[corNome]! : paleta[0]!;
     const alvo: ElId = ctx.selecionado ?? "cta";
     passos.push({
@@ -819,10 +865,16 @@ export function interpretarPedido(pedido: string, ctx: ContextoPedido): Plano {
   // título / texto explícito
   const citado = entreAspas(pedido);
   if (citado && /t[íi]tulo|headline|chamada/.test(t)) {
-    passos.push({ texto: "Reescrever o título", aplicar: (d) => ({ ...d, textos: { ...d.textos, titulo: citado } }) });
+    passos.push({
+      texto: "Reescrever o título",
+      aplicar: (d) => ({ ...d, textos: { ...d.textos, titulo: citado } }),
+    });
     notas.push("novo título");
   } else if (citado && /cta|bot[ãa]o/.test(t)) {
-    passos.push({ texto: "Trocar o texto do CTA", aplicar: (d) => ({ ...d, textos: { ...d.textos, cta: citado } }) });
+    passos.push({
+      texto: "Trocar o texto do CTA",
+      aplicar: (d) => ({ ...d, textos: { ...d.textos, cta: citado } }),
+    });
     notas.push("novo CTA");
   } else if (citado) {
     const alvo: ElId = ctx.selecionado ?? "titulo";
@@ -847,14 +899,16 @@ export function interpretarPedido(pedido: string, ctx: ContextoPedido): Plano {
   if (/maior|aument|destaqu/.test(t)) {
     passos.push({
       texto: "Aumentar o título",
-      aplicar: (d) => comEstilo(d, "titulo", { tamanho: Math.min(72, (d.estilos.titulo?.tamanho ?? 32) + 8) }),
+      aplicar: (d) =>
+        comEstilo(d, "titulo", { tamanho: Math.min(72, (d.estilos.titulo?.tamanho ?? 32) + 8) }),
     });
     notas.push("título maior");
   }
   if (/menor|diminu|reduz|baix(e|ar) (dois|um)? ?pes/.test(t)) {
     passos.push({
       texto: "Reduzir o título",
-      aplicar: (d) => comEstilo(d, "titulo", { tamanho: Math.max(14, (d.estilos.titulo?.tamanho ?? 32) - 6) }),
+      aplicar: (d) =>
+        comEstilo(d, "titulo", { tamanho: Math.max(14, (d.estilos.titulo?.tamanho ?? 32) - 6) }),
     });
     notas.push("título menor");
   }
@@ -877,7 +931,11 @@ export function interpretarPedido(pedido: string, ctx: ContextoPedido): Plano {
       aplicar: (d) => ({
         ...d,
         densidade: Math.min(100, d.densidade + 15),
-        layout: { ...d.layout, gap: Math.max(0, d.layout.gap - 4), padding: Math.max(8, d.layout.padding - 8) },
+        layout: {
+          ...d.layout,
+          gap: Math.max(0, d.layout.gap - 4),
+          padding: Math.max(8, d.layout.padding - 8),
+        },
       }),
     });
     notas.push("mais denso");
@@ -888,7 +946,9 @@ export function interpretarPedido(pedido: string, ctx: ContextoPedido): Plano {
     passos.push({
       texto: "Centralizar o herói",
       aplicar: (d) =>
-        comEstilo(comEstilo(d, "titulo", { alinhamento: "center" }), "subtitulo", { alinhamento: "center" }),
+        comEstilo(comEstilo(d, "titulo", { alinhamento: "center" }), "subtitulo", {
+          alinhamento: "center",
+        }),
     });
     notas.push("herói centralizado");
   }
@@ -909,7 +969,8 @@ export function interpretarPedido(pedido: string, ctx: ContextoPedido): Plano {
     notas.push("herói reescrito com o seu pedido");
   }
 
-  if (ctx.temChipArquivo) passos.push({ texto: "Conferir contraste e espaçamento", aplicar: (d) => d });
+  if (ctx.temChipArquivo)
+    passos.push({ texto: "Conferir contraste e espaçamento", aplicar: (d) => d });
   passos.push({ texto: "Gerar nova versão", aplicar: (d) => d });
 
   return { passos, resumo: `Apliquei no arquivo em foco: ${notas.join(", ")}.` };
@@ -964,7 +1025,8 @@ export function aplicarVariante(doc: DesignDoc, v: Variante): DesignDoc {
 
 /* --------- exportação --------- */
 
-const esc = (s: string) => s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c] ?? c);
+const esc = (s: string) =>
+  s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c] ?? c);
 
 export function docParaHtml(doc: DesignDoc, nome: string, largura: number): string {
   const est = (el: ElId) => doc.estilos[el] ?? {};
@@ -1040,7 +1102,12 @@ export function baixarArquivo(nome: string, conteudo: string | Blob, tipo = "tex
   URL.revokeObjectURL(url);
 }
 
-export async function docParaPng(doc: DesignDoc, nome: string, largura: number, escala = 2): Promise<Blob | null> {
+export async function docParaPng(
+  doc: DesignDoc,
+  nome: string,
+  largura: number,
+  escala = 2,
+): Promise<Blob | null> {
   const altura = 620;
   const canvas = document.createElement("canvas");
   canvas.width = largura * escala;
@@ -1140,10 +1207,16 @@ export async function docParaPng(doc: DesignDoc, nome: string, largura: number, 
 export const arquivosDoRepo = [
   { arquivo: "src/components/estudio/Stage.tsx", papel: "palco, abas e artboard vivo" },
   { arquivo: "src/components/estudio/EstudioContext.tsx", papel: "documento, versões e conversa" },
-  { arquivo: "src/components/estudio/EditPanels.tsx", papel: "texto, cor, layout, camadas e ajustes" },
+  {
+    arquivo: "src/components/estudio/EditPanels.tsx",
+    papel: "texto, cor, layout, camadas e ajustes",
+  },
   { arquivo: "src/components/estudio/RightPanel.tsx", papel: "versões, comentários e código" },
   { arquivo: "src/components/estudio/ChatPane.tsx", papel: "compositor e thread" },
-  { arquivo: "src/components/estudio/Dialogs.tsx", papel: "exportar, compartilhar e design system" },
+  {
+    arquivo: "src/components/estudio/Dialogs.tsx",
+    papel: "exportar, compartilhar e design system",
+  },
   { arquivo: "src/lib/estudio-doc.ts", papel: "modelo do documento, interpretador e exportação" },
   { arquivo: "src/routes/d.$designId.tsx", papel: "layout do workspace" },
   { arquivo: "src/lib/supabase.ts", papel: "cliente Supabase self-hosted" },

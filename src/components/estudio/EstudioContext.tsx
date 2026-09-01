@@ -292,7 +292,8 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
     enabled: temSessao && !!abaAtiva,
   });
 
-  const nomeAtivo = designQ.data?.nome ?? designs.find((d) => d.id === abaAtiva)?.nome ?? "Novo design";
+  const nomeAtivo =
+    designQ.data?.nome ?? designs.find((d) => d.id === abaAtiva)?.nome ?? "Novo design";
 
   /* ---------- documento vivo (espelho local + gravação com debounce) ---------- */
   const [docLocal, setDocLocal] = useState<DesignDoc | null>(null);
@@ -341,7 +342,10 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
       setSujo(false);
       limparPilhas();
       setDocLocal(
-        remoto.doc && !ehDocHtml(remoto.doc) && !ehDocCanvas(remoto.doc) && Object.keys(remoto.doc).length
+        remoto.doc &&
+          !ehDocHtml(remoto.doc) &&
+          !ehDocCanvas(remoto.doc) &&
+          Object.keys(remoto.doc).length
           ? (remoto.doc as DesignDoc)
           : docPadrao(remoto.nome),
       );
@@ -381,7 +385,10 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
     [versoesQ.data],
   );
 
-  const conversaRemota = useMemo(() => (mensagensQ.data ?? []).map(paraMensagem), [mensagensQ.data]);
+  const conversaRemota = useMemo(
+    () => (mensagensQ.data ?? []).map(paraMensagem),
+    [mensagensQ.data],
+  );
   const [conversaLocal, setConversaLocal] = useState<ChatMessage[] | null>(null);
   const conversa = conversaLocal ?? conversaRemota;
   useEffect(() => {
@@ -495,7 +502,9 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
   const setProjeto = useCallback(
     (v: string) => {
       if (!projectId) return;
-      void renomearProjeto(projectId, v).then(() => qc.invalidateQueries({ queryKey: ["projeto", user?.id] }));
+      void renomearProjeto(projectId, v).then(() =>
+        qc.invalidateQueries({ queryKey: ["projeto", user?.id] }),
+      );
     },
     [projectId, qc, user?.id],
   );
@@ -541,7 +550,10 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
       const atual = canvasRef.current;
       if (!abaAtiva || !atual) return;
       const novo = fn(JSON.parse(JSON.stringify(atual)) as DocCanvas);
-      empilharDesfazer({ doc: null, canvas: JSON.parse(JSON.stringify(atual)) as DocCanvas }, rotulo);
+      empilharDesfazer(
+        { doc: null, canvas: JSON.parse(JSON.stringify(atual)) as DocCanvas },
+        rotulo,
+      );
       setCanvasLocal(novo);
       canvasRef.current = novo;
       if (modoEdicaoRef.current) {
@@ -631,7 +643,6 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [desfazer, refazer]);
 
-
   const salvarRascunho = useCallback(() => {
     if (!abaAtiva) return;
     const atual = (canvasRef.current ?? docRef.current) as unknown as DesignDoc;
@@ -661,11 +672,15 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
     registrar(autor, "Descartou a edição");
   }, [baseCanvas, baseDoc, registrar, autor]);
 
-
   const recarregarDoc = useCallback(() => {
     void qc.invalidateQueries({ queryKey: ["design", abaAtiva] });
     void carregarDesign(abaAtiva).then((r) => {
-      if (r) setDocLocal(r.doc && !ehDocHtml(r.doc) && !ehDocCanvas(r.doc) && Object.keys(r.doc).length ? (r.doc as DesignDoc) : docPadrao(r.nome));
+      if (r)
+        setDocLocal(
+          r.doc && !ehDocHtml(r.doc) && !ehDocCanvas(r.doc) && Object.keys(r.doc).length
+            ? (r.doc as DesignDoc)
+            : docPadrao(r.nome),
+        );
     });
   }, [abaAtiva, qc]);
 
@@ -692,7 +707,9 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
       const copia = clonarDoc(v.doc);
       setDocLocal(copia);
       docRef.current = copia;
-      void salvarDoc(abaAtiva, copia).then(() => qc.invalidateQueries({ queryKey: ["design", abaAtiva] }));
+      void salvarDoc(abaAtiva, copia).then(() =>
+        qc.invalidateQueries({ queryKey: ["design", abaAtiva] }),
+      );
       registrar(autor, `Restaurou ${v.rotulo}`);
     },
     [versoes, abaAtiva, registrar, qc, autor],
@@ -763,20 +780,21 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
   /* ---------- designs ---------- */
   const novoDesign = useCallback(
     (preset?: PresetNovo) => {
-    if (!temSessao || !projectId) {
-      setPedirLogin(true);
-      return;
-    }
-    const modelo = preset && preset !== "branco" ? previewsHtml[preset] : null;
-    const docModelo = preset === "agrum" ? canvasAgrum : preset === "barretos" ? canvasBarretos : null;
-    void criarDesign(
-      projectId,
-      modelo ? modelo.nome : undefined,
-      docModelo ?? (modelo ? { kind: "html" as const, src: modelo.src } : undefined),
-    ).then(async (row) => {
-      await qc.invalidateQueries({ queryKey: ["designs", user?.id] });
-      irParaDesign(row.id);
-    });
+      if (!temSessao || !projectId) {
+        setPedirLogin(true);
+        return;
+      }
+      const modelo = preset && preset !== "branco" ? previewsHtml[preset] : null;
+      const docModelo =
+        preset === "agrum" ? canvasAgrum : preset === "barretos" ? canvasBarretos : null;
+      void criarDesign(
+        projectId,
+        modelo ? modelo.nome : undefined,
+        docModelo ?? (modelo ? { kind: "html" as const, src: modelo.src } : undefined),
+      ).then(async (row) => {
+        await qc.invalidateQueries({ queryKey: ["designs", user?.id] });
+        irParaDesign(row.id);
+      });
     },
     [temSessao, projectId, qc, user?.id, irParaDesign],
   );
@@ -839,7 +857,10 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
         void navigate({ to: "/d/$designId", params: { designId: abaAtiva } });
         return;
       }
-      void navigate({ to: "/d/$designId/$painel", params: { designId: abaAtiva, painel: slugPainel[v] } });
+      void navigate({
+        to: "/d/$designId/$painel",
+        params: { designId: abaAtiva, painel: slugPainel[v] },
+      });
     },
     [abaAtiva, navigate],
   );
@@ -859,7 +880,10 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
     (v: boolean) => {
       if (!abaAtiva) return;
       if (v) {
-        void navigate({ to: "/d/$designId/editar/$painel", params: { designId: abaAtiva, painel: "simples" } });
+        void navigate({
+          to: "/d/$designId/editar/$painel",
+          params: { designId: abaAtiva, painel: "simples" },
+        });
       } else {
         void navigate({ to: "/d/$designId", params: { designId: abaAtiva } });
       }
@@ -1004,12 +1028,19 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
                 const arquivo = { nome: nomeAtivo, tipo: "tela", versao: proximaVersao };
                 setConversaLocal((c) =>
                   (c ?? []).map((m) =>
-                    m.id !== idBot ? m : { ...m, texto: plano.resumo, tarefas: tarefasFeitas, arquivo },
+                    m.id !== idBot
+                      ? m
+                      : { ...m, texto: plano.resumo, tarefas: tarefasFeitas, arquivo },
                   ),
                 );
                 void (async () => {
                   await salvarDoc(abaAtiva, docRef.current);
-                  await criarVersaoDb(abaAtiva, proximaVersao, "Assistente", clonarDoc(docRef.current));
+                  await criarVersaoDb(
+                    abaAtiva,
+                    proximaVersao,
+                    "Assistente",
+                    clonarDoc(docRef.current),
+                  );
                   await criarMensagem(abaAtiva, "assistente", {
                     texto: plano.resumo,
                     tarefas: tarefasFeitas,
@@ -1070,8 +1101,12 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
 
   const editarMensagem = useCallback(
     (id: string, texto: string) => {
-      setConversaLocal((c) => (c ?? conversaRemota).map((m) => (m.id === id ? { ...m, texto } : m)));
-      void atualizarMensagem(id, { texto }).then(() => qc.invalidateQueries({ queryKey: ["messages", abaAtiva] }));
+      setConversaLocal((c) =>
+        (c ?? conversaRemota).map((m) => (m.id === id ? { ...m, texto } : m)),
+      );
+      void atualizarMensagem(id, { texto }).then(() =>
+        qc.invalidateQueries({ queryKey: ["messages", abaAtiva] }),
+      );
       executarPedido(texto);
     },
     [conversaRemota, executarPedido, qc, abaAtiva],
@@ -1088,14 +1123,29 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
       const nome = `${nomeAtivo} — ramo`;
       void criarDesign(projectId, nome, clonarDoc(docRef.current)).then(async (row) => {
         for (const m of conversa.slice(0, idx + 1)) {
-          await criarMensagem(row.id, m.autor, { texto: m.texto, tarefas: m.tarefas, arquivo: m.arquivo });
+          await criarMensagem(row.id, m.autor, {
+            texto: m.texto,
+            tarefas: m.tarefas,
+            arquivo: m.arquivo,
+          });
         }
         await qc.invalidateQueries({ queryKey: ["designs", user?.id] });
         registrar(autor, `Ramificou em ${nome}`);
         irParaDesign(row.id);
       });
     },
-    [temSessao, projectId, abaAtiva, conversa, nomeAtivo, qc, user?.id, registrar, irParaDesign, autor],
+    [
+      temSessao,
+      projectId,
+      abaAtiva,
+      conversa,
+      nomeAtivo,
+      qc,
+      user?.id,
+      registrar,
+      irParaDesign,
+      autor,
+    ],
   );
 
   const pararGeracao = useCallback(() => {
@@ -1107,7 +1157,9 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
           ? {
               ...m,
               texto: "Parei aqui. O que já apliquei ficou no palco.",
-              tarefas: m.tarefas?.map((t) => (t.estado === "ativo" ? { ...t, estado: "pendente" as const } : t)),
+              tarefas: m.tarefas?.map((t) =>
+                t.estado === "ativo" ? { ...t, estado: "pendente" as const } : t,
+              ),
             }
           : m,
       ),

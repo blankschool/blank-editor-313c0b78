@@ -64,7 +64,12 @@ import {
   substituirTextoPreservandoPartes,
   virarPlaceholderImagem,
 } from "@/lib/estudio-doc";
-import { offsetsDaSelecao, partesParaHtml, restaurarOffsets, textoDoElemento } from "@/lib/texto-rico";
+import {
+  offsetsDaSelecao,
+  partesParaHtml,
+  restaurarOffsets,
+  textoDoElemento,
+} from "@/lib/texto-rico";
 import { enviarImagemCanvas } from "@/lib/estudio-db";
 import { toast } from "sonner";
 
@@ -76,7 +81,6 @@ export function Stage() {
   const [respostaRapida, setRespostaRapida] = useState("");
   const [maisFerramentas, setMaisFerramentas] = useState(false);
 
-
   const comentariosVisiveis = e.comentarios.filter((c) =>
     e.filtroComentarios === "abertos" ? !c.resolvido : c.resolvido,
   );
@@ -85,7 +89,10 @@ export function Stage() {
   const clicarPalco = (ev: React.MouseEvent<HTMLDivElement>) => {
     if (!e.modoComentario || !palcoRef.current) return;
     const r = palcoRef.current.getBoundingClientRect();
-    e.addComentario(((ev.clientX - r.left) / r.width) * 100, ((ev.clientY - r.top) / r.height) * 100);
+    e.addComentario(
+      ((ev.clientX - r.left) / r.width) * 100,
+      ((ev.clientY - r.top) / r.height) * 100,
+    );
   };
 
   return (
@@ -196,20 +203,20 @@ export function Stage() {
                     boxShadow: "none",
                   }
                 : e.docHtml
-                ? {
-                    width: 1080,
-                    height: 1440,
-                    transform: `scale(${(e.zoom / 100) * (larguras[e.viewport] / 1080)})`,
-                    transformOrigin: "center",
-                    background: "var(--card)",
-                  }
-                : {
-                    width: larguras[e.viewport],
-                    transform: `scale(${e.zoom / 100})`,
-                    transformOrigin: "center",
-                    background: e.doc.fundo,
-                    borderRadius: e.doc.layout.raio,
-                  }
+                  ? {
+                      width: 1080,
+                      height: 1440,
+                      transform: `scale(${(e.zoom / 100) * (larguras[e.viewport] / 1080)})`,
+                      transformOrigin: "center",
+                      background: "var(--card)",
+                    }
+                  : {
+                      width: larguras[e.viewport],
+                      transform: `scale(${e.zoom / 100})`,
+                      transformOrigin: "center",
+                      background: e.doc.fundo,
+                      borderRadius: e.doc.layout.raio,
+                    }
             }
           >
             {e.docCanvas ? (
@@ -217,10 +224,17 @@ export function Stage() {
             ) : e.docHtml ? (
               <Artboard doc={e.docHtml} />
             ) : (
-              <Artboard doc={e.doc} selecionavel selecionado={e.selecionado} onSelecionar={e.setSelecionado} />
+              <Artboard
+                doc={e.doc}
+                selecionavel
+                selecionado={e.selecionado}
+                onSelecionar={e.setSelecionado}
+              />
             )}
 
-            {e.modoEdicao && e.selecionado && <SelecaoOverlay alvo={e.selecionado} palcoRef={palcoRef} />}
+            {e.modoEdicao && e.selecionado && (
+              <SelecaoOverlay alvo={e.selecionado} palcoRef={palcoRef} />
+            )}
 
             {(e.modoComentario || e.painelDireito === "comentarios") &&
               comentariosVisiveis.map((c) => (
@@ -233,7 +247,9 @@ export function Stage() {
                   }}
                   className={cn(
                     "absolute grid size-6 -translate-x-1/2 -translate-y-full place-items-center rounded-full rounded-bl-none text-[10px] font-bold shadow-[var(--shadow-panel)]",
-                    c.resolvido ? "bg-muted text-muted-foreground" : "bg-accent text-accent-foreground",
+                    c.resolvido
+                      ? "bg-muted text-muted-foreground"
+                      : "bg-accent text-accent-foreground",
                   )}
                   style={{ left: `${c.x}%`, top: `${c.y}%` }}
                 >
@@ -257,7 +273,10 @@ export function Stage() {
               className="mt-1 w-full rounded border border-transparent bg-transparent text-[12px] text-surface-foreground outline-none hover:border-border focus:border-border"
             />
             {ativo.respostas.map((r, i) => (
-              <p key={i} className="mt-2 border-l-2 border-border pl-2 text-[11px] text-muted-foreground">
+              <p
+                key={i}
+                className="mt-2 border-l-2 border-border pl-2 text-[11px] text-muted-foreground"
+              >
                 <span className="font-medium text-foreground">{r.autor}: </span>
                 {r.texto}
               </p>
@@ -277,7 +296,9 @@ export function Stage() {
                 placeholder="Responder ou @mencionar"
                 className="h-7 flex-1 rounded-md border border-border bg-card px-2 text-[11px] outline-none focus:ring-1 focus:ring-ring"
               />
-              <button className="h-7 rounded-md bg-primary px-2 text-[11px] text-primary-foreground">Enviar</button>
+              <button className="h-7 rounded-md bg-primary px-2 text-[11px] text-primary-foreground">
+                Enviar
+              </button>
             </form>
             <div className="mt-2 flex gap-2 text-[11px]">
               <button
@@ -310,19 +331,18 @@ export function Stage() {
           )
             .filter(([id]) => maisFerramentas || id === "cursor" || id === "mao")
             .map(([id, Icon, titulo]) => (
-
-            <button
-              key={id}
-              title={titulo}
-              onClick={() => e.setFerramenta(id)}
-              className={cn(
-                "grid size-6 place-items-center first:rounded-l-md last:rounded-r-md",
-                e.ferramenta === id ? "bg-primary text-primary-foreground" : "hover:bg-secondary",
-              )}
-            >
-              <Icon className="size-3.5" />
-            </button>
-          ))}
+              <button
+                key={id}
+                title={titulo}
+                onClick={() => e.setFerramenta(id)}
+                className={cn(
+                  "grid size-6 place-items-center first:rounded-l-md last:rounded-r-md",
+                  e.ferramenta === id ? "bg-primary text-primary-foreground" : "hover:bg-secondary",
+                )}
+              >
+                <Icon className="size-3.5" />
+              </button>
+            ))}
         </div>
 
         <div className="flex items-center rounded-md border border-border bg-card">
@@ -423,7 +443,9 @@ export function Stage() {
           }}
           className={cn(
             "flex h-6 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md px-2.5 text-[11px] font-semibold",
-            e.modoEdicao ? "bg-accent text-accent-foreground" : "bg-primary text-primary-foreground",
+            e.modoEdicao
+              ? "bg-accent text-accent-foreground"
+              : "bg-primary text-primary-foreground",
           )}
         >
           <Pencil className="size-3.5" /> {e.modoEdicao ? "Sair da edição" : "Editar"}
@@ -520,7 +542,14 @@ function CamadaCanvasView({
         onPointerDown={onPointerDown}
         data-camada={cid}
       >
-        <span style={{ display: "grid", placeItems: "center", gap: 8, color: "hsl(var(--muted-foreground))" }}>
+        <span
+          style={{
+            display: "grid",
+            placeItems: "center",
+            gap: 8,
+            color: "hsl(var(--muted-foreground))",
+          }}
+        >
           <ImagePlus style={{ width: 40, height: 40 }} />
           <span style={{ fontSize: 18 }}>Clique duas vezes para enviar uma imagem</span>
         </span>
@@ -540,7 +569,9 @@ function CamadaCanvasView({
           overflow: "hidden",
           borderRadius: c.raio !== undefined ? Math.min(c.raio, Math.min(c.w, c.h) / 2) : undefined,
           opacity: c.opacidade,
-          boxShadow: c.sombra ? `${c.sombra.x}px ${c.sombra.y}px ${c.sombra.blur}px ${c.sombra.cor}` : undefined,
+          boxShadow: c.sombra
+            ? `${c.sombra.x}px ${c.sombra.y}px ${c.sombra.blur}px ${c.sombra.cor}`
+            : undefined,
           ...marca,
         }}
         onClick={clique}
@@ -576,8 +607,12 @@ function CamadaCanvasView({
           background: c.cor,
           borderRadius: c.raio !== undefined ? Math.min(c.raio, Math.min(c.w, c.h) / 2) : undefined,
           opacity: c.opacidade,
-          border: c.borda ? `${c.borda.largura}px ${c.borda.estilo ?? "solid"} ${c.borda.cor}` : undefined,
-          boxShadow: c.sombra ? `${c.sombra.x}px ${c.sombra.y}px ${c.sombra.blur}px ${c.sombra.cor}` : undefined,
+          border: c.borda
+            ? `${c.borda.largura}px ${c.borda.estilo ?? "solid"} ${c.borda.cor}`
+            : undefined,
+          boxShadow: c.sombra
+            ? `${c.sombra.x}px ${c.sombra.y}px ${c.sombra.blur}px ${c.sombra.cor}`
+            : undefined,
           boxSizing: "border-box",
           ...marca,
         }}
@@ -615,7 +650,9 @@ function CamadaCanvasView({
     textAlign: c.alinhamento,
     opacity: c.opacidade,
     whiteSpace: c.quebra ? "pre-wrap" : "pre",
-    textShadow: c.sombra ? `${c.sombra.x}px ${c.sombra.y}px ${c.sombra.blur}px ${c.sombra.cor}` : undefined,
+    textShadow: c.sombra
+      ? `${c.sombra.x}px ${c.sombra.y}px ${c.sombra.blur}px ${c.sombra.cor}`
+      : undefined,
     fontKerning: "none",
     fontVariantLigatures: "none",
     ...marca,
@@ -858,8 +895,11 @@ export function CanvasView({
   onSelecionar?: ((paginaId: string, camadaId: string) => void) | undefined;
   escala?: number;
   arrastavel?: boolean;
-  onGeometria?: ((paginaId: string, camadaId: string, geo: Geo, modo: ModoArraste) => void) | undefined;
-  acoes?: ((ctx: { paginaId: string; camadaId: string; camada: CanvasCamada }) => React.ReactNode) | undefined;
+  onGeometria?:
+    ((paginaId: string, camadaId: string, geo: Geo, modo: ModoArraste) => void) | undefined;
+  acoes?:
+    | ((ctx: { paginaId: string; camadaId: string; camada: CanvasCamada }) => React.ReactNode)
+    | undefined;
   editando?: string | null;
   onTextoInput?: ((novo: string) => void) | undefined;
   onSelecaoTexto?: ((sel: { inicio: number; fim: number } | null) => void) | undefined;
@@ -938,7 +978,13 @@ export function CanvasView({
         h: Math.round(geo.h),
       };
       st.atual = arredondado;
-      setArraste({ paginaId: st.paginaId, camadaId: st.camadaId, modo: st.modo, geo: arredondado, guias });
+      setArraste({
+        paginaId: st.paginaId,
+        camadaId: st.camadaId,
+        modo: st.modo,
+        geo: arredondado,
+        guias,
+      });
     };
     const soltar = () => {
       const st = refArraste.current;
@@ -1040,7 +1086,12 @@ export function CanvasView({
                 const cid = idCamadaCanvas(c, j, pid);
                 const vivo =
                   arraste && arraste.camadaId === cid
-                    ? ({ ...c, x: arraste.geo.x, y: arraste.geo.y, ...(c.tipo === "texto" ? {} : { w: arraste.geo.w, h: arraste.geo.h }) } as CanvasCamada)
+                    ? ({
+                        ...c,
+                        x: arraste.geo.x,
+                        y: arraste.geo.y,
+                        ...(c.tipo === "texto" ? {} : { w: arraste.geo.w, h: arraste.geo.h }),
+                      } as CanvasCamada)
                     : c;
                 return (
                   <CamadaCanvasView
@@ -1079,7 +1130,8 @@ export function CanvasView({
                 >
                   <div className="flex items-center gap-0.5 rounded-lg border border-border bg-popover p-1 shadow-[var(--shadow-panel)]">
                     <span className="whitespace-nowrap px-1 text-[10px] font-semibold text-accent">
-                      {selNaPagina.nome ?? selNaPagina.tipo} · {Math.round(dimSel.w)}×{Math.round(dimSel.h)}
+                      {selNaPagina.nome ?? selNaPagina.tipo} · {Math.round(dimSel.w)}×
+                      {Math.round(dimSel.h)}
                     </span>
                     {acoes && (
                       <>
@@ -1091,7 +1143,6 @@ export function CanvasView({
                 </div>
               )}
 
-
               {alcas && geoSel && selNaPagina && (
                 <>
                   {(["nw", "ne", "sw", "se"] as const).map((m) => (
@@ -1102,7 +1153,8 @@ export function CanvasView({
                         position: "absolute",
                         width: lado,
                         height: lado,
-                        left: (m === "nw" || m === "sw" ? geoSel.x : geoSel.x + geoSel.w) - lado / 2,
+                        left:
+                          (m === "nw" || m === "sw" ? geoSel.x : geoSel.x + geoSel.w) - lado / 2,
                         top: (m === "nw" || m === "ne" ? geoSel.y : geoSel.y + geoSel.h) - lado / 2,
                         background: "hsl(var(--accent))",
                         border: `${1 / (escala || 1)}px solid #fff`,
@@ -1205,7 +1257,9 @@ function CanvasComSelecao({ doc }: { doc: DocCanvas }) {
   /* estilo de um trecho selecionado na camada em edição */
   const camadaEditando = editando ? acharCamadaCanvas(doc, e.paginaCanvas, editando)?.camada : null;
   const camadaTexto =
-    camadaEditando && camadaEditando.tipo === "texto" ? (camadaEditando as CanvasCamadaTexto) : null;
+    camadaEditando && camadaEditando.tipo === "texto"
+      ? (camadaEditando as CanvasCamadaTexto)
+      : null;
   const temTrecho = !!(selTexto && selTexto.fim > selTexto.inicio);
   const estiloSel: Partial<CanvasParteTexto> =
     camadaTexto && temTrecho ? estiloDoTrecho(camadaTexto, selTexto!.inicio, selTexto!.fim) : {};
@@ -1217,7 +1271,7 @@ function CanvasComSelecao({ doc }: { doc: DocCanvas }) {
     if (!camadaTexto || !temTrecho || !editando) return;
     const { inicio, fim } = selTexto!;
     patchCamada(
-      e.paginaCanvas ?? (doc.paginas?.[0]?.id ?? "p1"),
+      e.paginaCanvas ?? doc.paginas?.[0]?.id ?? "p1",
       editando,
       (c) => aplicarEstiloEmTrecho(c as CanvasCamadaTexto, inicio, fim, patch),
       rotulo,
@@ -1225,7 +1279,12 @@ function CanvasComSelecao({ doc }: { doc: DocCanvas }) {
   };
 
   const gravar = useCallback(
-    (pid: string, cid: string, geo: { x: number; y: number; w: number; h: number }, modo: string) => {
+    (
+      pid: string,
+      cid: string,
+      geo: { x: number; y: number; w: number; h: number },
+      modo: string,
+    ) => {
       e.atualizarDocCanvas(
         (d) =>
           comCamadaCanvas(d, pid, cid, (c) => {
@@ -1350,7 +1409,7 @@ function CanvasComSelecao({ doc }: { doc: DocCanvas }) {
         onTextoInput={(novo) => {
           if (!editando) return;
           patchCamada(
-            e.paginaCanvas ?? (doc.paginas?.[0]?.id ?? "p1"),
+            e.paginaCanvas ?? doc.paginas?.[0]?.id ?? "p1",
             editando,
             (c) => substituirTextoPreservandoPartes(c as CanvasCamadaTexto, novo),
             "Editou o texto",
@@ -1374,8 +1433,16 @@ function CanvasComSelecao({ doc }: { doc: DocCanvas }) {
                   [
                     ["Negrito", Bold, () => ({ peso: estiloSel.peso === 700 ? undefined : 700 })],
                     ["Itálico", Italic, () => ({ italico: estiloSel.italico ? undefined : true })],
-                    ["Sublinhado", Underline, () => ({ sublinhado: estiloSel.sublinhado ? undefined : true })],
-                    ["Riscado", Strikethrough, () => ({ riscado: estiloSel.riscado ? undefined : true })],
+                    [
+                      "Sublinhado",
+                      Underline,
+                      () => ({ sublinhado: estiloSel.sublinhado ? undefined : true }),
+                    ],
+                    [
+                      "Riscado",
+                      Strikethrough,
+                      () => ({ riscado: estiloSel.riscado ? undefined : true }),
+                    ],
                   ] as const
                 ).map(([titulo, Icon, calc]) => (
                   <button
@@ -1386,10 +1453,18 @@ function CanvasComSelecao({ doc }: { doc: DocCanvas }) {
                     onClick={() => aplicarNoTrecho(calc(), `Aplicou ${titulo.toLowerCase()}`)}
                     className={cn(
                       "grid size-6 place-items-center rounded-md hover:bg-secondary disabled:opacity-40",
-                      titulo === "Negrito" && estiloSel.peso === 700 && "bg-primary text-primary-foreground",
-                      titulo === "Itálico" && estiloSel.italico && "bg-primary text-primary-foreground",
-                      titulo === "Sublinhado" && estiloSel.sublinhado && "bg-primary text-primary-foreground",
-                      titulo === "Riscado" && estiloSel.riscado && "bg-primary text-primary-foreground",
+                      titulo === "Negrito" &&
+                        estiloSel.peso === 700 &&
+                        "bg-primary text-primary-foreground",
+                      titulo === "Itálico" &&
+                        estiloSel.italico &&
+                        "bg-primary text-primary-foreground",
+                      titulo === "Sublinhado" &&
+                        estiloSel.sublinhado &&
+                        "bg-primary text-primary-foreground",
+                      titulo === "Riscado" &&
+                        estiloSel.riscado &&
+                        "bg-primary text-primary-foreground",
                     )}
                   >
                     <Icon className="size-3.5" />
@@ -1423,17 +1498,26 @@ function CanvasComSelecao({ doc }: { doc: DocCanvas }) {
                   onClick={() => e.setPainelEdicao("simples")}
                   className={cn(
                     "flex h-6 items-center gap-1 rounded-md px-1.5 text-[11px]",
-                    e.painelEdicao === "simples" ? "bg-primary text-primary-foreground" : "hover:bg-secondary",
+                    e.painelEdicao === "simples"
+                      ? "bg-primary text-primary-foreground"
+                      : "hover:bg-secondary",
                   )}
                 >
-                  {camada.tipo === "texto" ? <Type className="size-3.5" /> : <Palette className="size-3.5" />} Editar
+                  {camada.tipo === "texto" ? (
+                    <Type className="size-3.5" />
+                  ) : (
+                    <Palette className="size-3.5" />
+                  )}{" "}
+                  Editar
                 </button>
                 <button
                   title="Camadas e posição (Pro)"
                   onClick={() => e.setPainelEdicao("pro")}
                   className={cn(
                     "flex h-6 items-center gap-1 rounded-md px-1.5 text-[11px]",
-                    e.painelEdicao === "pro" ? "bg-primary text-primary-foreground" : "hover:bg-secondary",
+                    e.painelEdicao === "pro"
+                      ? "bg-primary text-primary-foreground"
+                      : "hover:bg-secondary",
                   )}
                 >
                   <LayoutGrid className="size-3.5" /> Pro
@@ -1463,7 +1547,10 @@ function CanvasComSelecao({ doc }: { doc: DocCanvas }) {
                       e.atualizarDocCanvas(
                         (d) =>
                           comCamadaCanvas(d, paginaId, camadaId, (c) => {
-                            const novo = virarPlaceholderImagem(c) as unknown as Record<string, unknown>;
+                            const novo = virarPlaceholderImagem(c) as unknown as Record<
+                              string,
+                              unknown
+                            >;
                             Object.keys(c as unknown as Record<string, unknown>).forEach(
                               (k) => delete (c as unknown as Record<string, unknown>)[k],
                             );
@@ -1481,7 +1568,10 @@ function CanvasComSelecao({ doc }: { doc: DocCanvas }) {
                   title="Duplicar camada"
                   onClick={() => {
                     const copia = duplicarCamadaCanvas(camada);
-                    e.atualizarDocCanvas((d) => adicionarCamadaCanvas(d, paginaId, copia), "Duplicou camada");
+                    e.atualizarDocCanvas(
+                      (d) => adicionarCamadaCanvas(d, paginaId, copia),
+                      "Duplicou camada",
+                    );
                     e.setCamadaCanvas(copia.id!);
                   }}
                   className="grid size-6 place-items-center rounded-md hover:bg-secondary"
@@ -1491,7 +1581,10 @@ function CanvasComSelecao({ doc }: { doc: DocCanvas }) {
                 <button
                   title="Excluir camada"
                   onClick={() => {
-                    e.atualizarDocCanvas((d) => removerCamadaCanvas(d, paginaId, camadaId), "Apagou camada");
+                    e.atualizarDocCanvas(
+                      (d) => removerCamadaCanvas(d, paginaId, camadaId),
+                      "Apagou camada",
+                    );
                     e.setCamadaCanvas(null);
                   }}
                   className="grid size-6 place-items-center rounded-md hover:bg-secondary"
@@ -1565,7 +1658,8 @@ export function Artboard({
             : undefined
         }
         className={cn(
-          selecionavel && "cursor-default rounded-sm outline-offset-2 hover:outline hover:outline-1 hover:outline-accent/50",
+          selecionavel &&
+            "cursor-default rounded-sm outline-offset-2 hover:outline hover:outline-1 hover:outline-accent/50",
           selecionado === id && selecionavel && "outline outline-2 outline-accent",
         )}
       >
@@ -1591,7 +1685,10 @@ export function Artboard({
       case "titulo":
         return (
           <h2
-            className={cn("font-semibold leading-tight tracking-tight", doc.heroiCheio ? "max-w-full" : "max-w-[80%]")}
+            className={cn(
+              "font-semibold leading-tight tracking-tight",
+              doc.heroiCheio ? "max-w-full" : "max-w-[80%]",
+            )}
             style={{ fontSize: 32, ...st }}
           >
             {doc.textos.titulo}
@@ -1600,7 +1697,10 @@ export function Artboard({
       case "subtitulo":
         return (
           <p
-            className={cn("text-[13px] leading-relaxed text-muted-foreground", doc.heroiCheio ? "" : "max-w-[70%]")}
+            className={cn(
+              "text-[13px] leading-relaxed text-muted-foreground",
+              doc.heroiCheio ? "" : "max-w-[70%]",
+            )}
             style={st}
           >
             {doc.textos.subtitulo}
@@ -1609,7 +1709,12 @@ export function Artboard({
       case "cta": {
         const sec = doc.estilos.ctaSecundario;
         return (
-          <div className={cn("flex gap-2", doc.estilos.titulo?.alinhamento === "center" && "justify-center")}>
+          <div
+            className={cn(
+              "flex gap-2",
+              doc.estilos.titulo?.alinhamento === "center" && "justify-center",
+            )}
+          >
             <span
               className="rounded-md bg-primary px-3 py-1.5 text-[12px] font-medium text-primary-foreground"
               style={{ ...estiloCss(s), borderRadius: doc.layout.raio }}
@@ -1640,7 +1745,10 @@ export function Artboard({
         return doc.provaSocial ? (
           <div className="flex flex-wrap items-center gap-6 border-t border-border pt-4" style={st}>
             {doc.logos.map((l) => (
-              <span key={l} className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+              <span
+                key={l}
+                className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground"
+              >
                 {l}
               </span>
             ))}
@@ -1697,7 +1805,12 @@ function SelecaoOverlay({
     const r = el.getBoundingClientRect();
     const escala = e.zoom / 100;
     setPalcoW(p.width / escala);
-    setCaixa({ x: (r.left - p.left) / escala, y: (r.top - p.top) / escala, w: r.width / escala, h: r.height / escala });
+    setCaixa({
+      x: (r.left - p.left) / escala,
+      y: (r.top - p.top) / escala,
+      w: r.width / escala,
+      h: r.height / escala,
+    });
   }, [alvo, palcoRef, e.zoom]);
 
   useLayoutEffect(medir, [medir, e.doc]);
@@ -1724,7 +1837,14 @@ function SelecaoOverlay({
     return () => ro.disconnect();
   }, [e.zoom, alvo]);
 
-  const grupo = alvo === "topo" ? "Topo" : alvo === "prova" ? "Prova social" : alvo === "rodape" ? "Rodapé" : "Herói";
+  const grupo =
+    alvo === "topo"
+      ? "Topo"
+      : alvo === "prova"
+        ? "Prova social"
+        : alvo === "rodape"
+          ? "Rodapé"
+          : "Herói";
 
   const ESPACO = 12;
   const acimaTem = caixa ? caixa.y - barra.h - ESPACO >= 0 : false;
@@ -1744,9 +1864,14 @@ function SelecaoOverlay({
           className="pointer-events-none absolute rounded-sm outline outline-2 outline-accent"
           style={{ left: caixa.x, top: caixa.y, width: caixa.w, height: caixa.h }}
         >
-          {["-left-1 -top-1", "-right-1 -top-1", "-bottom-1 -left-1", "-bottom-1 -right-1"].map((pos) => (
-            <span key={pos} className={cn("absolute size-2 rounded-[2px] border border-accent bg-card", pos)} />
-          ))}
+          {["-left-1 -top-1", "-right-1 -top-1", "-bottom-1 -left-1", "-bottom-1 -right-1"].map(
+            (pos) => (
+              <span
+                key={pos}
+                className={cn("absolute size-2 rounded-[2px] border border-accent bg-card", pos)}
+              />
+            ),
+          )}
         </div>
       )}
 
@@ -1794,7 +1919,11 @@ function SelecaoOverlay({
               if (d.ordem.includes(copia) && copia !== alvo) return d;
               const ordem = [...d.ordem];
               ordem.splice(i + 1, 0, copia);
-              return { ...d, ordem, estilos: { ...d.estilos, [copia]: { ...(d.estilos[alvo] ?? {}), oculto: false } } };
+              return {
+                ...d,
+                ordem,
+                estilos: { ...d.estilos, [copia]: { ...(d.estilos[alvo] ?? {}), oculto: false } },
+              };
             }, `Duplicou ${rotuloEl[alvo]}`)
           }
           className="grid size-6 place-items-center rounded-md hover:bg-secondary"
@@ -1805,7 +1934,10 @@ function SelecaoOverlay({
           title="Excluir elemento"
           onClick={() => {
             e.atualizarDoc(
-              (d) => ({ ...d, estilos: { ...d.estilos, [alvo]: { ...(d.estilos[alvo] ?? {}), oculto: true } } }),
+              (d) => ({
+                ...d,
+                estilos: { ...d.estilos, [alvo]: { ...(d.estilos[alvo] ?? {}), oculto: true } },
+              }),
               `Ocultou ${rotuloEl[alvo]}`,
             );
           }}
@@ -1815,7 +1947,9 @@ function SelecaoOverlay({
         </button>
         <span className="mx-1 h-4 w-px bg-border" />
         <button
-          onClick={() => e.enviarPedido(`Melhorar ${rotuloEl[alvo].toLowerCase()} do herói com mais respiro`)}
+          onClick={() =>
+            e.enviarPedido(`Melhorar ${rotuloEl[alvo].toLowerCase()} do herói com mais respiro`)
+          }
           className="flex h-6 items-center gap-1 whitespace-nowrap rounded-md bg-accent px-2 text-[11px] font-medium text-accent-foreground"
         >
           <Sparkles className="size-3" /> Pedir ao assistente
