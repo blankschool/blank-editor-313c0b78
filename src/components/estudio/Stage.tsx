@@ -574,7 +574,7 @@ function CamadaCanvasView({
           width: c.w,
           height: c.h,
           background: c.cor,
-          borderRadius: c.raio,
+          borderRadius: c.raio !== undefined ? Math.min(c.raio, Math.min(c.w, c.h) / 2) : undefined,
           opacity: c.opacidade,
           border: c.borda ? `${c.borda.largura}px ${c.borda.estilo ?? "solid"} ${c.borda.cor}` : undefined,
           boxShadow: c.sombra ? `${c.sombra.x}px ${c.sombra.y}px ${c.sombra.blur}px ${c.sombra.cor}` : undefined,
@@ -582,56 +582,162 @@ function CamadaCanvasView({
           ...marca,
         }}
         onClick={clique}
+        onDoubleClick={duplo}
         onPointerDown={onPointerDown}
         data-camada={cid}
       />
     );
   }
+  const estiloTexto: React.CSSProperties = {
+    position: "absolute",
+    left: c.x,
+    top: c.y,
+    width: c.w,
+    height: c.h,
+    fontFamily: c.fonte ? `"${c.fonte}", sans-serif` : undefined,
+    fontWeight: c.peso,
+    fontSize: c.tamanho,
+    fontStyle: c.italico ? "italic" : undefined,
+    textDecoration:
+      c.sublinhado && c.riscado
+        ? "underline line-through"
+        : c.sublinhado
+          ? "underline"
+          : c.riscado
+            ? "line-through"
+            : undefined,
+    textTransform: c.caixa && c.caixa !== "normal" ? c.caixa : undefined,
+    background: c.fundo,
+    borderRadius: c.raio,
+    lineHeight: c.entrelinha !== undefined ? `${c.entrelinha}px` : undefined,
+    letterSpacing: c.entreLetras !== undefined ? `${c.entreLetras}px` : undefined,
+    color: c.cor,
+    textAlign: c.alinhamento,
+    opacity: c.opacidade,
+    whiteSpace: c.quebra ? "pre-wrap" : "pre",
+    textShadow: c.sombra ? `${c.sombra.x}px ${c.sombra.y}px ${c.sombra.blur}px ${c.sombra.cor}` : undefined,
+    fontKerning: "none",
+    fontVariantLigatures: "none",
+    ...marca,
+  };
+
+  if (editando)
+    return (
+      <TextoEditavelPalco
+        camada={c}
+        cid={cid}
+        estilo={{ ...estiloTexto, outline: "2px solid hsl(var(--accent))", cursor: "text" }}
+        onTextoInput={onTextoInput}
+        onSelecaoTexto={onSelecaoTexto}
+      />
+    );
+
   return (
     <div
-      style={{
-        position: "absolute",
-        left: c.x,
-        top: c.y,
-        width: c.w,
-        height: c.h,
-        fontFamily: c.fonte ? `"${c.fonte}", sans-serif` : undefined,
-        fontWeight: c.peso,
-        fontSize: c.tamanho,
-        fontStyle: c.italico ? "italic" : undefined,
-        textDecoration:
-          c.sublinhado && c.riscado
-            ? "underline line-through"
-            : c.sublinhado
-              ? "underline"
-              : c.riscado
-                ? "line-through"
-                : undefined,
-        textTransform: c.caixa && c.caixa !== "normal" ? c.caixa : undefined,
-        background: c.fundo,
-        lineHeight: c.entrelinha !== undefined ? `${c.entrelinha}px` : undefined,
-        letterSpacing: c.entreLetras !== undefined ? `${c.entreLetras}px` : undefined,
-        color: c.cor,
-        textAlign: c.alinhamento,
-        opacity: c.opacidade,
-        whiteSpace: c.quebra ? "pre-wrap" : "pre",
-        textShadow: c.sombra ? `${c.sombra.x}px ${c.sombra.y}px ${c.sombra.blur}px ${c.sombra.cor}` : undefined,
-        fontKerning: "none",
-        fontVariantLigatures: "none",
-        ...marca,
-      }}
+      style={estiloTexto}
       onClick={clique}
+      onDoubleClick={duplo}
       onPointerDown={onPointerDown}
       data-camada={cid}
     >
       {c.partes
         ? c.partes.map((p, i) => (
-            <span key={i} style={{ fontWeight: p.peso, color: p.cor }}>
+            <span
+              key={i}
+              style={{
+                fontWeight: p.peso,
+                color: p.cor,
+                fontSize: p.tamanho,
+                fontStyle: p.italico ? "italic" : undefined,
+                textDecoration:
+                  p.sublinhado && p.riscado
+                    ? "underline line-through"
+                    : p.sublinhado
+                      ? "underline"
+                      : p.riscado
+                        ? "line-through"
+                        : undefined,
+              }}
+            >
               {p.texto}
             </span>
           ))
         : c.texto}
     </div>
+  );
+}
+
+/** edição no lugar: contenteditable que preserva os trechos estilizados */
+function TextoEditavelPalco({
+  camada,
+  cid,
+  estilo,
+  onTextoInput,
+  onSelecaoTexto,
+}: {
+  camada: CanvasCamadaTexto;
+  cid?: string;
+  estilo: React.CSSProperties;
+  onTextoInput?: ((novo: string) => void) | undefined;
+  onSelecaoTexto?: ((sel: { inicio: number; fim: number } | null) => void) | undefined;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const digitando = useRef(false);
+  const html = partesParaHtml(partesDaCamadaCanvas(camada));
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    if (digitando.current) {
+      digitando.current = false;
+      return;
+    }
+    if (el.innerHTML === html) return;
+    const sel = offsetsDaSelecao(el);
+    el.innerHTML = html;
+    if (sel) restaurarOffsets(el, sel.inicio, sel.fim);
+  }, [html]);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.focus();
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    const s = window.getSelection();
+    s?.removeAllRanges();
+    s?.addRange(range);
+    onSelecaoTexto?.(offsetsDaSelecao(el));
+    const onSel = () => {
+      if (document.activeElement === el) onSelecaoTexto?.(offsetsDaSelecao(el));
+    };
+    document.addEventListener("selectionchange", onSel);
+    return () => document.removeEventListener("selectionchange", onSel);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <div
+      ref={ref}
+      contentEditable
+      suppressContentEditableWarning
+      spellCheck={false}
+      style={estilo}
+      data-camada={cid}
+      onPointerDown={(ev) => ev.stopPropagation()}
+      onClick={(ev) => ev.stopPropagation()}
+      onInput={() => {
+        const el = ref.current;
+        if (!el) return;
+        digitando.current = true;
+        onTextoInput?.(textoDoElemento(el));
+      }}
+      onKeyDown={(ev) => {
+        ev.stopPropagation();
+        if (ev.key === "Escape") (ev.currentTarget as HTMLElement).blur();
+      }}
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
   );
 }
 
