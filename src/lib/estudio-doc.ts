@@ -132,6 +132,10 @@ export interface CanvasParteTexto {
   texto: string;
   peso?: number;
   cor?: string;
+  italico?: boolean;
+  sublinhado?: boolean;
+  riscado?: boolean;
+  tamanho?: number;
 }
 
 export interface CanvasSombra {
