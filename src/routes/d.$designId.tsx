@@ -31,27 +31,24 @@ const CHAVE_LARGURAS = "estudio:larguras:v1";
 
 function WorkspaceLayout() {
   const e = useEstudio();
-  const larguras = useRef<number[] | null>(null);
+  const [layout, setLayout] = useState<Record<string, number> | undefined>(undefined);
 
   useEffect(() => {
     try {
       const bruto = localStorage.getItem(CHAVE_LARGURAS);
-      if (bruto) larguras.current = JSON.parse(bruto) as number[];
+      if (bruto) setLayout(JSON.parse(bruto) as Record<string, number>);
     } catch {
       /* ignora */
     }
   }, []);
 
-  const guardar = useCallback((tamanhos: number[]) => {
-    larguras.current = tamanhos;
+  const guardar = useCallback((novo: Record<string, number>) => {
     try {
-      localStorage.setItem(CHAVE_LARGURAS, JSON.stringify(tamanhos));
+      localStorage.setItem(CHAVE_LARGURAS, JSON.stringify(novo));
     } catch {
       /* ignora */
     }
   }, []);
-
-  const salvos = larguras.current;
 
   return (
     <main className="flex h-screen flex-col overflow-hidden bg-background text-foreground">
@@ -70,28 +67,27 @@ function WorkspaceLayout() {
           </div>
         )}
 
-        <ResizablePanelGroup direction="horizontal" onLayout={guardar} className="min-w-0 flex-1">
+        <ResizablePanelGroup
+          orientation="horizontal"
+          defaultLayout={layout}
+          onLayoutChanged={guardar}
+          className="min-w-0 flex-1"
+        >
           {e.bibliotecaAberta && (
             <>
-              <ResizablePanel
-                id="biblioteca"
-                order={1}
-                defaultSize={salvos?.[0] ?? 18}
-                minSize={12}
-                maxSize={32}
-                className="min-w-0"
-              >
+              <ResizablePanel id="biblioteca" defaultSize="18" minSize="12" maxSize="32" className="min-w-0">
                 <LibrarySidebar />
               </ResizablePanel>
               <ResizableHandle
                 withHandle
                 onDoubleClick={() => e.setBibliotecaAberta(false)}
+                title="Arraste para redimensionar · duplo clique recolhe"
                 className="w-1.5 bg-transparent hover:bg-border"
               />
             </>
           )}
 
-          <ResizablePanel id="palco" order={2} defaultSize={salvos?.[1] ?? 60} minSize={30} className="min-w-0">
+          <ResizablePanel id="palco" defaultSize="60" minSize="30" className="min-w-0">
             <div className="flex h-full min-w-0">
               <Stage />
               <Outlet />
@@ -103,16 +99,10 @@ function WorkspaceLayout() {
               <ResizableHandle
                 withHandle
                 onDoubleClick={() => e.setConversaAberta(false)}
+                title="Arraste para redimensionar · duplo clique recolhe"
                 className="w-1.5 bg-transparent hover:bg-border"
               />
-              <ResizablePanel
-                id="conversa"
-                order={3}
-                defaultSize={salvos?.[2] ?? 22}
-                minSize={16}
-                maxSize={40}
-                className="min-w-0"
-              >
+              <ResizablePanel id="conversa" defaultSize="22" minSize="16" maxSize="40" className="min-w-0">
                 <ChatPane />
               </ResizablePanel>
             </>
@@ -121,6 +111,7 @@ function WorkspaceLayout() {
 
         <PanelRail />
       </div>
+
 
       {!e.conversaAberta && (
         <button
