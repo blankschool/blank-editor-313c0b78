@@ -302,6 +302,23 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
   const modoEdicaoRef = useRef(modoEdicao);
   modoEdicaoRef.current = modoEdicao;
 
+  /* pilhas de desfazer / refazer (documento inteiro, agrupado por rótulo + tempo) */
+  const pilhaDesfazer = useRef<Instantaneo[]>([]);
+  const pilhaRefazer = useRef<Instantaneo[]>([]);
+  const ultimoPasso = useRef<{ rotulo: string; t: number }>({ rotulo: "", t: 0 });
+  const [podeDesfazer, setPodeDesfazer] = useState(false);
+  const [podeRefazer, setPodeRefazer] = useState(false);
+  const sincronizarPilhas = useCallback(() => {
+    setPodeDesfazer(pilhaDesfazer.current.length > 0);
+    setPodeRefazer(pilhaRefazer.current.length > 0);
+  }, []);
+  const limparPilhas = useCallback(() => {
+    pilhaDesfazer.current = [];
+    pilhaRefazer.current = [];
+    ultimoPasso.current = { rotulo: "", t: 0 };
+    sincronizarPilhas();
+  }, [sincronizarPilhas]);
+
   useEffect(() => {
     const remoto = designQ.data;
     if (!remoto) {
