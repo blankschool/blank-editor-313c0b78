@@ -301,3 +301,17 @@ export async function enviarArquivoPrivado(file: File) {
   if (error) throw error;
   return data;
 }
+
+export async function enviarImagemCanvas(file: File): Promise<string> {
+  const user = await usuarioAtual();
+  if (!user) throw new Error("Entre na sua conta para enviar imagens.");
+  const path = `${user.id}/${crypto.randomUUID()}-${file.name}`;
+  const { error } = await supabase.storage.from("uploads").upload(path, file, {
+    ...(file.type ? { contentType: file.type } : {}),
+    upsert: false,
+  });
+  if (error) throw error;
+  const publica = supabase.storage.from("uploads").getPublicUrl(path).data.publicUrl;
+  const { data: assinada } = await supabase.storage.from("uploads").createSignedUrl(path, 60 * 60 * 24 * 365);
+  return assinada?.signedUrl ?? publica;
+}
