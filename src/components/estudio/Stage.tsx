@@ -466,12 +466,20 @@ function CamadaCanvasView({
   selecionada,
   onSelecionar,
   onPointerDown,
+  editando,
+  onTextoInput,
+  onSelecaoTexto,
+  onDuploClique,
 }: {
   c: CanvasCamada;
   cid?: string;
   selecionada?: boolean;
   onSelecionar?: (() => void) | undefined;
   onPointerDown?: ((ev: React.PointerEvent) => void) | undefined;
+  editando?: boolean;
+  onTextoInput?: ((novo: string) => void) | undefined;
+  onSelecaoTexto?: ((sel: { inicio: number; fim: number } | null) => void) | undefined;
+  onDuploClique?: (() => void) | undefined;
 }) {
   if (c.oculto) return null;
   const marca: React.CSSProperties = selecionada
