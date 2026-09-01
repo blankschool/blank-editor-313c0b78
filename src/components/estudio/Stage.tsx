@@ -977,16 +977,13 @@ function ImagemCanvasView({
                 {Math.round(zoomAtual * 100)}%
               </span>
               <span className="h-4 w-px bg-border" />
-              <button
-                className="rounded-md px-2 py-1 text-[11px] hover:bg-secondary"
-                onClick={() => {
-                  const r = Math.round(innerRot);
-                  return void r;
-                }}
+              <span
+                className="text-[11px] tabular-nums text-muted-foreground"
                 title="Rotação atual da foto"
               >
                 {Math.round(innerRot)}°
-              </button>
+              </span>
+
               <span className="h-4 w-px bg-border" />
               <button
                 className="rounded-md bg-primary px-2 py-1 text-[11px] text-primary-foreground"
