@@ -43,7 +43,7 @@ export function ChatPane() {
   };
 
   return (
-    <aside className="flex w-[380px] shrink-0 flex-col border-l border-border bg-sidebar">
+    <aside className="flex h-full w-full min-w-0 flex-col border-l border-border bg-sidebar">
       <div className="flex h-9 shrink-0 items-center border-b border-border px-3 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
         Conversa
       </div>

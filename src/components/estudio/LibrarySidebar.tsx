@@ -1,6 +1,6 @@
-import { Copy, Plus, Search, Star, SlidersHorizontal, FileText, Layers } from "lucide-react";
+import { useState } from "react";
+import { Copy, Plus, Search, Star, SlidersHorizontal, FileText, Layers, PanelLeftClose } from "lucide-react";
 import { useEstudio, type FiltroBiblioteca } from "./EstudioContext";
-import { arvoreProjeto } from "@/lib/estudio-mock";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 
@@ -11,16 +11,33 @@ const filtros: { id: FiltroBiblioteca; rotulo: string }[] = [
 ];
 
 export function LibrarySidebar() {
-  const { designs, busca, setBusca, filtro, setFiltro, abrirDesign, duplicarDesign, novoDesign, favoritar, abaAtiva } =
-    useEstudio();
+  const {
+    designs,
+    busca,
+    setBusca,
+    filtro,
+    setFiltro,
+    abrirDesign,
+    duplicarDesign,
+    novoDesign,
+    favoritar,
+    abaAtiva,
+    temSessao,
+    setBibliotecaAberta,
+  } = useEstudio();
+  const [mostrarFiltros, setMostrarFiltros] = useState(false);
+  const [mostrarArvore, setMostrarArvore] = useState(false);
 
   const lista = designs
     .filter((d) => d.nome.toLowerCase().includes(busca.toLowerCase()))
     .filter((d) => (filtro === "favoritos" ? d.favorito : true))
     .sort((a, b) => (filtro === "tipo" ? a.tipo.localeCompare(b.tipo) : 0));
 
+  const grupos = Array.from(new Set(lista.map((d) => d.tipo)));
+
+
   return (
-    <aside className="flex w-[262px] shrink-0 flex-col border-r border-border bg-sidebar">
+    <aside className="flex h-full w-full min-w-0 flex-col border-r border-border bg-sidebar">
       <div className="flex items-center gap-1.5 p-2.5">
         <div className="relative flex-1">
           <Search className="pointer-events-none absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -31,27 +48,44 @@ export function LibrarySidebar() {
             className="h-7 w-full rounded-md border border-border bg-card pl-7 pr-2 text-[12px] outline-none placeholder:text-muted-foreground focus:ring-1 focus:ring-ring"
           />
         </div>
-        <button className="grid size-7 shrink-0 place-items-center rounded-md border border-border bg-card hover:bg-secondary">
+        <button
+          onClick={() => setMostrarFiltros((v) => !v)}
+          title="Filtros"
+          className={cn(
+            "grid size-7 shrink-0 place-items-center rounded-md border bg-card hover:bg-secondary",
+            mostrarFiltros ? "border-primary text-primary" : "border-border",
+          )}
+        >
           <SlidersHorizontal className="size-3.5" />
+        </button>
+        <button
+          onClick={() => setBibliotecaAberta(false)}
+          title="Recolher biblioteca"
+          className="grid size-7 shrink-0 place-items-center rounded-md border border-border bg-card hover:bg-secondary"
+        >
+          <PanelLeftClose className="size-3.5" />
         </button>
       </div>
 
-      <div className="flex gap-1 px-2.5 pb-2">
-        {filtros.map((f) => (
-          <button
-            key={f.id}
-            onClick={() => setFiltro(f.id)}
-            className={cn(
-              "rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition-colors",
-              filtro === f.id
-                ? "border-primary bg-primary text-primary-foreground"
-                : "border-border bg-card text-muted-foreground hover:text-foreground",
-            )}
-          >
-            {f.rotulo}
-          </button>
-        ))}
-      </div>
+      {mostrarFiltros && (
+        <div className="flex gap-1 px-2.5 pb-2">
+          {filtros.map((f) => (
+            <button
+              key={f.id}
+              onClick={() => setFiltro(f.id)}
+              className={cn(
+                "rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition-colors",
+                filtro === f.id
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border bg-card text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {f.rotulo}
+            </button>
+          ))}
+        </div>
+      )}
+
 
       <ScrollArea className="flex-1">
         <div className="grid grid-cols-2 gap-2 px-2.5 pb-3">
@@ -94,6 +128,12 @@ export function LibrarySidebar() {
           ))}
         </div>
 
+        {lista.length === 0 && (
+          <p className="px-2.5 pb-3 text-[11px] text-muted-foreground">
+            {temSessao ? "Nenhum design ainda." : "Entre na sua conta para ver seus designs."}
+          </p>
+        )}
+
         <button
           onClick={novoDesign}
           className="mx-2.5 mb-4 flex h-8 w-[calc(100%-20px)] items-center justify-center gap-1.5 rounded-md border border-dashed border-border text-[11px] font-semibold text-muted-foreground hover:border-accent hover:text-accent"
@@ -102,26 +142,35 @@ export function LibrarySidebar() {
         </button>
 
         <div className="border-t border-border px-2.5 py-3">
-          <p className="mb-2 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <button
+            onClick={() => setMostrarArvore((v) => !v)}
+            className="mb-2 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground"
+          >
             <Layers className="size-3" /> Árvore do projeto
-          </p>
-          {arvoreProjeto.map((p) => (
-            <div key={p.id} className="mb-2">
-              <p className="text-[11px] font-medium">{p.nome}</p>
-              <ul className="mt-0.5 space-y-0.5 border-l border-border pl-2">
-                {p.filhos.map((f) => (
-                  <li
-                    key={f}
-                    className="flex items-center gap-1 truncate text-[11px] text-muted-foreground hover:text-foreground"
-                  >
-                    <FileText className="size-3 shrink-0" /> {f}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+          </button>
+          {mostrarArvore &&
+            grupos.map((g) => (
+              <div key={g} className="mb-2">
+                <p className="text-[11px] font-medium capitalize">{g}</p>
+                <ul className="mt-0.5 space-y-0.5 border-l border-border pl-2">
+                  {lista
+                    .filter((d) => d.tipo === g)
+                    .map((d) => (
+                      <li key={d.id}>
+                        <button
+                          onClick={() => abrirDesign(d.id)}
+                          className="flex w-full items-center gap-1 truncate text-left text-[11px] text-muted-foreground hover:text-foreground"
+                        >
+                          <FileText className="size-3 shrink-0" /> {d.nome}
+                        </button>
+                      </li>
+                    ))}
+                </ul>
+              </div>
+            ))}
         </div>
       </ScrollArea>
+
     </aside>
   );
 }

@@ -25,6 +25,8 @@ import {
   Copy,
   Trash2,
   Sparkles,
+  MoreHorizontal,
+
 } from "lucide-react";
 import { useEstudio } from "./EstudioContext";
 import { cn } from "@/lib/utils";
@@ -37,6 +39,8 @@ export function Stage() {
   const e = useEstudio();
   const palcoRef = useRef<HTMLDivElement>(null);
   const [respostaRapida, setRespostaRapida] = useState("");
+  const [maisFerramentas, setMaisFerramentas] = useState(false);
+
 
   const comentariosVisiveis = e.comentarios.filter((c) =>
     e.filtroComentarios === "abertos" ? !c.resolvido : c.resolvido,
@@ -244,7 +248,10 @@ export function Stage() {
               ["regua", Ruler, "Régua"],
               ["grade", Grid3x3, "Grade"],
             ] as const
-          ).map(([id, Icon, titulo]) => (
+          )
+            .filter(([id]) => maisFerramentas || id === "cursor" || id === "mao")
+            .map(([id, Icon, titulo]) => (
+
             <button
               key={id}
               title={titulo}
@@ -286,43 +293,59 @@ export function Stage() {
           Ajustar
         </button>
 
-        <div className="flex items-center rounded-md border border-border bg-card">
-          {(
-            [
-              ["mobile", Smartphone],
-              ["tablet", Tablet],
-              ["desktop", Monitor],
-            ] as const
-          ).map(([id, Icon]) => (
-            <button
-              key={id}
-              onClick={() => e.setViewport(id)}
-              className={cn(
-                "grid size-6 place-items-center first:rounded-l-md last:rounded-r-md",
-                e.viewport === id ? "bg-primary text-primary-foreground" : "hover:bg-secondary",
-              )}
-            >
-              <Icon className="size-3.5" />
-            </button>
-          ))}
-        </div>
+        {maisFerramentas && (
+          <div className="flex items-center rounded-md border border-border bg-card">
+            {(
+              [
+                ["mobile", Smartphone],
+                ["tablet", Tablet],
+                ["desktop", Monitor],
+              ] as const
+            ).map(([id, Icon]) => (
+              <button
+                key={id}
+                onClick={() => e.setViewport(id)}
+                className={cn(
+                  "grid size-6 place-items-center first:rounded-l-md last:rounded-r-md",
+                  e.viewport === id ? "bg-primary text-primary-foreground" : "hover:bg-secondary",
+                )}
+              >
+                <Icon className="size-3.5" />
+              </button>
+            ))}
+          </div>
+        )}
+
+        <button
+          onClick={() => setMaisFerramentas((v) => !v)}
+          title="Mais ferramentas"
+          className={cn(
+            "grid size-6 shrink-0 place-items-center rounded-md border bg-card hover:bg-secondary",
+            maisFerramentas ? "border-primary text-primary" : "border-border",
+          )}
+        >
+          <MoreHorizontal className="size-3.5" />
+        </button>
 
         <div className="flex-1" />
 
-        <button
-          onClick={() => {
-            e.setModoComentario(!e.modoComentario);
-            e.setPainelDireito("comentarios");
-          }}
-          className={cn(
-            "flex h-6 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md border px-2 text-[11px] font-medium",
-            e.modoComentario
-              ? "border-accent bg-accent text-accent-foreground"
-              : "border-border bg-card hover:bg-secondary",
-          )}
-        >
-          <MessageSquarePlus className="size-3.5" /> Comentar
-        </button>
+        {maisFerramentas && (
+          <button
+            onClick={() => {
+              e.setModoComentario(!e.modoComentario);
+              e.setPainelDireito("comentarios");
+            }}
+            className={cn(
+              "flex h-6 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md border px-2 text-[11px] font-medium",
+              e.modoComentario
+                ? "border-accent bg-accent text-accent-foreground"
+                : "border-border bg-card hover:bg-secondary",
+            )}
+          >
+            <MessageSquarePlus className="size-3.5" /> Comentar
+          </button>
+        )}
+
         <button
           onClick={() => e.setApresentando(true)}
           className="flex h-6 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md border border-border bg-card px-2 text-[11px] font-medium hover:bg-secondary"

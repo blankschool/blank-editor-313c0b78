@@ -9,16 +9,8 @@ import {
   type ReactNode,
 } from "react";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
-import {
-  abasIniciais,
-  comentariosIniciais,
-  conversaInicial,
-  designs as designsMock,
-  type ChatMessage,
-  type CommentPin,
-  type DesignItem,
-  type OpenTab,
-} from "@/lib/estudio-mock";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import type { ChatMessage, CommentPin, DesignItem, OpenTab } from "@/lib/estudio-mock";
 import {
   clonarDoc,
   docPadrao,
@@ -26,6 +18,31 @@ import {
   type DesignDoc,
   type ElId,
 } from "@/lib/estudio-doc";
+import { supabase } from "@/lib/supabase";
+import {
+  atualizarComentario,
+  atualizarDesign,
+  atualizarMensagem,
+  carregarDesign,
+  criarComentario,
+  criarDesign,
+  criarMensagem,
+  criarResposta,
+  criarVersaoDb,
+  garantirProjeto,
+  hora,
+  listarComentarios,
+  listarDesigns,
+  listarMensagens,
+  listarVersoes,
+  nomeDoUsuario,
+  paraItem,
+  paraMensagem,
+  removerDesign,
+  removerVersao,
+  renomearProjeto,
+  salvarDoc,
+} from "@/lib/estudio-db";
 
 export type Viewport = "mobile" | "tablet" | "desktop";
 export type Ferramenta = "cursor" | "mao" | "regua" | "grade";
@@ -129,7 +146,7 @@ interface EstudioState {
   atualizarDoc: (fn: (d: DesignDoc) => DesignDoc, rotulo: string) => void;
   recarregarDoc: () => void;
   versoes: VersaoDoc[];
-  criarVersao: (rotulo: string, autor?: string) => VersaoDoc;
+  criarVersao: (rotulo: string, autor?: string) => void;
   restaurarVersao: (id: string) => void;
   duplicarVersao: (id: string) => void;
   excluirVersao: (id: string) => void;
@@ -138,6 +155,20 @@ interface EstudioState {
   setVersaoA: (id: string) => void;
   setVersaoB: (id: string) => void;
   historico: EventoHistorico[];
+  /* sessão */
+  usuarioEmail: string | null;
+  temSessao: boolean;
+  carregandoSessao: boolean;
+  pedirLogin: boolean;
+  setPedirLogin: (v: boolean) => void;
+  entrar: (email: string, senha: string) => Promise<void>;
+  cadastrar: (email: string, senha: string) => Promise<void>;
+  sair: () => Promise<void>;
+  /* cromado */
+  bibliotecaAberta: boolean;
+  setBibliotecaAberta: (v: boolean) => void;
+  conversaAberta: boolean;
+  setConversaAberta: (v: boolean) => void;
 }
 
 const Ctx = createContext<EstudioState | null>(null);
@@ -145,22 +176,20 @@ const Ctx = createContext<EstudioState | null>(null);
 let seq = 100;
 const nextId = () => `x${seq++}`;
 
-const agora = () =>
-  new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+const agora = () => new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 
-const CHAVE = "estudio:v1";
-
-interface Persistido {
-  docs: Record<string, DesignDoc>;
-  versoes: Record<string, VersaoDoc[]>;
-  designs: DesignItem[];
+/* cromado (só interface) */
+const CHROME = "estudio:cromado:v1";
+interface Cromado {
+  zoom: number;
+  bibliotecaAberta: boolean;
+  conversaAberta: boolean;
   abas: OpenTab[];
-  projeto: string;
-  historico: EventoHistorico[];
 }
 
 export function EstudioProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   const partes = pathname.split("/").filter(Boolean);
@@ -173,147 +202,302 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
   const painelDireito: PainelDireito = modoEdicao ? "props" : (painelPorSlug[secao] ?? null);
   const apresentando = secao === "apresentar";
 
-  const [projeto, setProjeto] = useState("Aurora — produto");
-  const [designs, setDesigns] = useState<DesignItem[]>(designsMock);
+  /* ---------- sessão ---------- */
+  const sessao = useQuery({
+    queryKey: ["sessao"],
+    queryFn: async () => (await supabase.auth.getUser()).data.user ?? null,
+    staleTime: 30_000,
+  });
+  const user = sessao.data ?? null;
+  const temSessao = !!user;
+  const autor = nomeDoUsuario(user);
+
+  useEffect(() => {
+    const { data } = supabase.auth.onAuthStateChange((evento) => {
+      if (evento !== "SIGNED_IN" && evento !== "SIGNED_OUT" && evento !== "USER_UPDATED") return;
+      void qc.invalidateQueries({ queryKey: ["sessao"] });
+      if (evento === "SIGNED_OUT") qc.clear();
+      else void qc.invalidateQueries();
+    });
+    return () => data.subscription.unsubscribe();
+  }, [qc]);
+
+  const projetoQ = useQuery({
+    queryKey: ["projeto", user?.id],
+    queryFn: garantirProjeto,
+    enabled: temSessao,
+  });
+  const projectId = projetoQ.data?.id ?? "";
+
+  /* ---------- dados ---------- */
+  const designsQ = useQuery({
+    queryKey: ["designs", user?.id],
+    queryFn: listarDesigns,
+    enabled: temSessao,
+  });
+  const designs = useMemo(() => (designsQ.data ?? []).map(paraItem), [designsQ.data]);
+
+  const abaAtiva = idRota;
+
+  const designQ = useQuery({
+    queryKey: ["design", abaAtiva],
+    queryFn: () => carregarDesign(abaAtiva),
+    enabled: temSessao && !!abaAtiva,
+  });
+
+  const versoesQ = useQuery({
+    queryKey: ["versions", abaAtiva],
+    queryFn: () => listarVersoes(abaAtiva),
+    enabled: temSessao && !!abaAtiva,
+  });
+
+  const mensagensQ = useQuery({
+    queryKey: ["messages", abaAtiva],
+    queryFn: () => listarMensagens(abaAtiva),
+    enabled: temSessao && !!abaAtiva,
+  });
+
+  const comentariosQ = useQuery({
+    queryKey: ["comments", abaAtiva],
+    queryFn: () => listarComentarios(abaAtiva),
+    enabled: temSessao && !!abaAtiva,
+  });
+
+  const nomeAtivo = designQ.data?.nome ?? designs.find((d) => d.id === abaAtiva)?.nome ?? "Novo design";
+
+  /* ---------- documento vivo (espelho local + gravação com debounce) ---------- */
+  const [docLocal, setDocLocal] = useState<DesignDoc | null>(null);
+  const [docId, setDocId] = useState("");
+  const salvarTimer = useRef<number | null>(null);
+
+  useEffect(() => {
+    const remoto = designQ.data;
+    if (!remoto) {
+      if (!abaAtiva) setDocLocal(null);
+      return;
+    }
+    if (remoto.id !== docId) {
+      setDocId(remoto.id);
+      setDocLocal(remoto.doc && Object.keys(remoto.doc).length ? remoto.doc : docPadrao(remoto.nome));
+    }
+  }, [designQ.data, docId, abaAtiva]);
+
+  const doc = docLocal ?? docPadrao(nomeAtivo);
+  const docRef = useRef(doc);
+  docRef.current = doc;
+
+  const agendarSalvar = useCallback(
+    (id: string, novo: DesignDoc) => {
+      if (salvarTimer.current) window.clearTimeout(salvarTimer.current);
+      salvarTimer.current = window.setTimeout(() => {
+        void salvarDoc(id, novo)
+          .then(() => qc.invalidateQueries({ queryKey: ["designs", user?.id] }))
+          .catch(() => undefined);
+      }, 500);
+    },
+    [qc, user?.id],
+  );
+
+  const versoes = useMemo<VersaoDoc[]>(
+    () =>
+      (versoesQ.data ?? []).map((v) => ({
+        id: v.id,
+        rotulo: v.rotulo,
+        autor: v.autor,
+        quando: hora(v.criado_em),
+        doc: v.doc,
+      })),
+    [versoesQ.data],
+  );
+
+  const conversaRemota = useMemo(() => (mensagensQ.data ?? []).map(paraMensagem), [mensagensQ.data]);
+  const [conversaLocal, setConversaLocal] = useState<ChatMessage[] | null>(null);
+  const conversa = conversaLocal ?? conversaRemota;
+  useEffect(() => {
+    setConversaLocal(null);
+  }, [abaAtiva]);
+
+  const comentarios = comentariosQ.data ?? [];
+
+  /* ---------- estado de interface ---------- */
   const [busca, setBusca] = useState("");
   const [filtro, setFiltro] = useState<FiltroBiblioteca>("recentes");
-  const [abas, setAbas] = useState<OpenTab[]>(abasIniciais);
+  const [abas, setAbas] = useState<OpenTab[]>([]);
   const [zoom, setZoom] = useState(100);
   const [viewport, setViewport] = useState<Viewport>("desktop");
   const [ferramenta, setFerramenta] = useState<Ferramenta>("cursor");
   const [selecionado, setSelecionado] = useState<ElId | null>("titulo");
   const [modoComentario, setModoComentario] = useState(false);
-  const [comentarios, setComentarios] = useState<CommentPin[]>(comentariosIniciais);
   const [filtroComentarios, setFiltroComentarios] = useState<"abertos" | "resolvidos">("abertos");
-  const [comentarioAtivo, setComentarioAtivo] = useState<string | null>("c1");
-  const [conversa, setConversa] = useState<ChatMessage[]>(conversaInicial);
+  const [comentarioAtivo, setComentarioAtivo] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
-  const [contexto, setContexto] = useState([
-    { id: "k1", rotulo: "Home — Aurora", tipo: "arquivo" },
-    { id: "k2", rotulo: "Aurora Quente", tipo: "design system" },
-  ]);
+  const [contexto, setContexto] = useState<{ id: string; rotulo: string; tipo: string }[]>([]);
   const [sistemaAtivo, setSistemaAtivo] = useState("s1");
-  const [docs, setDocs] = useState<Record<string, DesignDoc>>({});
-  const [versoesPorId, setVersoesPorId] = useState<Record<string, VersaoDoc[]>>({});
   const [historico, setHistorico] = useState<EventoHistorico[]>([]);
   const [versaoA, setVersaoA] = useState<string | null>(null);
   const [versaoB, setVersaoB] = useState<string | null>(null);
+  const [pedirLogin, setPedirLogin] = useState(false);
+  const [bibliotecaAberta, setBibliotecaAberta] = useState(false);
+  const [conversaAberta, setConversaAberta] = useState(false);
   const [hidratado, setHidratado] = useState(false);
 
-  const abaAtiva = idRota;
-  const nomeAtivo = designs.find((d) => d.id === abaAtiva)?.nome ?? "Novo design";
-
-  /* ---------- persistência ---------- */
+  /* cromado no localStorage */
   useEffect(() => {
     try {
-      const bruto = localStorage.getItem(CHAVE);
+      const bruto = localStorage.getItem(CHROME);
       if (bruto) {
-        const p = JSON.parse(bruto) as Partial<Persistido>;
-        if (p.docs) setDocs(p.docs);
-        if (p.versoes) setVersoesPorId(p.versoes);
-        if (p.designs?.length) setDesigns(p.designs);
-        if (p.abas?.length) setAbas(p.abas);
-        if (p.projeto) setProjeto(p.projeto);
-        if (p.historico) setHistorico(p.historico);
+        const c = JSON.parse(bruto) as Partial<Cromado>;
+        if (typeof c.zoom === "number") setZoom(c.zoom);
+        if (typeof c.bibliotecaAberta === "boolean") setBibliotecaAberta(c.bibliotecaAberta);
+        if (typeof c.conversaAberta === "boolean") setConversaAberta(c.conversaAberta);
+        if (c.abas?.length) setAbas(c.abas);
       }
     } catch {
-      /* estado corrompido: segue com o padrão */
+      /* ignora */
     }
     setHidratado(true);
   }, []);
 
   useEffect(() => {
     if (!hidratado) return;
-    const payload: Persistido = { docs, versoes: versoesPorId, designs, abas, projeto, historico };
+    const payload: Cromado = { zoom, bibliotecaAberta, conversaAberta, abas };
     try {
-      localStorage.setItem(CHAVE, JSON.stringify(payload));
+      localStorage.setItem(CHROME, JSON.stringify(payload));
     } catch {
-      /* cota cheia: ignora */
+      /* ignora */
     }
-  }, [hidratado, docs, versoesPorId, designs, abas, projeto, historico]);
+  }, [hidratado, zoom, bibliotecaAberta, conversaAberta, abas]);
 
-  const docsRef = useRef(docs);
-  docsRef.current = docs;
+  /* aba do design aberto */
+  useEffect(() => {
+    if (!abaAtiva || !designQ.data) return;
+    setAbas((as) =>
+      as.some((a) => a.id === abaAtiva)
+        ? as.map((a) => (a.id === abaAtiva ? { ...a, nome: designQ.data!.nome } : a))
+        : [...as, { id: abaAtiva, nome: designQ.data!.nome, fixada: false }],
+    );
+  }, [abaAtiva, designQ.data]);
 
-  const doc = useMemo(() => docs[abaAtiva] ?? docPadrao(nomeAtivo), [docs, abaAtiva, nomeAtivo]);
-  const versoes = useMemo(() => versoesPorId[abaAtiva] ?? [], [versoesPorId, abaAtiva]);
+  /* chip de contexto do arquivo aberto */
+  useEffect(() => {
+    if (!designQ.data) return;
+    setContexto([{ id: "arquivo", rotulo: designQ.data.nome, tipo: "arquivo" }]);
+  }, [designQ.data]);
 
   const registrar = useCallback((quem: string, o: string) => {
     setHistorico((h) => [{ id: nextId(), quem, o, quando: agora() }, ...h].slice(0, 40));
   }, []);
 
-  const marcarAtualizado = useCallback((id: string) => {
-    setDesigns((ds) => ds.map((d) => (d.id === id ? { ...d, atualizado: "agora" } : d)));
-  }, []);
+  /* ---------- sessão: ações ---------- */
+  const entrar = useCallback(
+    async (email: string, senha: string) => {
+      const { error } = await supabase.auth.signInWithPassword({ email, password: senha });
+      if (error) throw error;
+      setPedirLogin(false);
+      await qc.invalidateQueries();
+    },
+    [qc],
+  );
 
+  const cadastrar = useCallback(
+    async (email: string, senha: string) => {
+      const { error } = await supabase.auth.signUp({ email, password: senha });
+      if (error) throw error;
+      const login = await supabase.auth.signInWithPassword({ email, password: senha });
+      if (login.error) throw login.error;
+      setPedirLogin(false);
+      await qc.invalidateQueries();
+    },
+    [qc],
+  );
+
+  const sair = useCallback(async () => {
+    await qc.cancelQueries();
+    qc.clear();
+    await supabase.auth.signOut();
+    setAbas([]);
+    void navigate({ to: "/biblioteca" });
+  }, [qc, navigate]);
+
+  /* ---------- projeto ---------- */
+  const projeto = projetoQ.data?.nome ?? (temSessao ? "Meu projeto" : "Estúdio");
+  const setProjeto = useCallback(
+    (v: string) => {
+      if (!projectId) return;
+      void renomearProjeto(projectId, v).then(() => qc.invalidateQueries({ queryKey: ["projeto", user?.id] }));
+    },
+    [projectId, qc, user?.id],
+  );
+
+  /* ---------- documento ---------- */
   const atualizarDoc = useCallback(
     (fn: (d: DesignDoc) => DesignDoc, rotulo: string) => {
       if (!abaAtiva) return;
-      setDocs((ds) => {
-        const atual = ds[abaAtiva] ?? docPadrao(nomeAtivo);
-        return { ...ds, [abaAtiva]: fn(clonarDoc(atual)) };
-      });
-      marcarAtualizado(abaAtiva);
-      if (rotulo) registrar("Você", rotulo);
+      const novo = fn(clonarDoc(docRef.current));
+      setDocLocal(novo);
+      docRef.current = novo;
+      agendarSalvar(abaAtiva, novo);
+      if (rotulo) registrar(autor, rotulo);
     },
-    [abaAtiva, nomeAtivo, marcarAtualizado, registrar],
+    [abaAtiva, agendarSalvar, registrar, autor],
   );
 
   const recarregarDoc = useCallback(() => {
-    if (!abaAtiva) return;
-    setDocs((ds) => ({ ...ds, [abaAtiva]: docPadrao(nomeAtivo) }));
-    registrar("Você", "Recarregou o arquivo do zero");
-  }, [abaAtiva, nomeAtivo, registrar]);
+    void qc.invalidateQueries({ queryKey: ["design", abaAtiva] });
+    void carregarDesign(abaAtiva).then((r) => {
+      if (r) setDocLocal(r.doc && Object.keys(r.doc).length ? r.doc : docPadrao(r.nome));
+    });
+  }, [abaAtiva, qc]);
 
   const criarVersao = useCallback(
-    (rotulo: string, autor = "Você") => {
-      const atual = docs[abaAtiva] ?? docPadrao(nomeAtivo);
-      const lista = versoesPorId[abaAtiva] ?? [];
-      const v: VersaoDoc = {
-        id: nextId(),
-        rotulo: rotulo || `v${lista.length + 1}`,
-        autor,
-        quando: agora(),
-        doc: clonarDoc(atual),
-      };
-      setVersoesPorId((vs) => ({ ...vs, [abaAtiva]: [v, ...(vs[abaAtiva] ?? [])] }));
-      setVersaoA(v.id);
-      registrar(autor, `Criou ${v.rotulo}`);
-      return v;
+    (rotulo: string, quem = autor) => {
+      if (!abaAtiva) return;
+      const label = rotulo || `v${versoes.length + 1}`;
+      void criarVersaoDb(abaAtiva, label, quem, clonarDoc(docRef.current))
+        .then((v) => {
+          setVersaoA(v.id);
+          registrar(quem, `Criou ${label}`);
+          return qc.invalidateQueries({ queryKey: ["versions", abaAtiva] });
+        })
+        .catch(() => undefined);
     },
-    [docs, versoesPorId, abaAtiva, nomeAtivo, registrar],
+    [abaAtiva, versoes.length, registrar, qc, autor],
   );
 
   const restaurarVersao = useCallback(
     (id: string) => {
-      const v = (versoesPorId[abaAtiva] ?? []).find((x) => x.id === id);
-      if (!v) return;
-      setDocs((ds) => ({ ...ds, [abaAtiva]: clonarDoc(v.doc) }));
-      registrar("Você", `Restaurou ${v.rotulo}`);
+      const v = versoes.find((x) => x.id === id);
+      if (!v || !abaAtiva) return;
+      const copia = clonarDoc(v.doc);
+      setDocLocal(copia);
+      docRef.current = copia;
+      void salvarDoc(abaAtiva, copia).then(() => qc.invalidateQueries({ queryKey: ["design", abaAtiva] }));
+      registrar(autor, `Restaurou ${v.rotulo}`);
     },
-    [versoesPorId, abaAtiva, registrar],
+    [versoes, abaAtiva, registrar, qc, autor],
   );
 
   const duplicarVersao = useCallback(
     (id: string) => {
-      const v = (versoesPorId[abaAtiva] ?? []).find((x) => x.id === id);
-      if (!v) return;
-      const nova: VersaoDoc = { ...v, id: nextId(), rotulo: `${v.rotulo} (cópia)`, quando: agora(), doc: clonarDoc(v.doc) };
-      setVersoesPorId((vs) => ({ ...vs, [abaAtiva]: [nova, ...(vs[abaAtiva] ?? [])] }));
-      registrar("Você", `Duplicou ${v.rotulo}`);
+      const v = versoes.find((x) => x.id === id);
+      if (!v || !abaAtiva) return;
+      void criarVersaoDb(abaAtiva, `${v.rotulo} (cópia)`, autor, clonarDoc(v.doc)).then(() =>
+        qc.invalidateQueries({ queryKey: ["versions", abaAtiva] }),
+      );
     },
-    [versoesPorId, abaAtiva, registrar],
+    [versoes, abaAtiva, qc, autor],
   );
 
   const excluirVersao = useCallback(
     (id: string) => {
-      setVersoesPorId((vs) => ({ ...vs, [abaAtiva]: (vs[abaAtiva] ?? []).filter((v) => v.id !== id) }));
+      void removerVersao(id).then(() => qc.invalidateQueries({ queryKey: ["versions", abaAtiva] }));
       setVersaoA((a) => (a === id ? null : a));
       setVersaoB((b) => (b === id ? null : b));
     },
-    [abaAtiva],
+    [qc, abaAtiva],
   );
 
+  /* ---------- navegação ---------- */
   const irParaDesign = useCallback(
     (id: string) => {
       if (!id) {
@@ -326,15 +510,7 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
   );
 
   const setAbaAtiva = irParaDesign;
-
-  const abrirDesign = useCallback(
-    (id: string) => {
-      const d = designs.find((x) => x.id === id);
-      if (d) setAbas((as) => (as.some((a) => a.id === id) ? as : [...as, { id, nome: d.nome, fixada: false }]));
-      irParaDesign(id);
-    },
-    [designs, irParaDesign],
-  );
+  const abrirDesign = irParaDesign;
 
   const fecharAba = useCallback(
     (id: string) => {
@@ -361,57 +537,69 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  /* ---------- designs ---------- */
+  const novoDesign = useCallback(() => {
+    if (!temSessao || !projectId) {
+      setPedirLogin(true);
+      return;
+    }
+    void criarDesign(projectId).then(async (row) => {
+      await qc.invalidateQueries({ queryKey: ["designs", user?.id] });
+      irParaDesign(row.id);
+    });
+  }, [temSessao, projectId, qc, user?.id, irParaDesign]);
+
   const duplicarDesign = useCallback(
     (id: string) => {
-      const d = designs.find((x) => x.id === id);
-      if (!d) return;
-      const novo = nextId();
-      const base = docs[id] ?? docPadrao(d.nome);
-      setDesigns((ds) => [{ ...d, id: novo, nome: `${d.nome} (cópia)`, atualizado: "agora", favorito: false }, ...ds]);
-      setDocs((ds) => ({ ...ds, [novo]: clonarDoc(base) }));
-      setAbas((as) => [...as, { id: novo, nome: `${d.nome} (cópia)`, fixada: false }]);
-      registrar("Você", `Duplicou ${d.nome}`);
-      irParaDesign(novo);
+      if (!temSessao || !projectId) {
+        setPedirLogin(true);
+        return;
+      }
+      void carregarDesign(id).then(async (r) => {
+        if (!r) return;
+        const row = await criarDesign(projectId, `${r.nome} (cópia)`, clonarDoc(r.doc), r.tom);
+        await qc.invalidateQueries({ queryKey: ["designs", user?.id] });
+        registrar(autor, `Duplicou ${r.nome}`);
+        irParaDesign(row.id);
+      });
     },
-    [designs, docs, registrar, irParaDesign],
+    [temSessao, projectId, qc, user?.id, irParaDesign, registrar, autor],
   );
 
   const excluirDesign = useCallback(
     (id: string) => {
-      const restantesAbas = abas.filter((a) => a.id !== id);
-      setDesigns((ds) => ds.filter((d) => d.id !== id));
-      setAbas(restantesAbas);
-      setDocs((ds) => {
-        const c = { ...ds };
-        delete c[id];
-        return c;
+      const restantes = abas.filter((a) => a.id !== id);
+      void removerDesign(id).then(async () => {
+        setAbas(restantes);
+        await qc.invalidateQueries({ queryKey: ["designs", user?.id] });
+        if (abaAtiva === id) irParaDesign(restantes[0]?.id ?? "");
       });
-      registrar("Você", "Excluiu um arquivo");
-      if (abaAtiva === id) irParaDesign(restantesAbas[0]?.id ?? "");
     },
-    [abas, abaAtiva, registrar, irParaDesign],
+    [abas, abaAtiva, qc, user?.id, irParaDesign],
   );
 
-  const renomearDesign = useCallback((id: string, nome: string) => {
-    setDesigns((ds) => ds.map((d) => (d.id === id ? { ...d, nome } : d)));
-    setAbas((as) => as.map((a) => (a.id === id ? { ...a, nome } : a)));
-  }, []);
+  const renomearDesign = useCallback(
+    (id: string, nome: string) => {
+      setAbas((as) => as.map((a) => (a.id === id ? { ...a, nome } : a)));
+      void atualizarDesign(id, { nome }).then(() => {
+        void qc.invalidateQueries({ queryKey: ["designs", user?.id] });
+        void qc.invalidateQueries({ queryKey: ["design", id] });
+      });
+    },
+    [qc, user?.id],
+  );
 
-  const novoDesign = useCallback(() => {
-    const id = nextId();
-    setDesigns((ds) => [
-      { id, nome: "Novo design", tipo: "tela", atualizado: "agora", favorito: false, tom: "oklch(0.9 0.03 85)" },
-      ...ds,
-    ]);
-    setDocs((ds) => ({ ...ds, [id]: docPadrao("Novo design") }));
-    setAbas((as) => [...as, { id, nome: "Novo design", fixada: false }]);
-    irParaDesign(id);
-  }, [irParaDesign]);
+  const favoritar = useCallback(
+    (id: string) => {
+      const atual = designs.find((d) => d.id === id);
+      void atualizarDesign(id, { favorito: !atual?.favorito }).then(() =>
+        qc.invalidateQueries({ queryKey: ["designs", user?.id] }),
+      );
+    },
+    [designs, qc, user?.id],
+  );
 
-  const favoritar = useCallback((id: string) => {
-    setDesigns((ds) => ds.map((d) => (d.id === id ? { ...d, favorito: !d.favorito } : d)));
-  }, []);
-
+  /* ---------- painéis ---------- */
   const setPainelDireito = useCallback(
     (v: PainelDireito) => {
       if (!abaAtiva) return;
@@ -456,29 +644,51 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
     [abaAtiva, navigate],
   );
 
-  const addComentario = useCallback((x: number, y: number) => {
-    const id = nextId();
-    setComentarios((cs) => [
-      ...cs,
-      { id, x, y, autor: "Você", texto: "Novo comentário", resolvido: false, respostas: [] },
-    ]);
-    setComentarioAtivo(id);
-    setFiltroComentarios("abertos");
-  }, []);
+  /* ---------- comentários ---------- */
+  const invalidarComentarios = useCallback(
+    () => qc.invalidateQueries({ queryKey: ["comments", abaAtiva] }),
+    [qc, abaAtiva],
+  );
 
-  const resolverComentario = useCallback((id: string) => {
-    setComentarios((cs) => cs.map((c) => (c.id === id ? { ...c, resolvido: !c.resolvido } : c)));
-  }, []);
+  const addComentario = useCallback(
+    (x: number, y: number) => {
+      if (!temSessao || !abaAtiva) {
+        setPedirLogin(true);
+        return;
+      }
+      void criarComentario(abaAtiva, x, y, autor).then(async (c) => {
+        await invalidarComentarios();
+        setComentarioAtivo(c.id);
+        setFiltroComentarios("abertos");
+      });
+    },
+    [temSessao, abaAtiva, autor, invalidarComentarios],
+  );
 
-  const responderComentario = useCallback((id: string, texto: string) => {
-    setComentarios((cs) =>
-      cs.map((c) => (c.id === id ? { ...c, respostas: [...c.respostas, { autor: "Você", texto }] } : c)),
-    );
-  }, []);
+  const resolverComentario = useCallback(
+    (id: string) => {
+      const c = comentarios.find((x) => x.id === id);
+      void atualizarComentario(id, { resolvido: !c?.resolvido }).then(invalidarComentarios);
+    },
+    [comentarios, invalidarComentarios],
+  );
 
-  const editarComentario = useCallback((id: string, texto: string) => {
-    setComentarios((cs) => cs.map((c) => (c.id === id ? { ...c, texto } : c)));
-  }, []);
+  const responderComentario = useCallback(
+    (id: string, texto: string) => {
+      void criarResposta(id, texto, autor).then(invalidarComentarios);
+    },
+    [autor, invalidarComentarios],
+  );
+
+  const editarComentario = useCallback(
+    (id: string, texto: string) => {
+      qc.setQueryData<CommentPin[]>(["comments", abaAtiva], (antigo) =>
+        (antigo ?? []).map((c) => (c.id === id ? { ...c, texto } : c)),
+      );
+      void atualizarComentario(id, { texto });
+    },
+    [qc, abaAtiva],
+  );
 
   /* ---------- conversa que altera o documento ---------- */
   const timers = useRef<number[]>([]);
@@ -490,7 +700,10 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
 
   const executarPedido = useCallback(
     (texto: string) => {
-      if (!abaAtiva) return;
+      if (!abaAtiva || !temSessao) {
+        setPedirLogin(true);
+        return;
+      }
       limparTimers();
       const plano = interpretarPedido(texto, {
         sistemaAtivo,
@@ -504,16 +717,19 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
         texto: p.texto,
         estado: "pendente" as const,
       }));
-      setConversa((c) => [...c, { id: idBot, autor: "assistente", texto: "Trabalhando no arquivo…", tarefas }]);
+      setConversaLocal((c) => [
+        ...(c ?? conversaRemota),
+        { id: idBot, autor: "assistente", texto: "Trabalhando no arquivo…", tarefas },
+      ]);
       setEnviando(true);
 
-      const proximaVersao = `v${(versoesPorId[abaAtiva] ?? []).length + 1}`;
+      const proximaVersao = `v${versoes.length + 1}`;
 
       plano.passos.forEach((passo, i) => {
         const t = window.setTimeout(
           () => {
-            setConversa((c) =>
-              c.map((m) =>
+            setConversaLocal((c) =>
+              (c ?? []).map((m) =>
                 m.id !== idBot
                   ? m
                   : {
@@ -525,36 +741,34 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
                     },
               ),
             );
-            setDocs((ds) => {
-              const atual = ds[abaAtiva] ?? docPadrao(nomeAtivo);
-              return { ...ds, [abaAtiva]: passo.aplicar(clonarDoc(atual)) };
-            });
+            const novo = passo.aplicar(clonarDoc(docRef.current));
+            docRef.current = novo;
+            setDocLocal(novo);
 
             if (i === plano.passos.length - 1) {
               const fim = window.setTimeout(() => {
-                setConversa((c) =>
-                  c.map((m) =>
-                    m.id !== idBot
-                      ? m
-                      : {
-                          ...m,
-                          texto: plano.resumo,
-                          tarefas: m.tarefas?.map((tar) => ({ ...tar, estado: "feito" as const })),
-                          arquivo: { nome: nomeAtivo, tipo: "tela", versao: proximaVersao },
-                        },
+                const tarefasFeitas = tarefas.map((tar) => ({ ...tar, estado: "feito" as const }));
+                const arquivo = { nome: nomeAtivo, tipo: "tela", versao: proximaVersao };
+                setConversaLocal((c) =>
+                  (c ?? []).map((m) =>
+                    m.id !== idBot ? m : { ...m, texto: plano.resumo, tarefas: tarefasFeitas, arquivo },
                   ),
                 );
-                const v: VersaoDoc = {
-                  id: nextId(),
-                  rotulo: proximaVersao,
-                  autor: "Assistente",
-                  quando: agora(),
-                  doc: clonarDoc(docsRef.current[abaAtiva] ?? docPadrao(nomeAtivo)),
-                };
-                setVersoesPorId((vs) => ({ ...vs, [abaAtiva]: [v, ...(vs[abaAtiva] ?? [])] }));
-                setVersaoA(v.id);
+                void (async () => {
+                  await salvarDoc(abaAtiva, docRef.current);
+                  await criarVersaoDb(abaAtiva, proximaVersao, "Assistente", clonarDoc(docRef.current));
+                  await criarMensagem(abaAtiva, "assistente", {
+                    texto: plano.resumo,
+                    tarefas: tarefasFeitas,
+                    arquivo,
+                  });
+                  setConversaLocal(null);
+                  await qc.invalidateQueries({ queryKey: ["messages", abaAtiva] });
+                  await qc.invalidateQueries({ queryKey: ["versions", abaAtiva] });
+                  await qc.invalidateQueries({ queryKey: ["design", abaAtiva] });
+                  await qc.invalidateQueries({ queryKey: ["designs", user?.id] });
+                })().catch(() => undefined);
                 registrar("Assistente", plano.resumo);
-                marcarAtualizado(abaAtiva);
                 setEnviando(false);
               }, 320);
               timers.current.push(fim);
@@ -565,66 +779,78 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
         timers.current.push(t);
       });
     },
-    [abaAtiva, nomeAtivo, sistemaAtivo, contexto, selecionado, versoesPorId, registrar, marcarAtualizado],
+    [
+      abaAtiva,
+      temSessao,
+      sistemaAtivo,
+      contexto,
+      selecionado,
+      versoes.length,
+      nomeAtivo,
+      registrar,
+      qc,
+      user?.id,
+      conversaRemota,
+    ],
   );
 
   const enviarPedido = useCallback(
     (texto: string) => {
-      setConversa((c) => [...c, { id: nextId(), autor: "voce", texto }]);
+      if (!abaAtiva || !temSessao) {
+        setPedirLogin(true);
+        return;
+      }
+      setConversaLocal((c) => [...(c ?? conversaRemota), { id: nextId(), autor: "voce", texto }]);
+      void criarMensagem(abaAtiva, "voce", { texto }).catch(() => undefined);
       executarPedido(texto);
     },
-    [executarPedido],
+    [abaAtiva, temSessao, conversaRemota, executarPedido],
   );
 
   const reenviarMensagem = useCallback(
     (id: string) => {
       const m = conversa.find((x) => x.id === id);
-      if (m) executarPedido(m.texto);
+      if (m) enviarPedido(m.texto);
     },
-    [conversa, executarPedido],
+    [conversa, enviarPedido],
   );
 
   const editarMensagem = useCallback(
     (id: string, texto: string) => {
-      setConversa((c) => c.map((m) => (m.id === id ? { ...m, texto } : m)));
+      setConversaLocal((c) => (c ?? conversaRemota).map((m) => (m.id === id ? { ...m, texto } : m)));
+      void atualizarMensagem(id, { texto }).then(() => qc.invalidateQueries({ queryKey: ["messages", abaAtiva] }));
       executarPedido(texto);
     },
-    [executarPedido],
+    [conversaRemota, executarPedido, qc, abaAtiva],
   );
 
   const ramificar = useCallback(
     (id: string) => {
+      if (!temSessao || !projectId || !abaAtiva) {
+        setPedirLogin(true);
+        return;
+      }
       const idx = conversa.findIndex((m) => m.id === id);
-      if (idx < 0 || !abaAtiva) return;
-      const base = designs.find((d) => d.id === abaAtiva);
-      const novo = nextId();
-      const nome = `${base?.nome ?? "Design"} — ramo`;
-      setDesigns((ds) => [
-        {
-          id: novo,
-          nome,
-          tipo: base?.tipo ?? "tela",
-          atualizado: "agora",
-          favorito: false,
-          tom: base?.tom ?? "oklch(0.9 0.03 85)",
-        },
-        ...ds,
-      ]);
-      setDocs((ds) => ({ ...ds, [novo]: clonarDoc(ds[abaAtiva] ?? docPadrao(nomeAtivo)) }));
-      setAbas((as) => [...as, { id: novo, nome, fixada: false }]);
-      setConversa(conversa.slice(0, idx + 1));
-      registrar("Você", `Ramificou em ${nome}`);
-      irParaDesign(novo);
+      if (idx < 0) return;
+      const nome = `${nomeAtivo} — ramo`;
+      void criarDesign(projectId, nome, clonarDoc(docRef.current)).then(async (row) => {
+        for (const m of conversa.slice(0, idx + 1)) {
+          await criarMensagem(row.id, m.autor, { texto: m.texto, tarefas: m.tarefas, arquivo: m.arquivo });
+        }
+        await qc.invalidateQueries({ queryKey: ["designs", user?.id] });
+        registrar(autor, `Ramificou em ${nome}`);
+        irParaDesign(row.id);
+      });
     },
-    [conversa, abaAtiva, designs, nomeAtivo, registrar, irParaDesign],
+    [temSessao, projectId, abaAtiva, conversa, nomeAtivo, qc, user?.id, registrar, irParaDesign, autor],
   );
 
   const pararGeracao = useCallback(() => {
     limparTimers();
     setEnviando(false);
-    setConversa((c) =>
-      c.map((m, i) =>
-        i === c.length - 1 && m.autor === "assistente"
+    setConversaLocal((c) =>
+      (c ?? []).map((m, i) =>
+        i === c!.length - 1 && m.autor === "assistente"
           ? {
               ...m,
               texto: "Parei aqui. O que já apliquei ficou no palco.",
@@ -633,7 +859,8 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
           : m,
       ),
     );
-  }, []);
+    if (abaAtiva) void salvarDoc(abaAtiva, docRef.current).catch(() => undefined);
+  }, [abaAtiva]);
 
   const removerContexto = useCallback((id: string) => {
     setContexto((cs) => cs.filter((c) => c.id !== id));
@@ -717,9 +944,22 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
       setVersaoA,
       setVersaoB,
       historico,
+      usuarioEmail: user?.email ?? null,
+      temSessao,
+      carregandoSessao: sessao.isLoading,
+      pedirLogin,
+      setPedirLogin,
+      entrar,
+      cadastrar,
+      sair,
+      bibliotecaAberta,
+      setBibliotecaAberta,
+      conversaAberta,
+      setConversaAberta,
     }),
     [
       projeto,
+      setProjeto,
       designs,
       busca,
       filtro,
@@ -778,6 +1018,15 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
       versaoA,
       versaoB,
       historico,
+      user?.email,
+      temSessao,
+      sessao.isLoading,
+      pedirLogin,
+      entrar,
+      cadastrar,
+      sair,
+      bibliotecaAberta,
+      conversaAberta,
     ],
   );
 
