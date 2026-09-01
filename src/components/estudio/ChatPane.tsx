@@ -14,6 +14,7 @@ import {
   Check,
   Loader2,
   Pencil,
+  Trash2,
 } from "lucide-react";
 import { useEstudio } from "./EstudioContext";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -98,6 +99,12 @@ export function ChatPane() {
                         className="flex items-center gap-1 hover:text-foreground"
                       >
                         <RefreshCw className="size-2.5" /> Reenviar
+                      </button>
+                      <button
+                        onClick={() => e.apagarMensagem(m.id)}
+                        className="flex items-center gap-1 text-destructive hover:opacity-80"
+                      >
+                        <Trash2 className="size-2.5" /> Apagar
                       </button>
                     </div>
                   </>
@@ -218,6 +225,12 @@ export function ChatPane() {
                     className="flex items-center gap-1 hover:text-foreground"
                   >
                     <GitBranch className="size-2.5" /> Ramificar
+                  </button>
+                  <button
+                    onClick={() => e.apagarMensagem(m.id)}
+                    className="flex items-center gap-1 text-destructive hover:opacity-80"
+                  >
+                    <Trash2 className="size-2.5" /> Apagar
                   </button>
                 </div>
               </div>

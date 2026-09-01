@@ -31,7 +31,7 @@ import {
 } from "lucide-react";
 import { useEstudio } from "./EstudioContext";
 import { cn } from "@/lib/utils";
-import { rotuloEl, tipoEl, type DesignDoc, type ElId, type EstiloEl } from "@/lib/estudio-doc";
+import { ehDocHtml, rotuloEl, tipoEl, type DesignDoc, type DocHtml, type ElId, type EstiloEl } from "@/lib/estudio-doc";
 import { toast } from "sonner";
 
 export const larguras = { mobile: 340, tablet: 620, desktop: 880 } as const;
@@ -93,7 +93,7 @@ export function Stage() {
           </div>
         ))}
         <button
-          onClick={e.novoDesign}
+          onClick={() => e.novoDesign()}
           title="Nova aba"
           className="grid size-6 place-items-center rounded-md hover:bg-secondary"
         >
@@ -152,15 +152,29 @@ export function Stage() {
             onClick={clicarPalco}
             id="artboard-vivo"
             className="relative shrink-0 shadow-[var(--shadow-panel)] transition-[width,transform] duration-200"
-            style={{
-              width: larguras[e.viewport],
-              transform: `scale(${e.zoom / 100})`,
-              transformOrigin: "center",
-              background: e.doc.fundo,
-              borderRadius: e.doc.layout.raio,
-            }}
+            style={
+              e.docHtml
+                ? {
+                    width: 1080,
+                    height: 1440,
+                    transform: `scale(${(e.zoom / 100) * (larguras[e.viewport] / 1080)})`,
+                    transformOrigin: "center",
+                    background: "var(--card)",
+                  }
+                : {
+                    width: larguras[e.viewport],
+                    transform: `scale(${e.zoom / 100})`,
+                    transformOrigin: "center",
+                    background: e.doc.fundo,
+                    borderRadius: e.doc.layout.raio,
+                  }
+            }
           >
-            <Artboard doc={e.doc} selecionavel selecionado={e.selecionado} onSelecionar={e.setSelecionado} />
+            {e.docHtml ? (
+              <Artboard doc={e.docHtml} />
+            ) : (
+              <Artboard doc={e.doc} selecionavel selecionado={e.selecionado} onSelecionar={e.setSelecionado} />
+            )}
 
             {e.modoEdicao && e.selecionado && <SelecaoOverlay alvo={e.selecionado} palcoRef={palcoRef} />}
 
@@ -408,11 +422,22 @@ export function Artboard({
   selecionado = null,
   onSelecionar,
 }: {
-  doc: DesignDoc;
+  doc: DesignDoc | DocHtml;
   selecionavel?: boolean;
   selecionado?: ElId | null;
   onSelecionar?: (id: ElId) => void;
 }) {
+  if (ehDocHtml(doc)) {
+    return (
+      <iframe
+        src={doc.src}
+        title="Preview"
+        width={1080}
+        height={1440}
+        className="block h-[1440px] w-[1080px] border-0"
+      />
+    );
+  }
   const wrap = (id: ElId, node: React.ReactNode) => {
     const s = doc.estilos[id];
     if (s?.oculto) return null;
@@ -634,8 +659,10 @@ function SelecaoOverlay({
         <button
           title="Excluir elemento"
           onClick={() => {
-            e.atualizarDoc((d) => ({ ...d, ordem: d.ordem.filter((x) => x !== alvo) }), `Excluiu ${rotuloEl[alvo]}`);
-            e.setSelecionado(null);
+            e.atualizarDoc(
+              (d) => ({ ...d, estilos: { ...d.estilos, [alvo]: { ...(d.estilos[alvo] ?? {}), oculto: true } } }),
+              `Ocultou ${rotuloEl[alvo]}`,
+            );
           }}
           className="grid size-6 place-items-center rounded-md hover:bg-secondary"
         >

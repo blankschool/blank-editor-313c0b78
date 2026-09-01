@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import { docPadrao, type DesignDoc } from "@/lib/estudio-doc";
+import { docPadrao, type DesignDoc, type DocSalvo } from "@/lib/estudio-doc";
 import type { ChatMessage, CommentPin, DesignItem, DesignKind } from "@/lib/estudio-mock";
 
 export interface DesignRow {
@@ -9,7 +9,7 @@ export interface DesignRow {
   tipo: string;
   favorito: boolean;
   tom: string;
-  doc: DesignDoc;
+  doc: DocSalvo;
   atualizado_em: string;
 }
 
@@ -127,7 +127,7 @@ export async function carregarDesign(id: string) {
   return (data as DesignRow | null) ?? null;
 }
 
-export async function criarDesign(projectId: string, nome = "Novo design", doc?: DesignDoc, tom?: string) {
+export async function criarDesign(projectId: string, nome = "Novo design", doc?: DocSalvo, tom?: string) {
   const user = await usuarioAtual();
   if (!user) throw new Error("Entre na sua conta para criar um design.");
   const { data, error } = await supabase
@@ -265,6 +265,16 @@ export async function criarComentario(designId: string, x: number, y: number, au
     .single();
   if (error) throw error;
   return data as { id: string };
+}
+
+export async function removerComentario(id: string) {
+  const { error } = await supabase.from("comments").delete().eq("id", id);
+  if (error) throw error;
+}
+
+export async function removerMensagem(id: string) {
+  const { error } = await supabase.from("messages").delete().eq("id", id);
+  if (error) throw error;
 }
 
 export async function atualizarComentario(id: string, patch: { texto?: string; resolvido?: boolean }) {

@@ -44,7 +44,7 @@ function BibliotecaPage() {
                 </p>
               </div>
               <button
-                onClick={e.novoDesign}
+                onClick={() => e.novoDesign()}
                 className="flex h-8 items-center gap-1.5 rounded-md bg-primary px-3 text-[12px] font-medium text-primary-foreground"
               >
                 <Plus className="size-3.5" /> Novo design

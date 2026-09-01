@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
-import { Settings2, Layers, History, MessageSquare, Code2, X, Check } from "lucide-react";
+import { Settings2, Layers, History, MessageSquare, Code2, X, Check, Trash2 } from "lucide-react";
+
 import { useEstudio, slugPainel, type PainelDireito } from "./EstudioContext";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
@@ -257,6 +258,15 @@ export function ComentariosPanel() {
               >
                 {c.resolvido ? <X className="size-2.5" /> : <Check className="size-2.5" />}
                 {c.resolvido ? "Reabrir" : "Resolver"}
+              </span>
+              <span
+                onClick={(ev) => {
+                  ev.stopPropagation();
+                  e.apagarComentario(c.id);
+                }}
+                className="flex items-center gap-0.5 text-destructive hover:opacity-80"
+              >
+                <Trash2 className="size-2.5" /> Apagar
               </span>
             </div>
           </button>

@@ -1,8 +1,24 @@
 import { useState } from "react";
-import { Copy, Plus, Search, Star, SlidersHorizontal, FileText, Layers, PanelLeftClose } from "lucide-react";
+import { Copy, Plus, Search, Star, SlidersHorizontal, FileText, Layers, PanelLeftClose, Trash2, ChevronDown } from "lucide-react";
 import { useEstudio, type FiltroBiblioteca } from "./EstudioContext";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const filtros: { id: FiltroBiblioteca; rotulo: string }[] = [
   { id: "recentes", rotulo: "Recentes" },
@@ -20,6 +36,7 @@ export function LibrarySidebar() {
     abrirDesign,
     duplicarDesign,
     novoDesign,
+    excluirDesign,
     favoritar,
     abaAtiva,
     temSessao,
@@ -27,6 +44,7 @@ export function LibrarySidebar() {
   } = useEstudio();
   const [mostrarFiltros, setMostrarFiltros] = useState(false);
   const [mostrarArvore, setMostrarArvore] = useState(false);
+  const [aApagar, setAApagar] = useState<string | null>(null);
 
   const lista = designs
     .filter((d) => d.nome.toLowerCase().includes(busca.toLowerCase()))
@@ -122,6 +140,13 @@ export function LibrarySidebar() {
                   >
                     <Copy className="size-3" />
                   </button>
+                  <button
+                    onClick={() => setAApagar(d.id)}
+                    title="Apagar"
+                    className="grid size-4 place-items-center rounded text-destructive hover:bg-secondary"
+                  >
+                    <Trash2 className="size-3" />
+                  </button>
                 </div>
               </div>
             </div>
@@ -134,12 +159,22 @@ export function LibrarySidebar() {
           </p>
         )}
 
-        <button
-          onClick={novoDesign}
-          className="mx-2.5 mb-4 flex h-8 w-[calc(100%-20px)] items-center justify-center gap-1.5 rounded-md border border-dashed border-border text-[11px] font-semibold text-muted-foreground hover:border-accent hover:text-accent"
-        >
-          <Plus className="size-3.5" /> Novo design
-        </button>
+        <DropdownMenu>
+          <DropdownMenuTrigger className="mx-2.5 mb-4 flex h-8 w-[calc(100%-20px)] items-center justify-center gap-1.5 rounded-md border border-dashed border-border text-[11px] font-semibold text-muted-foreground hover:border-accent hover:text-accent">
+            <Plus className="size-3.5" /> Novo design <ChevronDown className="size-3" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-48">
+            <DropdownMenuItem onSelect={() => novoDesign("branco")} className="text-[12px]">
+              Em branco
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => novoDesign("agrum")} className="text-[12px]">
+              Agrum Eleição
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => novoDesign("barretos")} className="text-[12px]">
+              Barretos
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         <div className="border-t border-border px-2.5 py-3">
           <button
@@ -156,12 +191,19 @@ export function LibrarySidebar() {
                   {lista
                     .filter((d) => d.tipo === g)
                     .map((d) => (
-                      <li key={d.id}>
+                      <li key={d.id} className="group/linha flex items-center gap-1">
                         <button
                           onClick={() => abrirDesign(d.id)}
-                          className="flex w-full items-center gap-1 truncate text-left text-[11px] text-muted-foreground hover:text-foreground"
+                          className="flex min-w-0 flex-1 items-center gap-1 truncate text-left text-[11px] text-muted-foreground hover:text-foreground"
                         >
                           <FileText className="size-3 shrink-0" /> {d.nome}
+                        </button>
+                        <button
+                          onClick={() => setAApagar(d.id)}
+                          title="Apagar"
+                          className="grid size-4 shrink-0 place-items-center rounded text-destructive opacity-0 hover:bg-secondary group-hover/linha:opacity-100"
+                        >
+                          <Trash2 className="size-3" />
                         </button>
                       </li>
                     ))}
@@ -171,6 +213,25 @@ export function LibrarySidebar() {
         </div>
       </ScrollArea>
 
+      <AlertDialog open={!!aApagar} onOpenChange={(o) => !o && setAApagar(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Apagar este design?</AlertDialogTitle>
+            <AlertDialogDescription>Versões e conversa vão junto.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (aApagar) excluirDesign(aApagar);
+                setAApagar(null);
+              }}
+            >
+              Apagar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </aside>
   );
 }

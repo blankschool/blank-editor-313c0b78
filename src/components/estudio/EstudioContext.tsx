@@ -14,9 +14,13 @@ import type { ChatMessage, CommentPin, DesignItem, OpenTab } from "@/lib/estudio
 import {
   clonarDoc,
   docPadrao,
+  ehDocHtml,
   interpretarPedido,
+  previewsHtml,
   type DesignDoc,
+  type DocHtml,
   type ElId,
+  type PresetNovo,
 } from "@/lib/estudio-doc";
 import { supabase } from "@/lib/supabase";
 import {
@@ -38,7 +42,9 @@ import {
   nomeDoUsuario,
   paraItem,
   paraMensagem,
+  removerComentario,
   removerDesign,
+  removerMensagem,
   removerVersao,
   renomearProjeto,
   salvarDoc,
@@ -100,7 +106,8 @@ interface EstudioState {
   duplicarDesign: (id: string) => void;
   excluirDesign: (id: string) => void;
   renomearDesign: (id: string, nome: string) => void;
-  novoDesign: () => void;
+  novoDesign: (preset?: PresetNovo) => void;
+  docHtml: DocHtml | null;
   favoritar: (id: string) => void;
   zoom: number;
   setZoom: (v: number) => void;
@@ -125,6 +132,8 @@ interface EstudioState {
   resolverComentario: (id: string) => void;
   responderComentario: (id: string, texto: string) => void;
   editarComentario: (id: string, texto: string) => void;
+  apagarComentario: (id: string) => void;
+  apagarMensagem: (id: string) => void;
   filtroComentarios: "abertos" | "resolvidos";
   setFiltroComentarios: (v: "abertos" | "resolvidos") => void;
   comentarioAtivo: string | null;
@@ -278,10 +287,16 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
     }
     if (remoto.id !== docId) {
       setDocId(remoto.id);
-      setDocLocal(remoto.doc && Object.keys(remoto.doc).length ? remoto.doc : docPadrao(remoto.nome));
+      setDocLocal(
+        remoto.doc && !ehDocHtml(remoto.doc) && Object.keys(remoto.doc).length
+          ? (remoto.doc as DesignDoc)
+          : docPadrao(remoto.nome),
+      );
     }
   }, [designQ.data, docId, abaAtiva]);
 
+  const docRemoto = designQ.data?.doc;
+  const docHtml = ehDocHtml(docRemoto) ? docRemoto : null;
   const doc = docLocal ?? docPadrao(nomeAtivo);
   const docRef = useRef(doc);
   docRef.current = doc;
@@ -445,7 +460,7 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
   const recarregarDoc = useCallback(() => {
     void qc.invalidateQueries({ queryKey: ["design", abaAtiva] });
     void carregarDesign(abaAtiva).then((r) => {
-      if (r) setDocLocal(r.doc && Object.keys(r.doc).length ? r.doc : docPadrao(r.nome));
+      if (r) setDocLocal(r.doc && !ehDocHtml(r.doc) && Object.keys(r.doc).length ? (r.doc as DesignDoc) : docPadrao(r.nome));
     });
   }, [abaAtiva, qc]);
 
@@ -539,16 +554,24 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
   }, []);
 
   /* ---------- designs ---------- */
-  const novoDesign = useCallback(() => {
+  const novoDesign = useCallback(
+    (preset?: PresetNovo) => {
     if (!temSessao || !projectId) {
       setPedirLogin(true);
       return;
     }
-    void criarDesign(projectId).then(async (row) => {
+    const modelo = preset && preset !== "branco" ? previewsHtml[preset] : null;
+    void criarDesign(
+      projectId,
+      modelo ? modelo.nome : undefined,
+      modelo ? { kind: "html" as const, src: modelo.src } : undefined,
+    ).then(async (row) => {
       await qc.invalidateQueries({ queryKey: ["designs", user?.id] });
       irParaDesign(row.id);
     });
-  }, [temSessao, projectId, qc, user?.id, irParaDesign]);
+    },
+    [temSessao, projectId, qc, user?.id, irParaDesign],
+  );
 
   const duplicarDesign = useCallback(
     (id: string) => {
@@ -679,6 +702,27 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
       void criarResposta(id, texto, autor).then(invalidarComentarios);
     },
     [autor, invalidarComentarios],
+  );
+
+  const apagarComentario = useCallback(
+    (id: string) => {
+      void removerComentario(id).then(async () => {
+        setComentarioAtivo((a) => (a === id ? null : a));
+        await invalidarComentarios();
+      });
+    },
+    [invalidarComentarios],
+  );
+
+  const apagarMensagem = useCallback(
+    (id: string) => {
+      setConversaLocal((c) => (c ?? []).filter((m) => m.id !== id));
+      void removerMensagem(id).then(() => {
+        setConversaLocal(null);
+        void qc.invalidateQueries({ queryKey: ["messages", abaAtiva] });
+      });
+    },
+    [qc, abaAtiva],
   );
 
   const editarComentario = useCallback(
@@ -916,6 +960,9 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
       resolverComentario,
       responderComentario,
       editarComentario,
+      apagarComentario,
+      apagarMensagem,
+      docHtml,
       filtroComentarios,
       setFiltroComentarios,
       comentarioAtivo,
@@ -995,7 +1042,11 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
       resolverComentario,
       responderComentario,
       editarComentario,
+      apagarComentario,
+      apagarMensagem,
+      docHtml,
       filtroComentarios,
+
       comentarioAtivo,
       conversa,
       enviando,
