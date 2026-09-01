@@ -1273,7 +1273,9 @@ export function CanvasView({
     py: number;
     pagina: CanvasPagina;
     atual: Geo;
+    centro: { x: number; y: number };
   } | null>(null);
+
 
   const paginas = Array.isArray(doc.paginas) ? doc.paginas : [];
 
