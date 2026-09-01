@@ -663,19 +663,76 @@ function ImagemCanvasView({
         <img src={c.src} alt="" style={estiloImg} />
       </div>
       {recortando && (
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            border: `${2 / (escala || 1)}px solid #fff`,
-            boxShadow: "0 0 0 9999px rgba(0,0,0,0.25)",
-            pointerEvents: "none",
-          }}
-        />
+        <>
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              border: `${2 / (escala || 1)}px solid #fff`,
+              boxShadow: "0 0 0 9999px rgba(0,0,0,0.45)",
+              pointerEvents: "none",
+            }}
+          />
+          <div
+            onPointerDown={(ev) => ev.stopPropagation()}
+            onClick={(ev) => ev.stopPropagation()}
+            style={{
+              position: "absolute",
+              left: "50%",
+              top: c.h,
+              transform: `translate(-50%, ${12 / (escala || 1)}px) scale(${1 / (escala || 1)})`,
+              transformOrigin: "top center",
+              zIndex: 40,
+            }}
+          >
+            <div className="flex items-center gap-2 rounded-xl border border-border bg-card/95 px-2 py-1.5 shadow-lg backdrop-blur">
+              <button
+                className="rounded-md px-2 py-1 text-[11px] hover:bg-secondary"
+                onClick={() => aplicarEnquadramento("cover")}
+              >
+                Preencher
+              </button>
+              <button
+                className="rounded-md px-2 py-1 text-[11px] hover:bg-secondary"
+                onClick={() => aplicarEnquadramento("contain")}
+              >
+                Caber
+              </button>
+              <button
+                className="rounded-md px-2 py-1 text-[11px] hover:bg-secondary"
+                onClick={() => aplicarEnquadramento("cover")}
+              >
+                Redefinir
+              </button>
+              <span className="h-4 w-px bg-border" />
+              <input
+                type="range"
+                min={100}
+                max={400}
+                step={1}
+                value={Math.round(zoomAtual * 100)}
+                onChange={(ev) => definirZoom(Number(ev.target.value) / 100)}
+                className="h-1 w-28 accent-[hsl(var(--accent))]"
+                aria-label="Zoom da imagem"
+              />
+              <span className="w-9 text-right text-[11px] tabular-nums text-muted-foreground">
+                {Math.round(zoomAtual * 100)}%
+              </span>
+              <span className="h-4 w-px bg-border" />
+              <button
+                className="rounded-md bg-primary px-2 py-1 text-[11px] text-primary-foreground"
+                onClick={() => onSairRecorte?.()}
+              >
+                Concluir
+              </button>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );
 }
+
 
 function CamadaCanvasView({
   c,
