@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
-import { Settings2, Layers, History, MessageSquare, Code2, X, Check   Trash2,
-} from "lucide-react";
+import { Settings2, Layers, History, MessageSquare, Code2, X, Check, Trash2 } from "lucide-react";
+
 import { useEstudio, slugPainel, type PainelDireito } from "./EstudioContext";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
