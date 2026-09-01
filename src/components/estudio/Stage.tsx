@@ -595,6 +595,32 @@ function ImagemCanvasView({
     timerZoom.current = setTimeout(() => onRecorte?.(novo), 250);
   };
 
+  /* base cover: 100% do slider = foto preenchendo a moldura */
+  const base = nat ? coverImg(c.w, c.h, nat.w, nat.h) : { x: 0, y: 0, w: c.w, h: c.h };
+  const zoomAtual = base.w ? Math.max(1, inner.w / base.w) : 1;
+
+  const definirZoom = (fator: number) => {
+    const f = Math.max(1, fator);
+    const w = base.w * f;
+    const h = base.h * f;
+    const atual = vivo ?? gravado;
+    const fx = atual.w ? (c.w / 2 - atual.x) / atual.w : 0.5;
+    const fy = atual.h ? (c.h / 2 - atual.y) / atual.h : 0.5;
+    const novo = limitarImg({ w, h, x: c.w / 2 - fx * w, y: c.h / 2 - fy * h }, c.w, c.h);
+    setVivo(novo);
+    if (timerZoom.current) clearTimeout(timerZoom.current);
+    timerZoom.current = setTimeout(() => onRecorte?.(novo), 200);
+  };
+
+  const aplicarEnquadramento = (modo: "cover" | "contain") => {
+    if (!nat) return;
+    const novo =
+      modo === "cover" ? coverImg(c.w, c.h, nat.w, nat.h) : containImg(c.w, c.h, nat.w, nat.h);
+    setVivo(novo);
+    onRecorte?.(novo);
+  };
+
+
   const estiloImg: React.CSSProperties = {
     position: "absolute",
     display: "block",
