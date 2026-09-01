@@ -333,6 +333,7 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
       setBaseDoc(null);
       setBaseCanvas(null);
       setSujo(false);
+      limparPilhas();
       setDocLocal(
         remoto.doc && !ehDocHtml(remoto.doc) && !ehDocCanvas(remoto.doc) && Object.keys(remoto.doc).length
           ? (remoto.doc as DesignDoc)
