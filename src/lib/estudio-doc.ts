@@ -206,6 +206,8 @@ export interface CanvasCamadaImagem {
   /** vazio ou ausente = placeholder de imagem */
   src?: string;
   img?: { x: number; y: number; w: number; h: number };
+  /** rotação da foto dentro da moldura, em graus */
+  imgRot?: number;
 
   raio?: number;
   opacidade?: number;
