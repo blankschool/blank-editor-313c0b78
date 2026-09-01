@@ -253,6 +253,186 @@ export function textoDaCamadaCanvas(c: CanvasCamadaTexto): string {
   return c.texto ?? "";
 }
 
+/* --------- texto rico: trechos (partes) --------- */
+
+type EstiloParte = Omit<CanvasParteTexto, "texto">;
+
+const CHAVES_PARTE: Array<keyof EstiloParte> = ["peso", "cor", "italico", "sublinhado", "riscado", "tamanho"];
+
+function mesmoEstilo(a: CanvasParteTexto, b: CanvasParteTexto): boolean {
+  return CHAVES_PARTE.every((k) => a[k] === b[k]);
+}
+
+/** sempre devolve a camada como lista de trechos (nunca vazia) */
+export function partesDaCamadaCanvas(c: CanvasCamadaTexto): CanvasParteTexto[] {
+  if (c.partes?.length) return c.partes.map((p) => ({ ...p, texto: p.texto ?? "" }));
+  return [{ texto: c.texto ?? "" }];
+}
+
+/** funde trechos vizinhos iguais e descarta vazios */
+export function normalizarPartes(partes: CanvasParteTexto[]): CanvasParteTexto[] {
+  const out: CanvasParteTexto[] = [];
+  partes.forEach((p) => {
+    if (!p.texto) return;
+    const ultimo = out[out.length - 1];
+    if (ultimo && mesmoEstilo(ultimo, p)) ultimo.texto += p.texto;
+    else out.push({ ...p });
+  });
+  return out;
+}
+
+/** grava trechos na camada; se houver um estilo só, volta a ser texto simples */
+export function gravarPartesNaCamada(c: CanvasCamadaTexto, partes: CanvasParteTexto[]): void {
+  const norm = normalizarPartes(partes);
+  const simples = norm.length <= 1 && CHAVES_PARTE.every((k) => norm[0]?.[k] === undefined);
+  if (simples) {
+    c.texto = norm[0]?.texto ?? "";
+    delete c.partes;
+  } else {
+    c.partes = norm;
+    delete c.texto;
+  }
+}
+
+/** aplica um estilo apenas no intervalo [inicio, fim) do texto corrido da camada */
+export function aplicarEstiloEmTrecho(
+  c: CanvasCamadaTexto,
+  inicio: number,
+  fim: number,
+  patch: EstiloParte,
+): void {
+  const partes = partesDaCamadaCanvas(c);
+  const a = Math.max(0, Math.min(inicio, fim));
+  const b = Math.max(inicio, fim);
+  if (b <= a) return;
+  const saida: CanvasParteTexto[] = [];
+  let pos = 0;
+  partes.forEach((p) => {
+    const ini = pos;
+    const f = pos + p.texto.length;
+    pos = f;
+    if (f <= a || ini >= b) return void saida.push({ ...p });
+    const antes = p.texto.slice(0, Math.max(0, a - ini));
+    const meio = p.texto.slice(Math.max(0, a - ini), Math.min(p.texto.length, b - ini));
+    const depois = p.texto.slice(Math.min(p.texto.length, b - ini));
+    if (antes) saida.push({ ...p, texto: antes });
+    if (meio) {
+      const alvo: CanvasParteTexto = { ...p, texto: meio };
+      (Object.keys(patch) as Array<keyof EstiloParte>).forEach((k) => {
+        const v = patch[k];
+        if (v === undefined) delete alvo[k];
+        else (alvo as Record<string, unknown>)[k] = v;
+      });
+      saida.push(alvo);
+    }
+    if (depois) saida.push({ ...p, texto: depois });
+  });
+  gravarPartesNaCamada(c, saida);
+}
+
+/** lê o estilo comum ao intervalo (undefined quando o trecho é misto) */
+export function estiloDoTrecho(c: CanvasCamadaTexto, inicio: number, fim: number): EstiloParte {
+  const partes = partesDaCamadaCanvas(c);
+  const a = Math.min(inicio, fim);
+  const b = Math.max(inicio, fim);
+  const tocados: CanvasParteTexto[] = [];
+  let pos = 0;
+  partes.forEach((p) => {
+    const ini = pos;
+    const f = pos + p.texto.length;
+    pos = f;
+    if (f <= a || ini >= b) return;
+    tocados.push(p);
+  });
+  if (!tocados.length) return {};
+  const out: EstiloParte = {};
+  CHAVES_PARTE.forEach((k) => {
+    const v = tocados[0]![k];
+    if (tocados.every((p) => p[k] === v) && v !== undefined) (out as Record<string, unknown>)[k] = v;
+  });
+  return out;
+}
+
+/** troca o texto corrido preservando os estilos dos trechos que sobrevivem */
+export function substituirTextoPreservandoPartes(c: CanvasCamadaTexto, novo: string): void {
+  const partes = partesDaCamadaCanvas(c);
+  const antigo = partes.map((p) => p.texto).join("");
+  if (novo === antigo) return;
+  /* prefixo e sufixo iguais: o miolo é o que mudou */
+  let pre = 0;
+  while (pre < antigo.length && pre < novo.length && antigo[pre] === novo[pre]) pre++;
+  let suf = 0;
+  while (
+    suf < antigo.length - pre &&
+    suf < novo.length - pre &&
+    antigo[antigo.length - 1 - suf] === novo[novo.length - 1 - suf]
+  )
+    suf++;
+  const inserido = novo.slice(pre, novo.length - suf);
+  const fimRemocao = antigo.length - suf;
+
+  const saida: CanvasParteTexto[] = [];
+  let pos = 0;
+  let estiloInsercao: CanvasParteTexto | null = null;
+  partes.forEach((p) => {
+    const ini = pos;
+    const f = pos + p.texto.length;
+    pos = f;
+    const antes = p.texto.slice(0, Math.max(0, Math.min(p.texto.length, pre - ini)));
+    const depois = p.texto.slice(Math.max(0, Math.min(p.texto.length, fimRemocao - ini)));
+    if (antes) {
+      saida.push({ ...p, texto: antes });
+      estiloInsercao = p;
+    }
+    if (ini <= pre && f >= pre && !estiloInsercao) estiloInsercao = p;
+    if (depois) saida.push({ ...p, texto: depois, __depois: true } as CanvasParteTexto);
+  });
+  /* insere o texto novo na fronteira certa */
+  const finais: CanvasParteTexto[] = [];
+  let inseriu = false;
+  saida.forEach((p) => {
+    const marcado = (p as CanvasParteTexto & { __depois?: boolean }).__depois;
+    if (marcado && !inseriu) {
+      if (inserido) finais.push({ ...(estiloInsercao ?? p), texto: inserido });
+      inseriu = true;
+    }
+    const limpo = { ...p } as CanvasParteTexto & { __depois?: boolean };
+    delete limpo.__depois;
+    finais.push(limpo);
+  });
+  if (!inseriu && inserido) finais.push({ ...(estiloInsercao ?? partes[0] ?? { texto: "" }), texto: inserido });
+  gravarPartesNaCamada(c, finais);
+}
+
+/* --------- placeholder de imagem --------- */
+
+export function ehPlaceholderImagem(c: CanvasCamada): boolean {
+  return c.tipo === "imagem" && !c.src;
+}
+
+/** transforma qualquer camada num placeholder de imagem, preservando caixa e estilo */
+export function virarPlaceholderImagem(c: CanvasCamada): CanvasCamadaImagem {
+  const w = (c as { w?: number }).w ?? 400;
+  const h = (c as { h?: number }).h ?? 300;
+  const base: CanvasCamadaImagem = {
+    tipo: "imagem",
+    x: c.x,
+    y: c.y,
+    w: Math.max(24, Math.round(w)),
+    h: Math.max(24, Math.round(h || 300)),
+  };
+  if (c.id) base.id = c.id;
+  base.nome = "Placeholder";
+  if (c.oculto) base.oculto = true;
+  const raio = (c as { raio?: number }).raio;
+  if (raio !== undefined) base.raio = raio;
+  if (c.opacidade !== undefined) base.opacidade = c.opacidade;
+  const sombra = (c as { sombra?: CanvasSombra }).sombra;
+  if (sombra) base.sombra = sombra;
+  return base;
+}
+
+
 export function acharCamadaCanvas(
   doc: DocCanvas | null | undefined,
   paginaId: string | null,
