@@ -933,16 +933,64 @@ interface Geo {
   y: number;
   w: number;
   h: number;
+  /** rotação em graus (opcional) */
+  r?: number;
 }
 
-type ModoArraste = "mover" | "nw" | "ne" | "sw" | "se";
+type Direcao = "nw" | "n" | "ne" | "e" | "se" | "s" | "sw" | "w";
+type ModoArraste = "mover" | "girar" | Direcao;
+
+const DIRECOES: Direcao[] = ["nw", "n", "ne", "e", "se", "s", "sw", "w"];
+/** ângulo de cada alça, 0° = topo, sentido horário */
+const ANGULO_ALCA: Record<Direcao, number> = {
+  n: 0,
+  ne: 45,
+  e: 90,
+  se: 135,
+  s: 180,
+  sw: 225,
+  w: 270,
+  nw: 315,
+};
+const CURSORES = [
+  "ns-resize",
+  "nesw-resize",
+  "ew-resize",
+  "nwse-resize",
+  "ns-resize",
+  "nesw-resize",
+  "ew-resize",
+  "nwse-resize",
+];
+
+/** cursor certo para a alça já considerando a rotação da camada */
+function cursorDaAlca(dir: Direcao, rotacao = 0): string {
+  const a = ((ANGULO_ALCA[dir] + rotacao) % 360 + 360) % 360;
+  return CURSORES[Math.round(a / 45) % 8]!;
+}
 
 const MARGEM_PRANCHETA = 108;
 const TOLERANCIA_SNAP = 4;
 
-function geoDaCamada(c: CanvasCamada): Geo {
-  return { x: c.x, y: c.y, w: (c as { w?: number }).w ?? 0, h: (c as { h?: number }).h ?? 0 };
+function girarPonto(x: number, y: number, graus: number): { x: number; y: number } {
+  const t = (graus * Math.PI) / 180;
+  const cos = Math.cos(t);
+  const sen = Math.sin(t);
+  return { x: x * cos - y * sen, y: x * sen + y * cos };
 }
+
+function geoDaCamada(c: CanvasCamada): Geo {
+  const g: Geo = {
+    x: c.x,
+    y: c.y,
+    w: (c as { w?: number }).w ?? 0,
+    h: (c as { h?: number }).h ?? 0,
+  };
+  const r = (c as { rotacao?: number }).rotacao;
+  if (r) g.r = r;
+  return g;
+}
+
 
 function alvosGuias(pagina: CanvasPagina, ignorar: string): { v: number[]; h: number[] } {
   const L = pagina.largura || 1080;
