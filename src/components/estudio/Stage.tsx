@@ -1434,8 +1434,8 @@ export function CanvasView({
             ? arraste.geo
             : geoDaCamada(selNaPagina)
           : null;
-        const alcas = selNaPagina && selNaPagina.tipo !== "texto";
-        const lado = 10 / (escala || 1);
+        const alcas = !!selNaPagina;
+
         const larguraPag = p.largura || 1080;
         const esc = escala || 1;
         const dimSel =
