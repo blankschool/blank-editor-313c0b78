@@ -173,6 +173,11 @@ interface EstudioState {
   setVersaoA: (id: string) => void;
   setVersaoB: (id: string) => void;
   historico: EventoHistorico[];
+  /* desfazer / refazer */
+  desfazer: () => void;
+  refazer: () => void;
+  podeDesfazer: boolean;
+  podeRefazer: boolean;
   /* sessão */
   usuarioEmail: string | null;
   temSessao: boolean;
