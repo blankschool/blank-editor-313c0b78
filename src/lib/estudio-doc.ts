@@ -755,14 +755,27 @@ export async function camadaParaPng(camadaId: string, escala: 1 | 2 = 1): Promis
   if (!carregou) return null;
 
   const canvas = document.createElement("canvas");
-  canvas.width = w * escala;
-  canvas.height = h * escala;
+  canvas.width = cw * escala;
+  canvas.height = ch * escala;
   const ctx = canvas.getContext("2d");
   if (!ctx) return null;
   ctx.scale(escala, escala);
-  ctx.drawImage(img, 0, 0, w, h);
+  ctx.drawImage(img, 0, 0, cw, ch);
   return await new Promise<Blob | null>((resolve) => canvas.toBlob((b) => resolve(b), "image/png"));
 }
+
+/** lê o tamanho real do arquivo de imagem (para enquadrar em cover sem achatar) */
+export function medirImagem(src: string): Promise<{ w: number; h: number }> {
+  return new Promise((resolve) => {
+    if (typeof window === "undefined") return resolve({ w: 0, h: 0 });
+    const im = new window.Image();
+    im.crossOrigin = "anonymous";
+    im.onload = () => resolve({ w: im.naturalWidth, h: im.naturalHeight });
+    im.onerror = () => resolve({ w: 0, h: 0 });
+    im.src = src;
+  });
+}
+
 
 export function ehDocCanvas(d: unknown): d is DocCanvas {
   return (
