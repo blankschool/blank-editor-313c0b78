@@ -220,8 +220,11 @@ export interface CanvasCamadaForma {
   oculto?: boolean;
   x: number;
   y: number;
+  /** graus, sentido horário */
+  rotacao?: number;
   w: number;
   h: number;
+
   cor?: string;
   raio?: number;
   opacidade?: number;
