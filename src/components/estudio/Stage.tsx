@@ -45,6 +45,12 @@ import {
   type ElId,
   type EstiloEl,
   idCamadaCanvas,
+  acharCamadaCanvas,
+  adicionarCamadaCanvas,
+  duplicarCamadaCanvas,
+  novaCamadaForma,
+  novaCamadaTexto,
+  removerCamadaCanvas,
 } from "@/lib/estudio-doc";
 import { toast } from "sonner";
 
