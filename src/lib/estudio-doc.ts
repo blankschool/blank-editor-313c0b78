@@ -3,19 +3,19 @@ export type ElId = "topo" | "titulo" | "subtitulo" | "cta" | "ctaSecundario" | "
 export type Variante = "Calmo" | "Produto" | "Ousado";
 
 export interface EstiloEl {
-  cor?: string;
-  fundo?: string;
-  borda?: string;
-  opacidade?: number;
-  fonte?: string;
-  peso?: string;
-  tamanho?: number;
-  caixa?: "normal" | "uppercase" | "lowercase";
-  alinhamento?: "left" | "center" | "right";
-  entrelinha?: number;
-  entreLetras?: number;
-  oculto?: boolean;
-  travado?: boolean;
+  cor?: string | undefined;
+  fundo?: string | undefined;
+  borda?: string | undefined;
+  opacidade?: number | undefined;
+  fonte?: string | undefined;
+  peso?: string | undefined;
+  tamanho?: number | undefined;
+  caixa?: "normal" | "uppercase" | "lowercase" | undefined;
+  alinhamento?: "left" | "center" | "right" | undefined;
+  entrelinha?: number | undefined;
+  entreLetras?: number | undefined;
+  oculto?: boolean | undefined;
+  travado?: boolean | undefined;
 }
 
 export interface LayoutDoc {

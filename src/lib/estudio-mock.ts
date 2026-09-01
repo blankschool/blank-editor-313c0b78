@@ -25,13 +25,15 @@ export interface ChatMessage {
   id: string;
   autor: "voce" | "assistente";
   texto: string;
-  tarefas?: TaskItem[];
-  pergunta?: {
-    titulo: string;
-    opcoes: string[];
-    sliderLabel: string;
-  };
-  arquivo?: { nome: string; tipo: string; versao: string };
+  tarefas?: TaskItem[] | undefined;
+  pergunta?:
+    | {
+        titulo: string;
+        opcoes: string[];
+        sliderLabel: string;
+      }
+    | undefined;
+  arquivo?: { nome: string; tipo: string; versao: string } | undefined;
 }
 
 export interface CommentPin {

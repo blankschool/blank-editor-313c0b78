@@ -232,6 +232,9 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
     }
   }, [hidratado, docs, versoesPorId, designs, abas, projeto, historico]);
 
+  const docsRef = useRef(docs);
+  docsRef.current = docs;
+
   const doc = useMemo(() => docs[abaAtiva] ?? docPadrao(nomeAtivo), [docs, abaAtiva, nomeAtivo]);
   const versoes = useMemo(() => versoesPorId[abaAtiva] ?? [], [versoesPorId, abaAtiva]);
 
@@ -541,19 +544,15 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
                         },
                   ),
                 );
-                setDocs((ds) => {
-                  const atual = ds[abaAtiva] ?? docPadrao(nomeAtivo);
-                  const v: VersaoDoc = {
-                    id: nextId(),
-                    rotulo: proximaVersao,
-                    autor: "Assistente",
-                    quando: agora(),
-                    doc: clonarDoc(atual),
-                  };
-                  setVersoesPorId((vs) => ({ ...vs, [abaAtiva]: [v, ...(vs[abaAtiva] ?? [])] }));
-                  setVersaoA(v.id);
-                  return ds;
-                });
+                const v: VersaoDoc = {
+                  id: nextId(),
+                  rotulo: proximaVersao,
+                  autor: "Assistente",
+                  quando: agora(),
+                  doc: clonarDoc(docsRef.current[abaAtiva] ?? docPadrao(nomeAtivo)),
+                };
+                setVersoesPorId((vs) => ({ ...vs, [abaAtiva]: [v, ...(vs[abaAtiva] ?? [])] }));
+                setVersaoA(v.id);
                 registrar("Assistente", plano.resumo);
                 marcarAtualizado(abaAtiva);
                 setEnviando(false);
