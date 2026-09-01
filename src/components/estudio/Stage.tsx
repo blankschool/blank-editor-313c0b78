@@ -619,6 +619,7 @@ function ImagemCanvasView({
         zoom(Math.exp(-dy * 0.0015));
       }}
       data-camada={cid}
+      data-rotacao={(c as { rotacao?: number }).rotacao || undefined}
       data-recorte={recortando ? "1" : undefined}
     >
       {recortando && <img src={c.src} alt="" style={{ ...estiloImg, opacity: 0.3 }} />}
@@ -714,6 +715,7 @@ function CamadaCanvasView({
         onDoubleClick={duplo}
         onPointerDown={onPointerDown}
         data-camada={cid}
+        data-rotacao={(c as { rotacao?: number }).rotacao || undefined}
       >
         <span
           style={{
@@ -772,6 +774,7 @@ function CamadaCanvasView({
         onDoubleClick={duplo}
         onPointerDown={onPointerDown}
         data-camada={cid}
+        data-rotacao={(c as { rotacao?: number }).rotacao || undefined}
       />
     );
   }
@@ -830,6 +833,7 @@ function CamadaCanvasView({
       onDoubleClick={duplo}
       onPointerDown={onPointerDown}
       data-camada={cid}
+      data-rotacao={(c as { rotacao?: number }).rotacao || undefined}
     >
       {c.partes
         ? c.partes.map((p, i) => (
@@ -915,6 +919,7 @@ function TextoEditavelPalco({
       spellCheck={false}
       style={estilo}
       data-camada={cid}
+      data-rotacao={(c as { rotacao?: number }).rotacao || undefined}
       onPointerDown={(ev) => ev.stopPropagation()}
       onClick={(ev) => ev.stopPropagation()}
       onInput={() => {
