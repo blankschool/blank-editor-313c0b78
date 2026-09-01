@@ -35,7 +35,6 @@ import {
   ehDocCanvas,
   ehDocHtml,
   rotuloEl,
-  tipoEl,
   type CanvasCamada,
   type CanvasPagina,
   comCamadaCanvas,
@@ -1208,6 +1207,9 @@ function SelecaoOverlay({
 }) {
   const e = useEstudio();
   const [caixa, setCaixa] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
+  const [palcoW, setPalcoW] = useState(0);
+  const barraRef = useRef<HTMLDivElement | null>(null);
+  const [barra, setBarra] = useState({ w: 0, h: 0 });
 
   const medir = useCallback(() => {
     const palco = palcoRef.current;
@@ -1216,16 +1218,46 @@ function SelecaoOverlay({
     const p = palco.getBoundingClientRect();
     const r = el.getBoundingClientRect();
     const escala = e.zoom / 100;
+    setPalcoW(p.width / escala);
     setCaixa({ x: (r.left - p.left) / escala, y: (r.top - p.top) / escala, w: r.width / escala, h: r.height / escala });
   }, [alvo, palcoRef, e.zoom]);
 
   useLayoutEffect(medir, [medir, e.doc]);
   useEffect(() => {
     window.addEventListener("resize", medir);
-    return () => window.removeEventListener("resize", medir);
+    window.addEventListener("scroll", medir, true);
+    return () => {
+      window.removeEventListener("resize", medir);
+      window.removeEventListener("scroll", medir, true);
+    };
   }, [medir]);
 
+  useLayoutEffect(() => {
+    const el = barraRef.current;
+    if (!el) return;
+    const escala = e.zoom / 100;
+    const aplicar = () => {
+      const r = el.getBoundingClientRect();
+      setBarra({ w: r.width / escala, h: r.height / escala });
+    };
+    aplicar();
+    const ro = new ResizeObserver(aplicar);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [e.zoom, alvo]);
+
   const grupo = alvo === "topo" ? "Topo" : alvo === "prova" ? "Prova social" : alvo === "rodape" ? "Rodapé" : "Herói";
+
+  const ESPACO = 12;
+  const acimaTem = caixa ? caixa.y - barra.h - ESPACO >= 0 : false;
+  const topoBarra = caixa
+    ? acimaTem
+      ? caixa.y - barra.h - ESPACO
+      : caixa.y + caixa.h + ESPACO
+    : 0;
+  const esquerdaBarra = caixa
+    ? Math.max(4, Math.min(caixa.x, Math.max(4, (palcoW || caixa.x + barra.w) - barra.w - 4)))
+    : 0;
 
   return (
     <>
@@ -1234,32 +1266,27 @@ function SelecaoOverlay({
           className="pointer-events-none absolute rounded-sm outline outline-2 outline-accent"
           style={{ left: caixa.x, top: caixa.y, width: caixa.w, height: caixa.h }}
         >
-          <span className="absolute -top-5 left-0 rounded-sm bg-accent px-1.5 py-0.5 text-[10px] font-semibold text-accent-foreground">
-            {tipoEl[alvo]}.{rotuloEl[alvo].toLowerCase()} · {Math.round(caixa.w)}×{Math.round(caixa.h)}
-          </span>
           {["-left-1 -top-1", "-right-1 -top-1", "-bottom-1 -left-1", "-bottom-1 -right-1"].map((pos) => (
             <span key={pos} className={cn("absolute size-2 rounded-[2px] border border-accent bg-card", pos)} />
           ))}
-          <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 rounded bg-primary px-1 text-[9px] text-primary-foreground">
-            {Math.round(e.doc.layout.gap)} px
-          </span>
         </div>
       )}
 
-      <div className="absolute left-3 top-3 flex items-center gap-0.5 rounded-md border border-border bg-popover px-1.5 py-1 text-[10px] shadow-[var(--shadow-panel)]">
-        <span className="rounded px-1 py-0.5 text-muted-foreground">{grupo}</span>
-        <ChevronRight className="size-2.5 text-muted-foreground" />
-        <span className="rounded px-1 py-0.5 font-semibold text-accent">{rotuloEl[alvo]}</span>
-      </div>
-
       <div
-        className="absolute flex items-center gap-0.5 rounded-lg border border-border bg-popover p-1 shadow-[var(--shadow-panel)]"
-        style={
-          caixa
-            ? { left: caixa.x, top: Math.max(4, caixa.y - 46), transform: "none" }
-            : { left: "50%", bottom: 12, transform: "translateX(-50%)" }
-        }
+        ref={barraRef}
+        className={cn(
+          "absolute flex items-center gap-0.5 rounded-lg border border-border bg-popover p-1 shadow-[var(--shadow-panel)]",
+          !caixa && "hidden",
+        )}
+        style={{ left: esquerdaBarra, top: topoBarra, transform: "none" }}
       >
+        <span className="flex items-center gap-0.5 pl-1 pr-1 text-[10px]">
+          <span className="text-muted-foreground">{grupo}</span>
+          <ChevronRight className="size-2.5 text-muted-foreground" />
+          <span className="font-semibold text-accent">{rotuloEl[alvo]}</span>
+        </span>
+        <span className="mx-1 h-4 w-px bg-border" />
+
         {(
           [
             ["texto", Type, "Texto"],
