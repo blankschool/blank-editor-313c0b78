@@ -255,7 +255,7 @@ export function textoDaCamadaCanvas(c: CanvasCamadaTexto): string {
 
 /* --------- texto rico: trechos (partes) --------- */
 
-type EstiloParte = Omit<CanvasParteTexto, "texto">;
+type EstiloParte = { [K in keyof Omit<CanvasParteTexto, "texto">]?: CanvasParteTexto[K] | undefined };
 
 const CHAVES_PARTE: Array<keyof EstiloParte> = ["peso", "cor", "italico", "sublinhado", "riscado", "tamanho"];
 
@@ -321,7 +321,7 @@ export function aplicarEstiloEmTrecho(
       (Object.keys(patch) as Array<keyof EstiloParte>).forEach((k) => {
         const v = patch[k];
         if (v === undefined) delete alvo[k];
-        else (alvo as Record<string, unknown>)[k] = v;
+        else (alvo as unknown as Record<string, unknown>)[k] = v;
       });
       saida.push(alvo);
     }
