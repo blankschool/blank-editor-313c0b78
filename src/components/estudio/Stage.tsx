@@ -486,6 +486,7 @@ function CamadaCanvasView({
         }}
         onClick={clique}
         onPointerDown={onPointerDown}
+        data-camada={cid}
       >
         <img
           src={c.src}
@@ -522,6 +523,7 @@ function CamadaCanvasView({
         }}
         onClick={clique}
         onPointerDown={onPointerDown}
+        data-camada={cid}
       />
     );
   }
@@ -549,6 +551,7 @@ function CamadaCanvasView({
       }}
       onClick={clique}
       onPointerDown={onPointerDown}
+      data-camada={cid}
     >
       {c.partes
         ? c.partes.map((p, i) => (
