@@ -422,11 +422,66 @@ export function substituirTextoPreservandoPartes(c: CanvasCamadaTexto, novo: str
   gravarPartesNaCamada(c, saida);
 }
 
+/* --------- enquadramento da imagem dentro da moldura --------- */
+
+export interface CaixaImg {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+/** preenche a moldura mantendo a proporção do arquivo (sobra é cortada) */
+export function coverImg(mw: number, mh: number, natW: number, natH: number): CaixaImg {
+  if (!natW || !natH) return { x: 0, y: 0, w: mw, h: mh };
+  const k = Math.max(mw / natW, mh / natH);
+  const w = natW * k;
+  const h = natH * k;
+  return { x: (mw - w) / 2, y: (mh - h) / 2, w, h };
+}
+
+/** cabe inteira na moldura mantendo a proporção (pode sobrar espaço) */
+export function containImg(mw: number, mh: number, natW: number, natH: number): CaixaImg {
+  if (!natW || !natH) return { x: 0, y: 0, w: mw, h: mh };
+  const k = Math.min(mw / natW, mh / natH);
+  const w = natW * k;
+  const h = natH * k;
+  return { x: (mw - w) / 2, y: (mh - h) / 2, w, h };
+}
+
+/** impede que sobre espaço vazio quando a foto é maior que a moldura */
+export function limitarImg(img: CaixaImg, mw: number, mh: number): CaixaImg {
+  const x = img.w >= mw ? Math.min(0, Math.max(mw - img.w, img.x)) : (mw - img.w) / 2;
+  const y = img.h >= mh ? Math.min(0, Math.max(mh - img.h, img.y)) : (mh - img.h) / 2;
+  return { ...img, x, y };
+}
+
+/** ao mudar o tamanho da moldura, reenquadra em cover sem achatar */
+export function reenquadrarImg(
+  img: CaixaImg | undefined,
+  antigoW: number,
+  antigoH: number,
+  novoW: number,
+  novoH: number,
+): CaixaImg {
+  const base = img ?? { x: 0, y: 0, w: antigoW, h: antigoH };
+  const cover = coverImg(novoW, novoH, base.w || 1, base.h || 1);
+  /* mantém o ponto focal relativo */
+  const fx = base.w ? (antigoW / 2 - base.x) / base.w : 0.5;
+  const fy = base.h ? (antigoH / 2 - base.y) / base.h : 0.5;
+  return limitarImg(
+    { w: cover.w, h: cover.h, x: novoW / 2 - fx * cover.w, y: novoH / 2 - fy * cover.h },
+    novoW,
+    novoH,
+  );
+}
+
 /* --------- placeholder de imagem --------- */
 
 export function ehPlaceholderImagem(c: CanvasCamada): boolean {
   return c.tipo === "imagem" && !c.src;
 }
+
 
 /** transforma qualquer camada num placeholder de imagem, preservando caixa e estilo */
 export function virarPlaceholderImagem(c: CanvasCamada): CanvasCamadaImagem {
