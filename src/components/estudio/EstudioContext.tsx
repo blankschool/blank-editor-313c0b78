@@ -1042,7 +1042,11 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
       resolverComentario,
       responderComentario,
       editarComentario,
+      apagarComentario,
+      apagarMensagem,
+      docHtml,
       filtroComentarios,
+
       comentarioAtivo,
       conversa,
       enviando,
