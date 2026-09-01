@@ -682,7 +682,19 @@ export function CanvasView({
   acoes?: ((ctx: { paginaId: string; camadaId: string; camada: CanvasCamada }) => React.ReactNode) | undefined;
 }) {
   const refPaginas = useRef<HTMLDivElement | null>(null);
+  const refBarra = useRef<HTMLDivElement | null>(null);
+  const [barraW, setBarraW] = useState(0);
   const [medida, setMedida] = useState<{ w: number; h: number } | null>(null);
+
+  useLayoutEffect(() => {
+    const el = refBarra.current;
+    if (!el) return setBarraW(0);
+    const aplicar = () => setBarraW(el.getBoundingClientRect().width);
+    aplicar();
+    const ro = new ResizeObserver(aplicar);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [selecionada, escala]);
 
   useLayoutEffect(() => {
     if (!selecionada) return setMedida(null);
