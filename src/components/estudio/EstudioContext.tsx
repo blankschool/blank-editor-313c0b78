@@ -340,7 +340,7 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
           : docPadrao(remoto.nome),
       );
     }
-  }, [designQ.data, docId, abaAtiva]);
+  }, [designQ.data, docId, abaAtiva, limparPilhas]);
 
   const docRemoto = designQ.data?.doc;
   const docHtml = ehDocHtml(docRemoto) ? docRemoto : null;
