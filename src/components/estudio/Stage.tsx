@@ -1027,7 +1027,7 @@ function CamadaCanvasView({
   onDuploClique?: (() => void) | undefined;
   recortando?: boolean | undefined;
   escala?: number;
-  onRecorte?: ((img: CaixaImg) => void) | undefined;
+  onRecorte?: ((img: CaixaImg, rot: number) => void) | undefined;
   onSairRecorte?: (() => void) | undefined;
 }) {
   if (c.oculto) return null;
@@ -1602,7 +1602,9 @@ export function CanvasView({
   onSelecaoTexto?: ((sel: { inicio: number; fim: number } | null) => void) | undefined;
   onDuploClique?: ((paginaId: string, camadaId: string, camada: CanvasCamada) => void) | undefined;
   recortando?: string | null;
-  onRecorte?: ((paginaId: string, camadaId: string, img: CaixaImg) => void) | undefined;
+  onRecorte?:
+    | ((paginaId: string, camadaId: string, img: CaixaImg, rot: number) => void)
+    | undefined;
   onSairRecorte?: (() => void) | undefined;
 }) {
 
@@ -1880,7 +1882,7 @@ export function CanvasView({
                     onDuploClique={onDuploClique ? () => onDuploClique(pid, cid, c) : undefined}
                     recortando={recortando === cid}
                     escala={escala}
-                    onRecorte={onRecorte ? (img) => onRecorte(pid, cid, img) : undefined}
+                    onRecorte={onRecorte ? (img, rot) => onRecorte(pid, cid, img, rot) : undefined}
                     onSairRecorte={onSairRecorte}
                   />
 
@@ -2196,12 +2198,16 @@ function CanvasComSelecao({ doc }: { doc: DocCanvas }) {
           );
         }}
         recortando={recortando}
-        onRecorte={(pid, cid, img) =>
+        onRecorte={(pid, cid, img, rot) =>
           patchCamada(
             pid,
             cid,
             (c) => {
-              if (c.tipo === "imagem") c.img = img;
+              if (c.tipo === "imagem") {
+                c.img = img;
+                if (rot) c.imgRot = rot;
+                else delete c.imgRot;
+              }
             },
             "Ajustou a imagem",
           )
