@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   AlignCenter,
   AlignLeft,
@@ -9,18 +8,33 @@ import {
   Undo2,
   Redo2,
   Eye,
+  EyeOff,
   Lock,
+  LockOpen,
   GripVertical,
   Trash2,
   Image,
   Plus,
   RotateCcw,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import { useEstudio } from "./EstudioContext";
-import { camadas } from "@/lib/estudio-mock";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
+import {
+  aplicarVariante,
+  camadasDoDoc,
+  comEstilo,
+  paletaPorSistema,
+  paletaProjeto,
+  rotuloEl,
+  type ElId,
+  type Variante,
+} from "@/lib/estudio-doc";
+import { useState } from "react";
+import { toast } from "sonner";
 
 function Secao({ titulo, children }: { titulo: string; children: React.ReactNode }) {
   return (
@@ -43,51 +57,136 @@ function Campo({ rotulo, children }: { rotulo: string; children: React.ReactNode
 const inputCls =
   "h-6 w-24 rounded border border-border bg-card px-1.5 text-[11px] outline-none focus:ring-1 focus:ring-ring";
 
-/* 1f — texto e tipografia */
+function useAlvo(): ElId {
+  const e = useEstudio();
+  return e.selecionado ?? "titulo";
+}
+
+/* texto e tipografia */
 export function TextPanel() {
+  const e = useEstudio();
+  const alvo = useAlvo();
+  const s = e.doc.estilos[alvo] ?? {};
+  const texto = e.doc.textos[alvo] ?? "";
+
+  const setEstilo = (patch: Parameters<typeof comEstilo>[2], rotulo: string) =>
+    e.atualizarDoc((d) => comEstilo(d, alvo, patch), rotulo);
+
   return (
     <>
-      <Secao titulo="Edição no lugar">
+      <Secao titulo={`Edição no lugar · ${rotuloEl[alvo]}`}>
         <textarea
-          defaultValue="Desenhe, converse e publique no mesmo lugar"
+          value={texto}
+          onChange={(ev) =>
+            e.atualizarDoc((d) => ({ ...d, textos: { ...d.textos, [alvo]: ev.target.value } }), "")
+          }
           className="h-16 w-full resize-none rounded border border-border bg-card p-2 text-[11px] outline-none focus:ring-1 focus:ring-ring"
         />
         <div className="flex gap-1">
-          {[Bold, Italic, Link2, Undo2, Redo2].map((Icon, i) => (
-            <button key={i} className="grid size-6 place-items-center rounded border border-border bg-card hover:bg-secondary">
-              <Icon className="size-3" />
-            </button>
-          ))}
+          <button
+            title="Negrito"
+            onClick={() => setEstilo({ peso: s.peso === "700" ? "400" : "700" }, "Alternou negrito")}
+            className={cn(
+              "grid size-6 place-items-center rounded border border-border hover:bg-secondary",
+              s.peso === "700" ? "bg-primary text-primary-foreground" : "bg-card",
+            )}
+          >
+            <Bold className="size-3" />
+          </button>
+          <button
+            title="Itálico"
+            onClick={() =>
+              e.atualizarDoc(
+                (d) => ({ ...d, textos: { ...d.textos, [alvo]: `“${d.textos[alvo]}”` } }),
+                "Destacou o texto",
+              )
+            }
+            className="grid size-6 place-items-center rounded border border-border bg-card hover:bg-secondary"
+          >
+            <Italic className="size-3" />
+          </button>
+          <button
+            title="Transformar em link"
+            onClick={() => setEstilo({ cor: "oklch(0.55 0.13 245)" }, "Aplicou aparência de link")}
+            className="grid size-6 place-items-center rounded border border-border bg-card hover:bg-secondary"
+          >
+            <Link2 className="size-3" />
+          </button>
+          <button
+            title="Reduzir"
+            onClick={() => setEstilo({ tamanho: Math.max(10, (s.tamanho ?? 16) - 2) }, "Reduziu o texto")}
+            className="grid size-6 place-items-center rounded border border-border bg-card hover:bg-secondary"
+          >
+            <Undo2 className="size-3" />
+          </button>
+          <button
+            title="Aumentar"
+            onClick={() => setEstilo({ tamanho: Math.min(80, (s.tamanho ?? 16) + 2) }, "Aumentou o texto")}
+            className="grid size-6 place-items-center rounded border border-border bg-card hover:bg-secondary"
+          >
+            <Redo2 className="size-3" />
+          </button>
         </div>
       </Secao>
       <Secao titulo="Tipografia">
         <Campo rotulo="Fonte">
-          <select className={inputCls}>
-            <option>Söhne</option>
-            <option>Inter</option>
-            <option>Tiempos</option>
+          <select
+            className={inputCls}
+            value={s.fonte ?? "ui-sans-serif"}
+            onChange={(ev) => setEstilo({ fonte: ev.target.value }, "Trocou a fonte")}
+          >
+            <option value="ui-sans-serif">Söhne</option>
+            <option value="Inter, sans-serif">Inter</option>
+            <option value="Georgia, serif">Tiempos</option>
+            <option value="ui-monospace, monospace">Mono</option>
           </select>
         </Campo>
         <Campo rotulo="Peso">
-          <select className={inputCls}>
-            <option>Semibold</option>
-            <option>Regular</option>
-            <option>Bold</option>
+          <select
+            className={inputCls}
+            value={s.peso ?? "400"}
+            onChange={(ev) => setEstilo({ peso: ev.target.value }, "Trocou o peso")}
+          >
+            <option value="400">Regular</option>
+            <option value="600">Semibold</option>
+            <option value="700">Bold</option>
           </select>
         </Campo>
         <Campo rotulo="Tamanho">
-          <input className={inputCls} defaultValue="32 px" />
+          <input
+            type="number"
+            className={inputCls}
+            value={s.tamanho ?? 16}
+            onChange={(ev) => setEstilo({ tamanho: Number(ev.target.value) }, "")}
+          />
         </Campo>
         <Campo rotulo="Caixa">
-          <select className={inputCls}>
-            <option>Normal</option>
-            <option>MAIÚSCULAS</option>
-            <option>minúsculas</option>
+          <select
+            className={inputCls}
+            value={s.caixa ?? "normal"}
+            onChange={(ev) => setEstilo({ caixa: ev.target.value as "normal" }, "Trocou a caixa")}
+          >
+            <option value="normal">Normal</option>
+            <option value="uppercase">MAIÚSCULAS</option>
+            <option value="lowercase">minúsculas</option>
           </select>
         </Campo>
         <div className="flex gap-1">
-          {[AlignLeft, AlignCenter, AlignRight].map((Icon, i) => (
-            <button key={i} className="grid size-6 place-items-center rounded border border-border bg-card hover:bg-secondary">
+          {(
+            [
+              ["left", AlignLeft],
+              ["center", AlignCenter],
+              ["right", AlignRight],
+            ] as const
+          ).map(([a, Icon]) => (
+            <button
+              key={a}
+              onClick={() => setEstilo({ alinhamento: a }, "Alinhou o texto")}
+              className={cn(
+                "grid size-6 place-items-center rounded border border-border hover:bg-secondary",
+                s.alinhamento === a ? "bg-primary text-primary-foreground" : "bg-card",
+              )}
+            >
               <Icon className="size-3" />
             </button>
           ))}
@@ -95,94 +194,134 @@ export function TextPanel() {
       </Secao>
       <Secao titulo="Ritmo">
         <Campo rotulo="Entrelinha">
-          <input className={inputCls} defaultValue="1.15" />
+          <input
+            type="number"
+            step="0.05"
+            className={inputCls}
+            value={s.entrelinha ?? 1.4}
+            onChange={(ev) => setEstilo({ entrelinha: Number(ev.target.value) }, "")}
+          />
         </Campo>
-        <Campo rotulo="Entre letras">
-          <input className={inputCls} defaultValue="-0.02 em" />
-        </Campo>
-        <Campo rotulo="Quebra">
-          <select className={inputCls}>
-            <option>Balanceada</option>
-            <option>Automática</option>
-            <option>Manual</option>
-          </select>
+        <Campo rotulo="Entre letras (em)">
+          <input
+            type="number"
+            step="0.01"
+            className={inputCls}
+            value={s.entreLetras ?? 0}
+            onChange={(ev) => setEstilo({ entreLetras: Number(ev.target.value) }, "")}
+          />
         </Campo>
       </Secao>
     </>
   );
 }
 
-/* 1g — cor e preenchimento */
+/* cor e preenchimento */
 export function ColorPanel() {
-  const [alvo, setAlvo] = useState("texto");
-  const paleta = [
-    "oklch(0.58 0.15 40)",
-    "oklch(0.24 0.01 70)",
-    "oklch(0.88 0.05 85)",
-    "oklch(0.6 0.09 200)",
-    "oklch(0.55 0.1 145)",
-    "oklch(0.97 0.006 85)",
-  ];
+  const e = useEstudio();
+  const alvo = useAlvo();
+  const s = e.doc.estilos[alvo] ?? {};
+  const [campo, setCampo] = useState<"cor" | "fundo" | "borda">("cor");
+  const paleta = paletaPorSistema[e.sistemaAtivo] ?? paletaProjeto;
+
+  const pintar = (c: string) =>
+    e.atualizarDoc((d) => comEstilo(d, alvo, { [campo]: c }), `Pintou ${rotuloEl[alvo]} (${campo})`);
+
   return (
     <>
-      <Secao titulo="Alvo">
+      <Secao titulo={`Alvo · ${rotuloEl[alvo]}`}>
         <div className="flex gap-1">
-          {["texto", "fundo", "borda"].map((a) => (
+          {(["cor", "fundo", "borda"] as const).map((a) => (
             <button
               key={a}
-              onClick={() => setAlvo(a)}
+              onClick={() => setCampo(a)}
               className={cn(
                 "flex-1 rounded border px-2 py-1 text-[11px] capitalize",
-                alvo === a ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card",
+                campo === a ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card",
               )}
             >
-              {a}
+              {a === "cor" ? "texto" : a}
             </button>
           ))}
         </div>
       </Secao>
-      <Secao titulo="Paleta do projeto">
+      <Secao titulo="Paleta do sistema">
         <div className="grid grid-cols-6 gap-1.5">
-          {paleta.map((c) => (
-            <button key={c} className="size-7 rounded border border-border" style={{ background: c }} />
+          {[...paleta, ...paletaProjeto].slice(0, 12).map((c, i) => (
+            <button
+              key={`${c}-${i}`}
+              onClick={() => pintar(c)}
+              className="size-7 rounded border border-border"
+              style={{ background: c }}
+            />
           ))}
         </div>
         <Campo rotulo="Amostra livre">
-          <input className={inputCls} defaultValue="#C05621" />
+          <input
+            type="color"
+            className={cn(inputCls, "p-0")}
+            value={/^#/.test(s[campo] ?? "") ? (s[campo] as string) : "#c05621"}
+            onChange={(ev) => pintar(ev.target.value)}
+          />
         </Campo>
+        <button
+          onClick={() => e.atualizarDoc((d) => comEstilo(d, alvo, { [campo]: undefined }), "Limpou a cor")}
+          className="h-6 w-full rounded border border-border bg-card text-[11px] hover:bg-secondary"
+        >
+          Limpar {campo}
+        </button>
       </Secao>
-      <Secao titulo="Opacidade">
-        <Slider defaultValue={[100]} max={100} step={1} />
+      <Secao titulo={`Opacidade · ${s.opacidade ?? 100}%`}>
+        <Slider
+          value={[s.opacidade ?? 100]}
+          max={100}
+          step={1}
+          onValueChange={(v) => e.atualizarDoc((d) => comEstilo(d, alvo, { opacidade: v[0] }), "")}
+        />
       </Secao>
-      <Secao titulo="Gradiente e imagem">
-        <div className="h-10 rounded border border-border bg-[linear-gradient(90deg,oklch(0.58_0.15_40),oklch(0.88_0.05_85))]" />
-        <div className="flex gap-1">
-          <button className="flex h-6 flex-1 items-center justify-center gap-1 rounded border border-border bg-card text-[11px] hover:bg-secondary">
-            <Image className="size-3" /> Trocar imagem
-          </button>
-          <button className="h-6 flex-1 rounded border border-border bg-card text-[11px] hover:bg-secondary">
-            Enquadrar
-          </button>
+      <Secao titulo="Fundo do artboard">
+        <div className="flex gap-1.5">
+          {["var(--card)", "oklch(0.97 0.006 85)", "oklch(0.24 0.01 70)", "oklch(0.88 0.05 85)"].map((c) => (
+            <button
+              key={c}
+              onClick={() => e.atualizarDoc((d) => ({ ...d, fundo: c }), "Trocou o fundo do artboard")}
+              className="h-8 flex-1 rounded border border-border"
+              style={{ background: c }}
+            />
+          ))}
         </div>
+        <button
+          onClick={() =>
+            e.atualizarDoc((d) => comEstilo(d, "midia", { fundo: "linear-gradient(90deg,oklch(0.58 0.15 40),oklch(0.88 0.05 85))" }), "Aplicou gradiente na mídia")
+          }
+          className="flex h-6 w-full items-center justify-center gap-1 rounded border border-border bg-card text-[11px] hover:bg-secondary"
+        >
+          <Image className="size-3" /> Gradiente na mídia
+        </button>
       </Secao>
     </>
   );
 }
 
-/* 1h — layout e espaçamento */
+/* layout e espaçamento */
 export function LayoutPanel() {
-  const [dir, setDir] = useState("coluna");
+  const e = useEstudio();
+  const l = e.doc.layout;
+  const alvo = useAlvo();
+  const setL = (patch: Partial<typeof l>, rotulo: string) =>
+    e.atualizarDoc((d) => ({ ...d, layout: { ...d.layout, ...patch } }), rotulo);
+
   return (
     <>
       <Secao titulo="Direção">
         <div className="grid grid-cols-4 gap-1">
-          {["linha", "coluna", "grade", "livre"].map((d) => (
+          {(["linha", "coluna", "grade", "livre"] as const).map((d) => (
             <button
               key={d}
-              onClick={() => setDir(d)}
+              onClick={() => setL({ direcao: d }, `Direção ${d}`)}
               className={cn(
                 "rounded border px-1 py-1 text-[10px] capitalize",
-                dir === d ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card",
+                l.direcao === d ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card",
               )}
             >
               {d}
@@ -190,56 +329,71 @@ export function LayoutPanel() {
           ))}
         </div>
       </Secao>
-      <Secao titulo="Alinhamento">
-        <div className="flex items-center gap-3">
-          <div className="grid size-16 grid-cols-3 grid-rows-3 gap-0.5 rounded border border-border bg-card p-1">
-            {Array.from({ length: 9 }).map((_, i) => (
-              <button key={i} className="rounded-[2px] bg-muted hover:bg-accent" />
-            ))}
-          </div>
-          <div className="flex-1">
-            <Campo rotulo="Gap">
-              <input className={inputCls} defaultValue="12 px" />
-            </Campo>
-          </div>
-        </div>
+      <Secao titulo={`Gap · ${l.gap} px`}>
+        <Slider value={[l.gap]} max={64} step={1} onValueChange={(v) => setL({ gap: v[0]! }, "")} />
       </Secao>
       <Secao titulo="Espaço e tamanho">
-        <Campo rotulo="Margem">
-          <input className={inputCls} defaultValue="0 · 0 · 24 · 0" />
-        </Campo>
         <Campo rotulo="Padding">
-          <input className={inputCls} defaultValue="32 px" />
+          <input
+            type="number"
+            className={inputCls}
+            value={l.padding}
+            onChange={(ev) => setL({ padding: Number(ev.target.value) }, "")}
+          />
         </Campo>
         <Campo rotulo="Largura">
-          <select className={inputCls}>
-            <option>Automática</option>
-            <option>Fixa</option>
-            <option>100%</option>
+          <select
+            className={inputCls}
+            value={l.largura}
+            onChange={(ev) => setL({ largura: ev.target.value as typeof l.largura }, "Trocou a largura")}
+          >
+            <option value="auto">Automática</option>
+            <option value="fixa">Fixa</option>
+            <option value="cheia">100%</option>
           </select>
         </Campo>
       </Secao>
       <Secao titulo="Aparência">
         <Campo rotulo="Borda">
-          <input className={inputCls} defaultValue="1 px" />
+          <input
+            type="number"
+            className={inputCls}
+            value={l.borda}
+            onChange={(ev) => setL({ borda: Number(ev.target.value) }, "")}
+          />
         </Campo>
         <Campo rotulo="Raio">
-          <input className={inputCls} defaultValue="8 px" />
+          <input
+            type="number"
+            className={inputCls}
+            value={l.raio}
+            onChange={(ev) => setL({ raio: Number(ev.target.value) }, "")}
+          />
         </Campo>
         <Campo rotulo="Sombra">
-          <select className={inputCls}>
-            <option>Suave</option>
-            <option>Nenhuma</option>
-            <option>Elevada</option>
+          <select
+            className={inputCls}
+            value={l.sombra}
+            onChange={(ev) => setL({ sombra: ev.target.value as typeof l.sombra }, "Trocou a sombra")}
+          >
+            <option value="suave">Suave</option>
+            <option value="nenhuma">Nenhuma</option>
+            <option value="elevada">Elevada</option>
           </select>
         </Campo>
       </Secao>
-      <Secao titulo="Camada">
+      <Secao titulo={`Camada · ${rotuloEl[alvo]}`}>
         <div className="flex gap-1">
-          <button className="h-6 flex-1 rounded border border-border bg-card text-[11px] hover:bg-secondary">
+          <button
+            onClick={() => e.atualizarDoc((d) => mover(d, alvo, -1), "Trouxe à frente")}
+            className="h-6 flex-1 rounded border border-border bg-card text-[11px] hover:bg-secondary"
+          >
             Trazer à frente
           </button>
-          <button className="h-6 flex-1 rounded border border-border bg-card text-[11px] hover:bg-secondary">
+          <button
+            onClick={() => e.atualizarDoc((d) => mover(d, alvo, 1), "Enviou para trás")}
+            className="h-6 flex-1 rounded border border-border bg-card text-[11px] hover:bg-secondary"
+          >
             Enviar para trás
           </button>
         </div>
@@ -248,45 +402,134 @@ export function LayoutPanel() {
   );
 }
 
-/* 1i — estrutura e camadas */
+function mover<T extends { ordem: ElId[] }>(d: T, alvo: ElId, dir: -1 | 1): T {
+  const i = d.ordem.indexOf(alvo);
+  const j = i + dir;
+  if (i < 0 || j < 0 || j >= d.ordem.length) return d;
+  const ordem = [...d.ordem];
+  const item = ordem.splice(i, 1)[0]!;
+  ordem.splice(j, 0, item);
+  return { ...d, ordem };
+}
+
+/* estrutura e camadas */
 export function LayersPanel() {
   const e = useEstudio();
+  const camadas = camadasDoDoc(e.doc);
+  const alvo = e.selecionado;
+
   return (
     <>
       <Secao titulo="Árvore de camadas">
         <div className="space-y-0.5">
-          {camadas.map((c) => (
-            <div key={c.id}>
-              <LinhaCamada nome={c.nome} tipo={c.tipo} onSelect={() => e.setSelecionado(c.nome)} />
-              {c.filhos?.map((f) => (
-                <div key={f.id} className="pl-4">
-                  <LinhaCamada nome={f.nome} tipo={f.tipo} onSelect={() => e.setSelecionado(`${c.nome} › ${f.nome}`)} />
-                </div>
-              ))}
-            </div>
-          ))}
+          {camadas.map((c) => {
+            const s = e.doc.estilos[c.id] ?? {};
+            return (
+              <div
+                key={c.id}
+                className={cn(
+                  "group flex items-center gap-1 rounded px-1 py-0.5 text-[11px] hover:bg-secondary",
+                  alvo === c.id && "bg-secondary",
+                )}
+              >
+                <GripVertical className="size-3 cursor-grab text-muted-foreground" />
+                <button onClick={() => e.setSelecionado(c.id)} className="flex-1 truncate text-left">
+                  <span className="text-muted-foreground">{c.grupo} › </span>
+                  {c.nome}
+                </button>
+                <span className="text-[9px] text-muted-foreground">{c.tipo}</span>
+                <button
+                  title="Mostrar/ocultar"
+                  onClick={() => e.atualizarDoc((d) => comEstilo(d, c.id, { oculto: !s.oculto }), `Alternou ${c.nome}`)}
+                >
+                  {s.oculto ? (
+                    <EyeOff className="size-3 text-muted-foreground" />
+                  ) : (
+                    <Eye className="size-3 text-muted-foreground" />
+                  )}
+                </button>
+                <button
+                  title="Travar"
+                  onClick={() => e.atualizarDoc((d) => comEstilo(d, c.id, { travado: !s.travado }), `Travou ${c.nome}`)}
+                >
+                  {s.travado ? (
+                    <Lock className="size-3 text-accent" />
+                  ) : (
+                    <LockOpen className="size-3 text-muted-foreground" />
+                  )}
+                </button>
+              </div>
+            );
+          })}
         </div>
       </Secao>
       <Secao titulo="Reordenar">
-        <div className="rounded border border-dashed border-border p-2 text-center text-[11px] text-muted-foreground">
-          Solte aqui para duplicar o item ou inserir um novo bloco
+        <div className="flex gap-1">
+          <button
+            disabled={!alvo}
+            onClick={() => alvo && e.atualizarDoc((d) => mover(d, alvo, -1), "Subiu a camada")}
+            className="grid h-6 flex-1 place-items-center rounded border border-border bg-card hover:bg-secondary disabled:opacity-40"
+          >
+            <ArrowUp className="size-3" />
+          </button>
+          <button
+            disabled={!alvo}
+            onClick={() => alvo && e.atualizarDoc((d) => mover(d, alvo, 1), "Desceu a camada")}
+            className="grid h-6 flex-1 place-items-center rounded border border-border bg-card hover:bg-secondary disabled:opacity-40"
+          >
+            <ArrowDown className="size-3" />
+          </button>
         </div>
-        <button className="flex h-6 w-full items-center justify-center gap-1 rounded border border-border bg-card text-[11px] hover:bg-secondary">
-          <Plus className="size-3" /> Inserir bloco
+        <button
+          onClick={() =>
+            e.atualizarDoc(
+              (d) => (d.ordem.includes("midia") ? d : { ...d, ordem: [...d.ordem, "midia"] }),
+              "Inseriu bloco de mídia",
+            )
+          }
+          className="flex h-6 w-full items-center justify-center gap-1 rounded border border-border bg-card text-[11px] hover:bg-secondary"
+        >
+          <Plus className="size-3" /> Inserir bloco de mídia
         </button>
       </Secao>
       <Secao titulo="Ações">
         <div className="flex gap-1">
-          <button className="grid h-6 flex-1 place-items-center rounded border border-border bg-card hover:bg-secondary">
+          <button
+            title="Adicionar logo"
+            onClick={() => e.atualizarDoc((d) => ({ ...d, logos: [...d.logos, "Novo"] }), "Adicionou um logo")}
+            className="grid h-6 flex-1 place-items-center rounded border border-border bg-card hover:bg-secondary"
+          >
+            <Plus className="size-3" />
+          </button>
+          <button
+            title="Remover último logo"
+            onClick={() => e.atualizarDoc((d) => ({ ...d, logos: d.logos.slice(0, -1) }), "Removeu um logo")}
+            className="grid h-6 flex-1 place-items-center rounded border border-border bg-card hover:bg-secondary"
+          >
             <Undo2 className="size-3" />
           </button>
-          <button className="grid h-6 flex-1 place-items-center rounded border border-border bg-card hover:bg-secondary">
-            <Redo2 className="size-3" />
-          </button>
-          <button className="grid h-6 flex-1 place-items-center rounded border border-border bg-card hover:bg-secondary">
+          <button
+            title="Inserir mídia"
+            onClick={() =>
+              e.atualizarDoc(
+                (d) => (d.ordem.includes("midia") ? d : { ...d, ordem: [...d.ordem, "midia"] }),
+                "Inseriu mídia",
+              )
+            }
+            className="grid h-6 flex-1 place-items-center rounded border border-border bg-card hover:bg-secondary"
+          >
             <Image className="size-3" />
           </button>
-          <button className="grid h-6 flex-1 place-items-center rounded border border-border bg-card text-destructive hover:bg-secondary">
+          <button
+            title="Excluir camada selecionada"
+            disabled={!alvo}
+            onClick={() => {
+              if (!alvo) return;
+              e.atualizarDoc((d) => ({ ...d, ordem: d.ordem.filter((x) => x !== alvo) }), `Excluiu ${rotuloEl[alvo]}`);
+              e.setSelecionado(null);
+            }}
+            className="grid h-6 flex-1 place-items-center rounded border border-border bg-card text-destructive hover:bg-secondary disabled:opacity-40"
+          >
             <Trash2 className="size-3" />
           </button>
         </div>
@@ -295,61 +538,77 @@ export function LayersPanel() {
   );
 }
 
-function LinhaCamada({ nome, tipo, onSelect }: { nome: string; tipo: string; onSelect: () => void }) {
-  return (
-    <div className="group flex items-center gap-1 rounded px-1 py-0.5 text-[11px] hover:bg-secondary">
-      <GripVertical className="size-3 cursor-grab text-muted-foreground" />
-      <button onClick={onSelect} className="flex-1 truncate text-left">
-        {nome}
-      </button>
-      <span className="text-[9px] text-muted-foreground">{tipo}</span>
-      <button className="opacity-0 group-hover:opacity-100">
-        <Eye className="size-3 text-muted-foreground" />
-      </button>
-      <button className="opacity-0 group-hover:opacity-100">
-        <Lock className="size-3 text-muted-foreground" />
-      </button>
-    </div>
-  );
-}
-
-/* 1j — painel de ajustes (props) */
+/* painel de ajustes (props) */
 export function PropsPanel() {
-  const [variante, setVariante] = useState("Calmo");
+  const e = useEstudio();
+  const d = e.doc;
+
   return (
     <>
       <Secao titulo="Conteúdo exposto">
         <Campo rotulo="Título">
-          <input className={inputCls} defaultValue="Desenhe e publique" />
+          <input
+            className={inputCls}
+            value={d.textos.titulo}
+            onChange={(ev) => e.atualizarDoc((x) => ({ ...x, textos: { ...x.textos, titulo: ev.target.value } }), "")}
+          />
         </Campo>
         <Campo rotulo="CTA">
-          <input className={inputCls} defaultValue="Começar" />
+          <input
+            className={inputCls}
+            value={d.textos.cta}
+            onChange={(ev) => e.atualizarDoc((x) => ({ ...x, textos: { ...x.textos, cta: ev.target.value } }), "")}
+          />
         </Campo>
         <Campo rotulo="Nº de logos">
-          <input className={inputCls} defaultValue="4" />
+          <input
+            type="number"
+            min={0}
+            max={8}
+            className={inputCls}
+            value={d.logos.length}
+            onChange={(ev) => {
+              const n = Math.max(0, Math.min(8, Number(ev.target.value)));
+              e.atualizarDoc((x) => {
+                const base = ["Marés", "Fluxo", "Norte", "Cardume", "Vento", "Duna", "Píer", "Ilha"];
+                return { ...x, logos: base.slice(0, n) };
+              }, "");
+            }}
+          />
         </Campo>
       </Secao>
       <Secao titulo="Comportamento">
         <Campo rotulo="Mostrar prova social">
-          <Switch defaultChecked />
+          <Switch
+            checked={d.provaSocial}
+            onCheckedChange={(v) => e.atualizarDoc((x) => ({ ...x, provaSocial: v }), "Alternou prova social")}
+          />
         </Campo>
         <Campo rotulo="Herói em tela cheia">
-          <Switch />
+          <Switch
+            checked={d.heroiCheio}
+            onCheckedChange={(v) => e.atualizarDoc((x) => ({ ...x, heroiCheio: v }), "Alternou herói cheio")}
+          />
         </Campo>
         <div>
-          <p className="mb-1 text-[11px] text-muted-foreground">Densidade · 56%</p>
-          <Slider defaultValue={[56]} max={100} step={1} />
+          <p className="mb-1 text-[11px] text-muted-foreground">Densidade · {d.densidade}%</p>
+          <Slider
+            value={[d.densidade]}
+            max={100}
+            step={1}
+            onValueChange={(v) => e.atualizarDoc((x) => ({ ...x, densidade: v[0]! }), "")}
+          />
         </div>
       </Secao>
       <Secao titulo="Variantes">
         <div className="flex rounded border border-border bg-card p-0.5">
-          {["Calmo", "Produto", "Ousado"].map((v) => (
+          {(["Calmo", "Produto", "Ousado"] as Variante[]).map((v) => (
             <button
               key={v}
-              onClick={() => setVariante(v)}
+              onClick={() => e.atualizarDoc((x) => aplicarVariante(x, v), `Variante ${v}`)}
               className={cn(
                 "flex-1 rounded-[3px] py-1 text-[11px]",
-                variante === v ? "bg-primary text-primary-foreground" : "hover:bg-secondary",
+                d.variante === v ? "bg-primary text-primary-foreground" : "hover:bg-secondary",
               )}
             >
               {v}
@@ -357,8 +616,25 @@ export function PropsPanel() {
           ))}
         </div>
         <div className="grid grid-cols-3 gap-1">
-          {["Aurora", "Editorial", "Neutro"].map((p) => (
-            <button key={p} className="rounded border border-border bg-card py-1 text-[10px] hover:bg-secondary">
+          {(
+            [
+              ["Aurora", "s1"],
+              ["Editorial", "s2"],
+              ["Neutro", "s3"],
+            ] as const
+          ).map(([p, sid]) => (
+            <button
+              key={p}
+              onClick={() => {
+                e.setSistemaAtivo(sid);
+                const cores = paletaPorSistema[sid]!;
+                e.atualizarDoc(
+                  (x) => comEstilo(comEstilo(x, "cta", { fundo: cores[0] }), "titulo", { cor: cores[2] }),
+                  `Aplicou a paleta ${p}`,
+                );
+              }}
+              className="rounded border border-border bg-card py-1 text-[10px] hover:bg-secondary"
+            >
               {p}
             </button>
           ))}
@@ -366,10 +642,24 @@ export function PropsPanel() {
       </Secao>
       <Secao titulo="Aplicar">
         <div className="flex gap-1">
-          <button className="flex h-6 flex-1 items-center justify-center gap-1 rounded border border-border bg-card text-[11px] hover:bg-secondary">
+          <button
+            onClick={() => {
+              e.recarregarDoc();
+              toast.success("Padrão restaurado.");
+            }}
+            className="flex h-6 flex-1 items-center justify-center gap-1 rounded border border-border bg-card text-[11px] hover:bg-secondary"
+          >
             <RotateCcw className="size-3" /> Restaurar padrão
           </button>
-          <button className="h-6 flex-1 rounded bg-primary text-[11px] text-primary-foreground">Aplicar a tudo</button>
+          <button
+            onClick={() => {
+              const v = e.criarVersao("");
+              toast.success(`Versão ${v.rotulo} salva.`);
+            }}
+            className="h-6 flex-1 rounded bg-primary text-[11px] text-primary-foreground"
+          >
+            Salvar versão
+          </button>
         </div>
       </Secao>
     </>
