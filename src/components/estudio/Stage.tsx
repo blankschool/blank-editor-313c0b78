@@ -27,7 +27,12 @@ import {
   Sparkles,
   MoreHorizontal,
   MessageSquare,
-
+  ImagePlus,
+  Bold,
+  Italic,
+  Underline,
+  Strikethrough,
+  Frame,
 } from "lucide-react";
 import { useEstudio } from "./EstudioContext";
 import { cn } from "@/lib/utils";
@@ -36,6 +41,9 @@ import {
   ehDocHtml,
   rotuloEl,
   type CanvasCamada,
+  type CanvasCamadaTexto,
+  type CanvasCamadaImagem,
+  type CanvasParteTexto,
   type CanvasPagina,
   comCamadaCanvas,
   type DesignDoc,
@@ -50,7 +58,14 @@ import {
   novaCamadaForma,
   novaCamadaTexto,
   removerCamadaCanvas,
+  partesDaCamadaCanvas,
+  aplicarEstiloEmTrecho,
+  estiloDoTrecho,
+  substituirTextoPreservandoPartes,
+  virarPlaceholderImagem,
 } from "@/lib/estudio-doc";
+import { offsetsDaSelecao, partesParaHtml, restaurarOffsets, textoDoElemento } from "@/lib/texto-rico";
+import { enviarImagemCanvas } from "@/lib/estudio-db";
 import { toast } from "sonner";
 
 export const larguras = { mobile: 340, tablet: 620, desktop: 880 } as const;
