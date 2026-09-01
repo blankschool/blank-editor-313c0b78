@@ -1086,6 +1086,61 @@ function CanvasComSelecao({ doc }: { doc: DocCanvas }) {
         e.setPaginaCanvas(pid);
         e.setCamadaCanvas(cid);
       }}
+      acoes={({ paginaId, camadaId, camada }) => (
+        <>
+          {camada.tipo === "texto" && (
+            <button
+              title="Texto"
+              onClick={() => e.setPainelEdicao("texto")}
+              className={cn(
+                "flex h-6 items-center gap-1 rounded-md px-1.5 text-[11px]",
+                e.painelEdicao === "texto" ? "bg-primary text-primary-foreground" : "hover:bg-secondary",
+              )}
+            >
+              <Type className="size-3.5" /> Texto
+            </button>
+          )}
+          <button
+            title="Cor"
+            onClick={() => e.setPainelEdicao("cor")}
+            className={cn(
+              "flex h-6 items-center gap-1 rounded-md px-1.5 text-[11px]",
+              e.painelEdicao === "cor" ? "bg-primary text-primary-foreground" : "hover:bg-secondary",
+            )}
+          >
+            <Palette className="size-3.5" /> Cor
+          </button>
+          <span className="mx-1 h-4 w-px bg-border" />
+          <button
+            title="Duplicar camada"
+            onClick={() => {
+              const copia = duplicarCamadaCanvas(camada);
+              e.atualizarDocCanvas((d) => adicionarCamadaCanvas(d, paginaId, copia), "Duplicou camada");
+              e.setCamadaCanvas(copia.id!);
+            }}
+            className="grid size-6 place-items-center rounded-md hover:bg-secondary"
+          >
+            <Copy className="size-3.5" />
+          </button>
+          <button
+            title="Excluir camada"
+            onClick={() => {
+              e.atualizarDocCanvas((d) => removerCamadaCanvas(d, paginaId, camadaId), "Apagou camada");
+              e.setCamadaCanvas(null);
+            }}
+            className="grid size-6 place-items-center rounded-md hover:bg-secondary"
+          >
+            <Trash2 className="size-3.5" />
+          </button>
+          <span className="mx-1 h-4 w-px bg-border" />
+          <button
+            onClick={() => e.enviarPedido(`Melhorar a camada ${camada.nome ?? camada.tipo}`)}
+            className="flex h-6 items-center gap-1 whitespace-nowrap rounded-md bg-accent px-2 text-[11px] font-medium text-accent-foreground"
+          >
+            <Sparkles className="size-3" /> Pedir ao assistente
+          </button>
+        </>
+      )}
     />
   );
 }
