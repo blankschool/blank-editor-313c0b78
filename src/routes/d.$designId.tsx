@@ -1,5 +1,5 @@
 import { Outlet, createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { PanelLeftOpen, MessageSquare } from "lucide-react";
 import { TopBar } from "@/components/estudio/TopBar";
 import { LibrarySidebar } from "@/components/estudio/LibrarySidebar";
