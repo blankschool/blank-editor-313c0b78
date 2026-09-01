@@ -1463,6 +1463,7 @@ export function CanvasView({
               </span>
             )}
             <div
+              data-pagina={pid}
               style={{
                 position: "relative",
                 width: p.largura || 1080,
@@ -1480,9 +1481,12 @@ export function CanvasView({
                         ...c,
                         x: arraste.geo.x,
                         y: arraste.geo.y,
-                        ...(c.tipo === "texto" ? {} : { w: arraste.geo.w, h: arraste.geo.h }),
+                        w: arraste.geo.w,
+                        h: c.tipo === "texto" && arraste.modo === "mover" ? c.h : arraste.geo.h,
+                        ...(arraste.geo.r !== undefined ? { rotacao: arraste.geo.r } : {}),
                       } as CanvasCamada)
                     : c;
+
                 return (
                   <CamadaCanvasView
                     key={cid}
