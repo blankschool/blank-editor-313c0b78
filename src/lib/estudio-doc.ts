@@ -227,6 +227,44 @@ export function camadasDaPaginaCanvas(pagina: CanvasPagina | null | undefined): 
   }));
 }
 
+export function textoDaCamadaCanvas(c: CanvasCamadaTexto): string {
+  if (c.partes?.length) return c.partes.map((p) => p.texto ?? "").join("");
+  return c.texto ?? "";
+}
+
+export function acharCamadaCanvas(
+  doc: DocCanvas | null | undefined,
+  paginaId: string | null,
+  camadaId: string | null,
+): { pagina: CanvasPagina; camada: CanvasCamada; indice: number } | null {
+  if (!doc || !camadaId || !Array.isArray(doc.paginas)) return null;
+  for (let i = 0; i < doc.paginas.length; i++) {
+    const p = doc.paginas[i]!;
+    const pid = p.id ?? `p${i + 1}`;
+    if (paginaId && pid !== paginaId) continue;
+    const camadas = p.camadas ?? [];
+    for (let j = 0; j < camadas.length; j++) {
+      if (idCamadaCanvas(camadas[j]!, j, pid) === camadaId) {
+        return { pagina: p, camada: camadas[j]!, indice: j };
+      }
+    }
+  }
+  if (paginaId) return acharCamadaCanvas(doc, null, camadaId);
+  return null;
+}
+
+/** aplica um patch imutável na camada identificada, dentro de um doc já clonado */
+export function comCamadaCanvas(
+  doc: DocCanvas,
+  paginaId: string | null,
+  camadaId: string,
+  patch: (c: CanvasCamada) => void,
+): DocCanvas {
+  const achado = acharCamadaCanvas(doc, paginaId, camadaId);
+  if (achado) patch(achado.camada);
+  return doc;
+}
+
 export function ehDocCanvas(d: unknown): d is DocCanvas {
   return (
     !!d &&
