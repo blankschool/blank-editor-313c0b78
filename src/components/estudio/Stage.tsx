@@ -37,6 +37,8 @@ import {
   rotuloEl,
   tipoEl,
   type CanvasCamada,
+  type CanvasPagina,
+  comCamadaCanvas,
   type DesignDoc,
   type DocCanvas,
   type DocHtml,
@@ -894,6 +896,16 @@ function CanvasComSelecao({ doc }: { doc: DocCanvas }) {
             c.x = geo.x;
             c.y = geo.y;
             if (modo !== "mover" && c.tipo !== "texto") {
+              if (c.tipo === "imagem" && c.img && c.w && c.h) {
+                const rx = geo.w / c.w;
+                const ry = geo.h / c.h;
+                c.img = {
+                  x: c.img.x * rx,
+                  y: c.img.y * ry,
+                  w: c.img.w * rx,
+                  h: c.img.h * ry,
+                };
+              }
               c.w = geo.w;
               c.h = geo.h;
             }
