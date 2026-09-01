@@ -751,6 +751,8 @@ function CamadaCanvasView({
           top: c.y,
           width: c.w,
           height: c.h,
+          transform: transformRot(c),
+
           background: c.cor,
           borderRadius: c.raio !== undefined ? Math.min(c.raio, Math.min(c.w, c.h) / 2) : undefined,
           opacity: c.opacidade,
