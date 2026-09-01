@@ -416,17 +416,148 @@ function estiloCss(s: EstiloEl | undefined): React.CSSProperties {
   };
 }
 
+function CamadaCanvasView({ c }: { c: CanvasCamada }) {
+  if (c.tipo === "imagem") {
+    const inner = c.img ?? { x: 0, y: 0, w: c.w, h: c.h };
+    return (
+      <div
+        style={{
+          position: "absolute",
+          left: c.x,
+          top: c.y,
+          width: c.w,
+          height: c.h,
+          overflow: "hidden",
+          borderRadius: c.raio,
+          opacity: c.opacidade,
+        }}
+      >
+        <img
+          src={c.src}
+          alt=""
+          style={{
+            position: "absolute",
+            display: "block",
+            left: inner.x,
+            top: inner.y,
+            width: inner.w,
+            height: inner.h,
+            transform: c.espelhoY ? "scaleY(-1)" : undefined,
+          }}
+        />
+      </div>
+    );
+  }
+  if (c.tipo === "forma") {
+    return (
+      <div
+        style={{
+          position: "absolute",
+          left: c.x,
+          top: c.y,
+          width: c.w,
+          height: c.h,
+          background: c.cor,
+          borderRadius: c.raio,
+          opacity: c.opacidade,
+          border: c.borda ? `${c.borda.largura}px solid ${c.borda.cor}` : undefined,
+          boxSizing: "border-box",
+        }}
+      />
+    );
+  }
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: c.x,
+        top: c.y,
+        width: c.w,
+        height: c.h,
+        fontFamily: c.fonte ? `"${c.fonte}", sans-serif` : undefined,
+        fontWeight: c.peso,
+        fontSize: c.tamanho,
+        lineHeight: c.entrelinha !== undefined ? `${c.entrelinha}px` : undefined,
+        letterSpacing: c.entreLetras !== undefined ? `${c.entreLetras}px` : undefined,
+        color: c.cor,
+        textAlign: c.alinhamento,
+        opacity: c.opacidade,
+        whiteSpace: c.quebra ? "pre-wrap" : "pre",
+        fontKerning: "none",
+        fontVariantLigatures: "none",
+      }}
+    >
+      {c.partes
+        ? c.partes.map((p, i) => (
+            <span key={i} style={{ fontWeight: p.peso, color: p.cor }}>
+              {p.texto}
+            </span>
+          ))
+        : c.texto}
+    </div>
+  );
+}
+
+export function CanvasView({ doc }: { doc: DocCanvas }) {
+  const paginas = Array.isArray(doc.paginas) ? doc.paginas : [];
+  if (!paginas.length) {
+    return (
+      <div className="grid h-[1440px] w-[1080px] place-items-center text-sm text-muted-foreground">
+        Canvas sem páginas.
+      </div>
+    );
+  }
+  return (
+    <div className="flex flex-col items-center gap-10">
+      {paginas.map((p, i) => (
+        <div key={p.id ?? i} className="relative">
+          {paginas.length > 1 && (
+            <span className="absolute -top-7 left-0 text-[11px] font-medium text-muted-foreground">
+              {p.nome ?? `Página ${i + 1}`} · {i + 1}/{paginas.length}
+            </span>
+          )}
+          <div
+            style={{
+              position: "relative",
+              width: p.largura || 1080,
+              height: p.altura || 1440,
+              overflow: "hidden",
+              background: p.fundo ?? "#ffffff",
+              textRendering: "geometricPrecision",
+            }}
+          >
+            {(p.camadas ?? []).map((c, j) => (
+              <CamadaCanvasView key={j} c={c} />
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function Artboard({
   doc,
   selecionavel = false,
   selecionado = null,
   onSelecionar,
 }: {
-  doc: DesignDoc | DocHtml;
+  doc: DesignDoc | DocHtml | DocCanvas;
   selecionavel?: boolean;
   selecionado?: ElId | null;
   onSelecionar?: (id: ElId) => void;
 }) {
+  if (ehDocCanvas(doc)) {
+    try {
+      return <CanvasView doc={doc} />;
+    } catch {
+      return (
+        <div className="grid h-[1440px] w-[1080px] place-items-center text-sm text-muted-foreground">
+          Não foi possível desenhar este canvas.
+        </div>
+      );
+    }
+  }
   if (ehDocHtml(doc)) {
     return (
       <iframe
@@ -438,6 +569,7 @@ export function Artboard({
       />
     );
   }
+
   const wrap = (id: ElId, node: React.ReactNode) => {
     const s = doc.estilos[id];
     if (s?.oculto) return null;
