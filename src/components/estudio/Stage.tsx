@@ -778,6 +778,8 @@ function CamadaCanvasView({
     top: c.y,
     width: c.w,
     height: c.h,
+    transform: transformRot(c),
+
     fontFamily: c.fonte ? `"${c.fonte}", sans-serif` : undefined,
     fontWeight: c.peso,
     fontSize: c.tamanho,
