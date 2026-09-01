@@ -53,6 +53,8 @@ import {
   salvarDoc,
 } from "@/lib/estudio-db";
 
+import { slugPainel } from "@/lib/estudio-paineis";
+
 export type Viewport = "mobile" | "tablet" | "desktop";
 export type Ferramenta = "cursor" | "mao" | "regua" | "grade";
 export type PainelDireito = "props" | "camadas" | "versoes" | "comentarios" | "codigo" | null;
@@ -73,14 +75,6 @@ export interface EventoHistorico {
   o: string;
   quando: string;
 }
-
-export const slugPainel: Record<Exclude<PainelDireito, null>, string> = {
-  props: "ajustes",
-  camadas: "camadas",
-  versoes: "versoes",
-  comentarios: "comentarios",
-  codigo: "codigo",
-};
 
 const painelPorSlug: Record<string, Exclude<PainelDireito, null>> = {
   ajustes: "props",
