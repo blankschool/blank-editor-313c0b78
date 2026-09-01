@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Check, ChevronDown, Pencil, Share2, Download, User, FolderGit2 } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { Check, ChevronDown, Pencil, Share2, Download, User, FolderGit2, Library } from "lucide-react";
 import { useEstudio } from "./EstudioContext";
 import { Input } from "@/components/ui/input";
 import {
