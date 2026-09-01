@@ -134,6 +134,13 @@ export interface CanvasParteTexto {
   cor?: string;
 }
 
+export interface CanvasSombra {
+  x: number;
+  y: number;
+  blur: number;
+  cor: string;
+}
+
 export interface CanvasCamadaTexto {
   tipo: "texto";
   id?: string;
@@ -154,6 +161,7 @@ export interface CanvasCamadaTexto {
   alinhamento?: "left" | "center" | "right";
   quebra?: boolean;
   opacidade?: number;
+  sombra?: CanvasSombra;
 }
 
 export interface CanvasCamadaImagem {
@@ -170,6 +178,7 @@ export interface CanvasCamadaImagem {
   raio?: number;
   opacidade?: number;
   espelhoY?: boolean;
+  sombra?: CanvasSombra;
 }
 
 export interface CanvasCamadaForma {
@@ -184,7 +193,8 @@ export interface CanvasCamadaForma {
   cor?: string;
   raio?: number;
   opacidade?: number;
-  borda?: { largura: number; cor: string };
+  borda?: { largura: number; cor: string; estilo?: "solid" | "dashed" | "dotted" };
+  sombra?: CanvasSombra;
 }
 
 export type CanvasCamada = CanvasCamadaTexto | CanvasCamadaImagem | CanvasCamadaForma;
@@ -321,6 +331,15 @@ export function novaCamadaImagem(pagina: CanvasPagina, src: string, nome: string
     h,
     src,
   };
+}
+
+export function duplicarCamadaCanvas(camada: CanvasCamada, dx = 16, dy = 16): CanvasCamada {
+  const copia = JSON.parse(JSON.stringify(camada)) as CanvasCamada;
+  copia.id = novoIdCamada(camada.tipo === "texto" ? "txt" : camada.tipo === "imagem" ? "img" : "frm");
+  copia.nome = `${camada.nome ?? camada.tipo} cópia`;
+  copia.x = (camada.x ?? 0) + dx;
+  copia.y = (camada.y ?? 0) + dy;
+  return copia;
 }
 
 export function adicionarCamadaCanvas(doc: DocCanvas, paginaId: string | null, camada: CanvasCamada): DocCanvas {
