@@ -482,6 +482,169 @@ function estiloCss(s: EstiloEl | undefined): React.CSSProperties {
   };
 }
 
+function transformRot(c: CanvasCamada): string | undefined {
+  const r = (c as { rotacao?: number }).rotacao;
+  return r ? `rotate(${r}deg)` : undefined;
+}
+
+/** imagem da camada: enquadramento cover e modo recorte (arrastar / zoom) */
+function ImagemCanvasView({
+  c,
+  cid,
+  marca,
+  clique,
+  duplo,
+  onPointerDown,
+  recortando,
+  escala,
+  onRecorte,
+}: {
+  c: CanvasCamadaImagem;
+  cid?: string | undefined;
+  marca: React.CSSProperties;
+  clique?: ((ev: React.MouseEvent) => void) | undefined;
+  duplo?: ((ev: React.MouseEvent) => void) | undefined;
+  onPointerDown?: ((ev: React.PointerEvent) => void) | undefined;
+  recortando?: boolean | undefined;
+  escala: number;
+  onRecorte?: ((img: CaixaImg) => void) | undefined;
+}) {
+  const gravado: CaixaImg = c.img ?? { x: 0, y: 0, w: c.w, h: c.h };
+  const [vivo, setVivo] = useState<CaixaImg | null>(null);
+  const arrasteRef = useRef<{ px: number; py: number; base: CaixaImg } | null>(null);
+  const timerZoom = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const inner = vivo ?? gravado;
+
+  useEffect(() => {
+    if (!recortando) setVivo(null);
+  }, [recortando]);
+
+  useEffect(() => {
+    if (!recortando) return;
+    const mover = (ev: PointerEvent) => {
+      const st = arrasteRef.current;
+      if (!st) return;
+      const dx = (ev.clientX - st.px) / (escala || 1);
+      const dy = (ev.clientY - st.py) / (escala || 1);
+      setVivo(limitarImg({ ...st.base, x: st.base.x + dx, y: st.base.y + dy }, c.w, c.h));
+    };
+    const soltar = () => {
+      if (!arrasteRef.current) return;
+      arrasteRef.current = null;
+      setVivo((v) => {
+        if (v) onRecorte?.(v);
+        return v;
+      });
+    };
+    window.addEventListener("pointermove", mover);
+    window.addEventListener("pointerup", soltar);
+    return () => {
+      window.removeEventListener("pointermove", mover);
+      window.removeEventListener("pointerup", soltar);
+    };
+  }, [recortando, escala, c.w, c.h, onRecorte]);
+
+  const zoom = (fator: number) => {
+    const atual = vivo ?? gravado;
+    const minW = c.w;
+    const minH = c.h;
+    let w = atual.w * fator;
+    let h = atual.h * fator;
+    const kmin = Math.max(minW / atual.w, minH / atual.h);
+    if (fator < kmin) {
+      w = atual.w * kmin;
+      h = atual.h * kmin;
+    }
+    const cx = c.w / 2 - atual.x;
+    const cy = c.h / 2 - atual.y;
+    const k = w / atual.w;
+    const novo = limitarImg({ w, h, x: c.w / 2 - cx * k, y: c.h / 2 - cy * k }, c.w, c.h);
+    setVivo(novo);
+    if (timerZoom.current) clearTimeout(timerZoom.current);
+    timerZoom.current = setTimeout(() => onRecorte?.(novo), 250);
+  };
+
+  const estiloImg: React.CSSProperties = {
+    position: "absolute",
+    display: "block",
+    left: inner.x,
+    top: inner.y,
+    width: inner.w,
+    height: inner.h,
+    transform: c.espelhoY ? "scaleY(-1)" : undefined,
+    userSelect: "none",
+    pointerEvents: "none",
+  };
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: c.x,
+        top: c.y,
+        width: c.w,
+        height: c.h,
+        transform: transformRot(c),
+        overflow: recortando ? "visible" : "hidden",
+        borderRadius:
+          !recortando && c.raio !== undefined
+            ? Math.min(c.raio, Math.min(c.w, c.h) / 2)
+            : undefined,
+        opacity: c.opacidade,
+        boxShadow: c.sombra
+          ? `${c.sombra.x}px ${c.sombra.y}px ${c.sombra.blur}px ${c.sombra.cor}`
+          : undefined,
+        cursor: recortando ? "grab" : undefined,
+        ...marca,
+      }}
+      onClick={clique}
+      onDoubleClick={duplo}
+      onPointerDown={(ev) => {
+        if (recortando) {
+          if (ev.button !== 0) return;
+          ev.preventDefault();
+          ev.stopPropagation();
+          arrasteRef.current = { px: ev.clientX, py: ev.clientY, base: inner };
+          return;
+        }
+        onPointerDown?.(ev);
+      }}
+      onWheel={(ev) => {
+        if (!recortando) return;
+        ev.stopPropagation();
+        const dy = ev.deltaY * (ev.deltaMode === 1 ? 16 : ev.deltaMode === 2 ? 100 : 1);
+        zoom(Math.exp(-dy * 0.0015));
+      }}
+      data-camada={cid}
+      data-recorte={recortando ? "1" : undefined}
+    >
+      {recortando && <img src={c.src} alt="" style={{ ...estiloImg, opacity: 0.3 }} />}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          overflow: "hidden",
+          borderRadius:
+            c.raio !== undefined ? Math.min(c.raio, Math.min(c.w, c.h) / 2) : undefined,
+        }}
+      >
+        <img src={c.src} alt="" style={estiloImg} />
+      </div>
+      {recortando && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            border: `${2 / (escala || 1)}px solid #fff`,
+            boxShadow: "0 0 0 9999px rgba(0,0,0,0.25)",
+            pointerEvents: "none",
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
 function CamadaCanvasView({
   c,
   cid,
@@ -492,6 +655,9 @@ function CamadaCanvasView({
   onTextoInput,
   onSelecaoTexto,
   onDuploClique,
+  recortando,
+  escala = 1,
+  onRecorte,
 }: {
   c: CanvasCamada;
   cid?: string;
@@ -502,6 +668,9 @@ function CamadaCanvasView({
   onTextoInput?: ((novo: string) => void) | undefined;
   onSelecaoTexto?: ((sel: { inicio: number; fim: number } | null) => void) | undefined;
   onDuploClique?: (() => void) | undefined;
+  recortando?: boolean | undefined;
+  escala?: number;
+  onRecorte?: ((img: CaixaImg) => void) | undefined;
 }) {
   if (c.oculto) return null;
   const marca: React.CSSProperties = selecionada
@@ -528,6 +697,7 @@ function CamadaCanvasView({
           top: c.y,
           width: c.w,
           height: c.h,
+          transform: transformRot(c),
           borderRadius: c.raio,
           opacity: c.opacidade,
           border: "2px dashed hsl(var(--border))",
@@ -557,44 +727,21 @@ function CamadaCanvasView({
     );
   }
   if (c.tipo === "imagem") {
-    const inner = c.img ?? { x: 0, y: 0, w: c.w, h: c.h };
     return (
-      <div
-        style={{
-          position: "absolute",
-          left: c.x,
-          top: c.y,
-          width: c.w,
-          height: c.h,
-          overflow: "hidden",
-          borderRadius: c.raio !== undefined ? Math.min(c.raio, Math.min(c.w, c.h) / 2) : undefined,
-          opacity: c.opacidade,
-          boxShadow: c.sombra
-            ? `${c.sombra.x}px ${c.sombra.y}px ${c.sombra.blur}px ${c.sombra.cor}`
-            : undefined,
-          ...marca,
-        }}
-        onClick={clique}
-        onDoubleClick={duplo}
+      <ImagemCanvasView
+        c={c}
+        cid={cid}
+        marca={marca}
+        clique={clique}
+        duplo={duplo}
         onPointerDown={onPointerDown}
-        data-camada={cid}
-      >
-        <img
-          src={c.src}
-          alt=""
-          style={{
-            position: "absolute",
-            display: "block",
-            left: inner.x,
-            top: inner.y,
-            width: inner.w,
-            height: inner.h,
-            transform: c.espelhoY ? "scaleY(-1)" : undefined,
-          }}
-        />
-      </div>
+        recortando={recortando}
+        escala={escala}
+        onRecorte={onRecorte}
+      />
     );
   }
+
   if (c.tipo === "forma") {
     return (
       <div
