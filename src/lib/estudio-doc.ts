@@ -199,11 +199,14 @@ export interface CanvasCamadaImagem {
   oculto?: boolean;
   x: number;
   y: number;
+  /** graus, sentido horário */
+  rotacao?: number;
   w: number;
   h: number;
   /** vazio ou ausente = placeholder de imagem */
   src?: string;
   img?: { x: number; y: number; w: number; h: number };
+
   raio?: number;
   opacidade?: number;
   espelhoY?: boolean;
