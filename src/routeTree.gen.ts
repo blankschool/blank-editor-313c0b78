@@ -10,33 +10,158 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as BibliotecaRouteImport } from './routes/biblioteca'
+import { Route as DesignSystemRouteImport } from './routes/design-system'
+import { Route as DDesignIdRouteImport } from './routes/d.$designId'
+import { Route as DDesignIdIndexRouteImport } from './routes/d.$designId.index'
+import { Route as DDesignIdPainelRouteImport } from './routes/d.$designId.$painel'
+import { Route as DDesignIdApresentarRouteImport } from './routes/d.$designId.apresentar'
+import { Route as DDesignIdCompartilharRouteImport } from './routes/d.$designId.compartilhar'
+import { Route as DDesignIdExportarRouteImport } from './routes/d.$designId.exportar'
+import { Route as DDesignIdEditarIndexRouteImport } from './routes/d.$designId.editar.index'
+import { Route as DDesignIdEditarPainelRouteImport } from './routes/d.$designId.editar.$painel'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BibliotecaRoute = BibliotecaRouteImport.update({
+  id: '/biblioteca',
+  path: '/biblioteca',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DesignSystemRoute = DesignSystemRouteImport.update({
+  id: '/design-system',
+  path: '/design-system',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DDesignIdRoute = DDesignIdRouteImport.update({
+  id: '/d/$designId',
+  path: '/d/$designId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DDesignIdIndexRoute = DDesignIdIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DDesignIdRoute,
+} as any)
+const DDesignIdPainelRoute = DDesignIdPainelRouteImport.update({
+  id: '/$painel',
+  path: '/$painel',
+  getParentRoute: () => DDesignIdRoute,
+} as any)
+const DDesignIdApresentarRoute = DDesignIdApresentarRouteImport.update({
+  id: '/apresentar',
+  path: '/apresentar',
+  getParentRoute: () => DDesignIdRoute,
+} as any)
+const DDesignIdCompartilharRoute = DDesignIdCompartilharRouteImport.update({
+  id: '/compartilhar',
+  path: '/compartilhar',
+  getParentRoute: () => DDesignIdRoute,
+} as any)
+const DDesignIdExportarRoute = DDesignIdExportarRouteImport.update({
+  id: '/exportar',
+  path: '/exportar',
+  getParentRoute: () => DDesignIdRoute,
+} as any)
+const DDesignIdEditarIndexRoute = DDesignIdEditarIndexRouteImport.update({
+  id: '/editar/',
+  path: '/editar/',
+  getParentRoute: () => DDesignIdRoute,
+} as any)
+const DDesignIdEditarPainelRoute = DDesignIdEditarPainelRouteImport.update({
+  id: '/editar/$painel',
+  path: '/editar/$painel',
+  getParentRoute: () => DDesignIdRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/biblioteca': typeof BibliotecaRoute
+  '/design-system': typeof DesignSystemRoute
+  '/d/$designId': typeof DDesignIdRouteWithChildren
+  '/d/$designId/$painel': typeof DDesignIdPainelRoute
+  '/d/$designId/apresentar': typeof DDesignIdApresentarRoute
+  '/d/$designId/compartilhar': typeof DDesignIdCompartilharRoute
+  '/d/$designId/exportar': typeof DDesignIdExportarRoute
+  '/d/$designId/': typeof DDesignIdIndexRoute
+  '/d/$designId/editar/$painel': typeof DDesignIdEditarPainelRoute
+  '/d/$designId/editar/': typeof DDesignIdEditarIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/biblioteca': typeof BibliotecaRoute
+  '/design-system': typeof DesignSystemRoute
+  '/d/$designId/$painel': typeof DDesignIdPainelRoute
+  '/d/$designId/apresentar': typeof DDesignIdApresentarRoute
+  '/d/$designId/compartilhar': typeof DDesignIdCompartilharRoute
+  '/d/$designId/exportar': typeof DDesignIdExportarRoute
+  '/d/$designId': typeof DDesignIdIndexRoute
+  '/d/$designId/editar/$painel': typeof DDesignIdEditarPainelRoute
+  '/d/$designId/editar': typeof DDesignIdEditarIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/biblioteca': typeof BibliotecaRoute
+  '/design-system': typeof DesignSystemRoute
+  '/d/$designId': typeof DDesignIdRouteWithChildren
+  '/d/$designId/$painel': typeof DDesignIdPainelRoute
+  '/d/$designId/apresentar': typeof DDesignIdApresentarRoute
+  '/d/$designId/compartilhar': typeof DDesignIdCompartilharRoute
+  '/d/$designId/exportar': typeof DDesignIdExportarRoute
+  '/d/$designId/': typeof DDesignIdIndexRoute
+  '/d/$designId/editar/$painel': typeof DDesignIdEditarPainelRoute
+  '/d/$designId/editar/': typeof DDesignIdEditarIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/biblioteca'
+    | '/design-system'
+    | '/d/$designId'
+    | '/d/$designId/$painel'
+    | '/d/$designId/apresentar'
+    | '/d/$designId/compartilhar'
+    | '/d/$designId/exportar'
+    | '/d/$designId/'
+    | '/d/$designId/editar/$painel'
+    | '/d/$designId/editar/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/biblioteca'
+    | '/design-system'
+    | '/d/$designId/$painel'
+    | '/d/$designId/apresentar'
+    | '/d/$designId/compartilhar'
+    | '/d/$designId/exportar'
+    | '/d/$designId'
+    | '/d/$designId/editar/$painel'
+    | '/d/$designId/editar'
+  id:
+    | '__root__'
+    | '/'
+    | '/biblioteca'
+    | '/design-system'
+    | '/d/$designId'
+    | '/d/$designId/$painel'
+    | '/d/$designId/apresentar'
+    | '/d/$designId/compartilhar'
+    | '/d/$designId/exportar'
+    | '/d/$designId/'
+    | '/d/$designId/editar/$painel'
+    | '/d/$designId/editar/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  BibliotecaRoute: typeof BibliotecaRoute
+  DesignSystemRoute: typeof DesignSystemRoute
+  DDesignIdRoute: typeof DDesignIdRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +173,108 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/biblioteca': {
+      id: '/biblioteca'
+      path: '/biblioteca'
+      fullPath: '/biblioteca'
+      preLoaderRoute: typeof BibliotecaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/design-system': {
+      id: '/design-system'
+      path: '/design-system'
+      fullPath: '/design-system'
+      preLoaderRoute: typeof DesignSystemRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/d/$designId': {
+      id: '/d/$designId'
+      path: '/d/$designId'
+      fullPath: '/d/$designId'
+      preLoaderRoute: typeof DDesignIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/d/$designId/': {
+      id: '/d/$designId/'
+      path: '/'
+      fullPath: '/d/$designId/'
+      preLoaderRoute: typeof DDesignIdIndexRouteImport
+      parentRoute: typeof DDesignIdRoute
+    }
+    '/d/$designId/$painel': {
+      id: '/d/$designId/$painel'
+      path: '/$painel'
+      fullPath: '/d/$designId/$painel'
+      preLoaderRoute: typeof DDesignIdPainelRouteImport
+      parentRoute: typeof DDesignIdRoute
+    }
+    '/d/$designId/apresentar': {
+      id: '/d/$designId/apresentar'
+      path: '/apresentar'
+      fullPath: '/d/$designId/apresentar'
+      preLoaderRoute: typeof DDesignIdApresentarRouteImport
+      parentRoute: typeof DDesignIdRoute
+    }
+    '/d/$designId/compartilhar': {
+      id: '/d/$designId/compartilhar'
+      path: '/compartilhar'
+      fullPath: '/d/$designId/compartilhar'
+      preLoaderRoute: typeof DDesignIdCompartilharRouteImport
+      parentRoute: typeof DDesignIdRoute
+    }
+    '/d/$designId/exportar': {
+      id: '/d/$designId/exportar'
+      path: '/exportar'
+      fullPath: '/d/$designId/exportar'
+      preLoaderRoute: typeof DDesignIdExportarRouteImport
+      parentRoute: typeof DDesignIdRoute
+    }
+    '/d/$designId/editar/': {
+      id: '/d/$designId/editar/'
+      path: '/editar'
+      fullPath: '/d/$designId/editar/'
+      preLoaderRoute: typeof DDesignIdEditarIndexRouteImport
+      parentRoute: typeof DDesignIdRoute
+    }
+    '/d/$designId/editar/$painel': {
+      id: '/d/$designId/editar/$painel'
+      path: '/editar/$painel'
+      fullPath: '/d/$designId/editar/$painel'
+      preLoaderRoute: typeof DDesignIdEditarPainelRouteImport
+      parentRoute: typeof DDesignIdRoute
+    }
   }
 }
 
+interface DDesignIdRouteChildren {
+  DDesignIdPainelRoute: typeof DDesignIdPainelRoute
+  DDesignIdApresentarRoute: typeof DDesignIdApresentarRoute
+  DDesignIdCompartilharRoute: typeof DDesignIdCompartilharRoute
+  DDesignIdExportarRoute: typeof DDesignIdExportarRoute
+  DDesignIdIndexRoute: typeof DDesignIdIndexRoute
+  DDesignIdEditarPainelRoute: typeof DDesignIdEditarPainelRoute
+  DDesignIdEditarIndexRoute: typeof DDesignIdEditarIndexRoute
+}
+
+const DDesignIdRouteChildren: DDesignIdRouteChildren = {
+  DDesignIdPainelRoute: DDesignIdPainelRoute,
+  DDesignIdApresentarRoute: DDesignIdApresentarRoute,
+  DDesignIdCompartilharRoute: DDesignIdCompartilharRoute,
+  DDesignIdExportarRoute: DDesignIdExportarRoute,
+  DDesignIdIndexRoute: DDesignIdIndexRoute,
+  DDesignIdEditarPainelRoute: DDesignIdEditarPainelRoute,
+  DDesignIdEditarIndexRoute: DDesignIdEditarIndexRoute,
+}
+
+const DDesignIdRouteWithChildren = DDesignIdRoute._addFileChildren(
+  DDesignIdRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  BibliotecaRoute: BibliotecaRoute,
+  DesignSystemRoute: DesignSystemRoute,
+  DDesignIdRoute: DDesignIdRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

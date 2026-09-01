@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
+import { useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   abasIniciais,
   comentariosIniciais,
@@ -15,6 +16,22 @@ export type Ferramenta = "cursor" | "mao" | "regua" | "grade";
 export type PainelDireito = "props" | "camadas" | "versoes" | "comentarios" | "codigo" | null;
 export type PainelEdicao = "texto" | "cor" | "layout" | "estrutura" | null;
 export type FiltroBiblioteca = "recentes" | "favoritos" | "tipo";
+
+export const slugPainel: Record<Exclude<PainelDireito, null>, string> = {
+  props: "ajustes",
+  camadas: "camadas",
+  versoes: "versoes",
+  comentarios: "comentarios",
+  codigo: "codigo",
+};
+
+const painelPorSlug: Record<string, Exclude<PainelDireito, null>> = {
+  ajustes: "props",
+  camadas: "camadas",
+  versoes: "versoes",
+  comentarios: "comentarios",
+  codigo: "codigo",
+};
 
 interface EstudioState {
   projeto: string;
@@ -77,20 +94,28 @@ let seq = 100;
 const nextId = () => `x${seq++}`;
 
 export function EstudioProvider({ children }: { children: ReactNode }) {
+  const navigate = useNavigate();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+
+  const partes = pathname.split("/").filter(Boolean);
+  const idRota = partes[0] === "d" ? (partes[1] ?? "") : "";
+  const secao = partes[0] === "d" ? (partes[2] ?? "") : "";
+  const sub = partes[0] === "d" ? (partes[3] ?? "") : "";
+
+  const modoEdicao = secao === "editar";
+  const painelEdicao = (modoEdicao ? ((sub || "texto") as PainelEdicao) : null) as PainelEdicao;
+  const painelDireito: PainelDireito = modoEdicao ? "props" : (painelPorSlug[secao] ?? null);
+  const apresentando = secao === "apresentar";
+
   const [projeto, setProjeto] = useState("Aurora — produto");
   const [designs, setDesigns] = useState<DesignItem[]>(designsMock);
   const [busca, setBusca] = useState("");
   const [filtro, setFiltro] = useState<FiltroBiblioteca>("recentes");
   const [abas, setAbas] = useState<OpenTab[]>(abasIniciais);
-  const [abaAtiva, setAbaAtiva] = useState("d1");
   const [zoom, setZoom] = useState(100);
   const [viewport, setViewport] = useState<Viewport>("desktop");
   const [ferramenta, setFerramenta] = useState<Ferramenta>("cursor");
-  const [apresentando, setApresentando] = useState(false);
-  const [modoEdicao, setModoEdicao] = useState(false);
-  const [selecionado, setSelecionado] = useState<string | null>(null);
-  const [painelEdicao, setPainelEdicao] = useState<PainelEdicao>(null);
-  const [painelDireito, setPainelDireito] = useState<PainelDireito>("props");
+  const [selecionado, setSelecionado] = useState<string | null>("Herói › Título");
   const [modoComentario, setModoComentario] = useState(false);
   const [comentarios, setComentarios] = useState<CommentPin[]>(comentariosIniciais);
   const [filtroComentarios, setFiltroComentarios] = useState<"abertos" | "resolvidos">("abertos");
@@ -103,24 +128,37 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
   ]);
   const [sistemaAtivo, setSistemaAtivo] = useState("s1");
 
-  const abrirDesign = useCallback((id: string) => {
-    setDesigns((ds) => {
-      const d = ds.find((x) => x.id === id);
+  const abaAtiva = idRota;
+
+  const irParaDesign = useCallback(
+    (id: string) => {
+      if (!id) {
+        void navigate({ to: "/biblioteca" });
+        return;
+      }
+      void navigate({ to: "/d/$designId", params: { designId: id } });
+    },
+    [navigate],
+  );
+
+  const setAbaAtiva = irParaDesign;
+
+  const abrirDesign = useCallback(
+    (id: string) => {
+      const d = designs.find((x) => x.id === id);
       if (d) setAbas((as) => (as.some((a) => a.id === id) ? as : [...as, { id, nome: d.nome, fixada: false }]));
-      return ds;
-    });
-    setAbaAtiva(id);
-  }, []);
+      irParaDesign(id);
+    },
+    [designs, irParaDesign],
+  );
 
   const fecharAba = useCallback(
     (id: string) => {
-      setAbas((as) => {
-        const restantes = as.filter((a) => a.id !== id);
-        setAbaAtiva((atual) => (atual === id ? (restantes[0]?.id ?? "") : atual));
-        return restantes;
-      });
+      const restantes = abas.filter((a) => a.id !== id);
+      setAbas(restantes);
+      if (abaAtiva === id) irParaDesign(restantes[0]?.id ?? "");
     },
-    [],
+    [abas, abaAtiva, irParaDesign],
   );
 
   const fixarAba = useCallback((id: string) => {
@@ -154,12 +192,56 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
       ...ds,
     ]);
     setAbas((as) => [...as, { id, nome: "Novo design", fixada: false }]);
-    setAbaAtiva(id);
-  }, []);
+    irParaDesign(id);
+  }, [irParaDesign]);
 
   const favoritar = useCallback((id: string) => {
     setDesigns((ds) => ds.map((d) => (d.id === id ? { ...d, favorito: !d.favorito } : d)));
   }, []);
+
+  const setPainelDireito = useCallback(
+    (v: PainelDireito) => {
+      if (!abaAtiva) return;
+      if (!v) {
+        void navigate({ to: "/d/$designId", params: { designId: abaAtiva } });
+        return;
+      }
+      void navigate({ to: "/d/$designId/$painel", params: { designId: abaAtiva, painel: slugPainel[v] } });
+    },
+    [abaAtiva, navigate],
+  );
+
+  const setPainelEdicao = useCallback(
+    (v: PainelEdicao) => {
+      if (!abaAtiva) return;
+      void navigate({
+        to: "/d/$designId/editar/$painel",
+        params: { designId: abaAtiva, painel: v ?? "texto" },
+      });
+    },
+    [abaAtiva, navigate],
+  );
+
+  const setModoEdicao = useCallback(
+    (v: boolean) => {
+      if (!abaAtiva) return;
+      if (v) {
+        void navigate({ to: "/d/$designId/editar/$painel", params: { designId: abaAtiva, painel: "texto" } });
+      } else {
+        void navigate({ to: "/d/$designId", params: { designId: abaAtiva } });
+      }
+    },
+    [abaAtiva, navigate],
+  );
+
+  const setApresentando = useCallback(
+    (v: boolean) => {
+      if (!abaAtiva) return;
+      if (v) void navigate({ to: "/d/$designId/apresentar", params: { designId: abaAtiva } });
+      else void navigate({ to: "/d/$designId", params: { designId: abaAtiva } });
+    },
+    [abaAtiva, navigate],
+  );
 
   const addComentario = useCallback((x: number, y: number) => {
     const id = nextId();
@@ -281,6 +363,7 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
       fecharAba,
       fixarAba,
       moverAba,
+      setAbaAtiva,
       duplicarDesign,
       novoDesign,
       favoritar,
@@ -288,10 +371,14 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
       viewport,
       ferramenta,
       apresentando,
+      setApresentando,
       modoEdicao,
+      setModoEdicao,
       selecionado,
       painelEdicao,
+      setPainelEdicao,
       painelDireito,
+      setPainelDireito,
       modoComentario,
       comentarios,
       addComentario,

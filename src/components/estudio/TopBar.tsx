@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Check, ChevronDown, Pencil, Share2, Download, User, FolderGit2 } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { Check, ChevronDown, Pencil, Share2, Download, User, FolderGit2, Library } from "lucide-react";
 import { useEstudio } from "./EstudioContext";
 import { Input } from "@/components/ui/input";
 import {
@@ -11,14 +12,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-interface Props {
-  onExportar: () => void;
-  onCompartilhar: () => void;
-  onSistema: () => void;
-}
-
-export function TopBar({ onExportar, onCompartilhar, onSistema }: Props) {
-  const { projeto, setProjeto, setPainelDireito } = useEstudio();
+export function TopBar() {
+  const { projeto, setProjeto, abaAtiva } = useEstudio();
   const [editando, setEditando] = useState(false);
   const [rascunho, setRascunho] = useState(projeto);
 
@@ -80,30 +75,45 @@ export function TopBar({ onExportar, onCompartilhar, onSistema }: Props) {
 
       <div className="flex-1" />
 
-      <button
-        onClick={() => setPainelDireito("codigo")}
+      <Link
+        to="/biblioteca"
         className="flex h-7 items-center gap-1.5 rounded-md border border-border bg-card px-2.5 text-[12px] font-medium hover:bg-secondary"
       >
-        <FolderGit2 className="size-3.5" /> Código
-      </button>
-      <button
-        onClick={onSistema}
+        <Library className="size-3.5" /> Biblioteca
+      </Link>
+      {abaAtiva && (
+        <Link
+          to="/d/$designId/$painel"
+          params={{ designId: abaAtiva, painel: "codigo" }}
+          className="flex h-7 items-center gap-1.5 rounded-md border border-border bg-card px-2.5 text-[12px] font-medium hover:bg-secondary"
+        >
+          <FolderGit2 className="size-3.5" /> Código
+        </Link>
+      )}
+      <Link
+        to="/design-system"
         className="flex h-7 items-center gap-1.5 rounded-md border border-border bg-card px-2.5 text-[12px] font-medium hover:bg-secondary"
       >
         Design system
-      </button>
-      <button
-        onClick={onCompartilhar}
-        className="flex h-7 items-center gap-1.5 rounded-md border border-border bg-card px-2.5 text-[12px] font-medium hover:bg-secondary"
-      >
-        <Share2 className="size-3.5" /> Compartilhar
-      </button>
-      <button
-        onClick={onExportar}
-        className="flex h-7 items-center gap-1.5 rounded-md bg-primary px-2.5 text-[12px] font-medium text-primary-foreground hover:opacity-90"
-      >
-        <Download className="size-3.5" /> Exportar
-      </button>
+      </Link>
+      {abaAtiva && (
+        <>
+          <Link
+            to="/d/$designId/compartilhar"
+            params={{ designId: abaAtiva }}
+            className="flex h-7 items-center gap-1.5 rounded-md border border-border bg-card px-2.5 text-[12px] font-medium hover:bg-secondary"
+          >
+            <Share2 className="size-3.5" /> Compartilhar
+          </Link>
+          <Link
+            to="/d/$designId/exportar"
+            params={{ designId: abaAtiva }}
+            className="flex h-7 items-center gap-1.5 rounded-md bg-primary px-2.5 text-[12px] font-medium text-primary-foreground hover:opacity-90"
+          >
+            <Download className="size-3.5" /> Exportar
+          </Link>
+        </>
+      )}
       <DropdownMenu>
         <DropdownMenuTrigger className="ml-1 grid size-7 place-items-center rounded-full bg-accent text-[11px] font-semibold text-accent-foreground">
           <User className="size-3.5" />
