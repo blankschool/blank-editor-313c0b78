@@ -191,7 +191,7 @@ export function Stage() {
             }
           >
             {e.docCanvas ? (
-              <Artboard doc={e.docCanvas} />
+              <Artboard doc={e.docCanvas} selecionavel />
             ) : e.docHtml ? (
               <Artboard doc={e.docHtml} />
             ) : (
