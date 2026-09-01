@@ -160,7 +160,13 @@ function TextPanelCanvas() {
             className={inputCls}
             value={camada.fonte ?? ""}
             placeholder="herdada"
-            onChange={(ev) => patch((c) => void (c.fonte = ev.target.value || undefined), "")}
+            onChange={(ev) => {
+              const v = ev.target.value;
+              patch((c) => {
+                if (v) c.fonte = v;
+                else delete c.fonte;
+              }, "");
+            }}
           />
         </Campo>
         <Campo rotulo="Peso">
