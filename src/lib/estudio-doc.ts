@@ -134,6 +134,13 @@ export interface CanvasParteTexto {
   cor?: string;
 }
 
+export interface CanvasSombra {
+  x: number;
+  y: number;
+  blur: number;
+  cor: string;
+}
+
 export interface CanvasCamadaTexto {
   tipo: "texto";
   id?: string;
