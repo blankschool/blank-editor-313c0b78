@@ -146,7 +146,7 @@ interface EstudioState {
   atualizarDoc: (fn: (d: DesignDoc) => DesignDoc, rotulo: string) => void;
   recarregarDoc: () => void;
   versoes: VersaoDoc[];
-  criarVersao: (rotulo: string, autor?: string) => void;
+  criarVersao: (rotulo: string, autor?: string) => string;
   restaurarVersao: (id: string) => void;
   duplicarVersao: (id: string) => void;
   excluirVersao: (id: string) => void;
@@ -451,8 +451,8 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
 
   const criarVersao = useCallback(
     (rotulo: string, quem = autor) => {
-      if (!abaAtiva) return;
       const label = rotulo || `v${versoes.length + 1}`;
+      if (!abaAtiva) return label;
       void criarVersaoDb(abaAtiva, label, quem, clonarDoc(docRef.current))
         .then((v) => {
           setVersaoA(v.id);
@@ -460,6 +460,7 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
           return qc.invalidateQueries({ queryKey: ["versions", abaAtiva] });
         })
         .catch(() => undefined);
+      return label;
     },
     [abaAtiva, versoes.length, registrar, qc, autor],
   );
