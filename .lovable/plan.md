@@ -10,7 +10,7 @@ O painel Camadas já lista e oculta camadas de um doc `kind: "canvas"`. Falta qu
 **Painel Texto (doc canvas)**
 - Mostra o conteúdo da camada de texto selecionada.
 - Camada com `texto`: uma caixa com esse texto.
-- Camada com `partes`: uma caixa só, com as partes unidas por quebra de linha; ao digitar, as linhas voltam para as partes na mesma ordem, preservando `peso` e `cor` de cada parte (linhas a mais entram na última parte).
+- Camada com `partes`: uma caixa só, com o texto corrido (partes coladas na ordem, sem forçar linha nova). Ao digitar, grava tudo em `texto` da camada e esvazia `partes`. Peso e cor passam a valer para a camada inteira pelos controles de tipografia — sem preservar span por span neste turno.
 - Controles de tipografia que a camada canvas realmente tem: fonte, peso, tamanho, entrelinha, entre letras, alinhamento.
 - Sem camada de texto selecionada: aviso curto ("selecione uma camada de texto").
 - Camada imagem: painel mostra o `src` em campo somente leitura (sem upload).
