@@ -93,7 +93,7 @@ export function Stage() {
           </div>
         ))}
         <button
-          onClick={e.novoDesign}
+          onClick={() => e.novoDesign()}
           title="Nova aba"
           className="grid size-6 place-items-center rounded-md hover:bg-secondary"
         >
