@@ -1300,6 +1300,9 @@ type Direcao = "nw" | "n" | "ne" | "e" | "se" | "s" | "sw" | "w";
 type ModoArraste = "mover" | "girar" | Direcao;
 
 const DIRECOES: Direcao[] = ["nw", "n", "ne", "e", "se", "s", "sw", "w"];
+/** só cantos — usado no ajuste da foto dentro da máscara */
+const DIRECOES_CANTO: Direcao[] = ["nw", "ne", "se", "sw"];
+
 /** ângulo de cada alça, 0° = topo, sentido horário */
 const ANGULO_ALCA: Record<Direcao, number> = {
   n: 0,
