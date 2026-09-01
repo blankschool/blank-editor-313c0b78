@@ -501,11 +501,28 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
   );
 
   /* ---------- documento ---------- */
+  const empilharDesfazer = useCallback(
+    (anterior: Instantaneo, rotulo: string) => {
+      const t = Date.now();
+      const agrupa =
+        pilhaDesfazer.current.length > 0 &&
+        ultimoPasso.current.rotulo === rotulo &&
+        t - ultimoPasso.current.t < 400;
+      ultimoPasso.current = { rotulo, t };
+      if (agrupa) return;
+      pilhaDesfazer.current = [...pilhaDesfazer.current, anterior].slice(-50);
+      pilhaRefazer.current = [];
+      sincronizarPilhas();
+    },
+    [sincronizarPilhas],
+  );
+
   const atualizarDoc = useCallback(
     (fn: (d: DesignDoc) => DesignDoc, rotulo: string) => {
       if (!abaAtiva) return;
       const anterior = docRef.current;
       const novo = fn(clonarDoc(anterior));
+      empilharDesfazer({ doc: clonarDoc(anterior), canvas: null }, rotulo);
       setDocLocal(novo);
       docRef.current = novo;
       if (modoEdicaoRef.current) {
@@ -516,7 +533,7 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
       }
       if (rotulo) registrar(autor, rotulo);
     },
-    [abaAtiva, agendarSalvar, registrar, autor],
+    [abaAtiva, agendarSalvar, registrar, autor, empilharDesfazer],
   );
 
   const atualizarDocCanvas = useCallback(
@@ -524,6 +541,7 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
       const atual = canvasRef.current;
       if (!abaAtiva || !atual) return;
       const novo = fn(JSON.parse(JSON.stringify(atual)) as DocCanvas);
+      empilharDesfazer({ doc: null, canvas: JSON.parse(JSON.stringify(atual)) as DocCanvas }, rotulo);
       setCanvasLocal(novo);
       canvasRef.current = novo;
       if (modoEdicaoRef.current) {
@@ -534,8 +552,85 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
       }
       if (rotulo) registrar(autor, rotulo);
     },
-    [abaAtiva, agendarSalvar, registrar, autor],
+    [abaAtiva, agendarSalvar, registrar, autor, empilharDesfazer],
   );
+
+  /* aplica um instantâneo: mesma regra de gravação do rascunho */
+  const aplicarInstantaneo = useCallback(
+    (snap: Instantaneo) => {
+      if (snap.canvas) {
+        const copia = JSON.parse(JSON.stringify(snap.canvas)) as DocCanvas;
+        setCanvasLocal(copia);
+        canvasRef.current = copia;
+        if (modoEdicaoRef.current) setSujo(true);
+        else if (abaAtiva) agendarSalvar(abaAtiva, copia as unknown as DesignDoc);
+      }
+      if (snap.doc) {
+        const copia = clonarDoc(snap.doc);
+        setDocLocal(copia);
+        docRef.current = copia;
+        if (modoEdicaoRef.current) setSujo(true);
+        else if (abaAtiva) agendarSalvar(abaAtiva, copia);
+      }
+    },
+    [abaAtiva, agendarSalvar],
+  );
+
+  const instantaneoAtual = useCallback(
+    (comoCanvas: boolean): Instantaneo =>
+      comoCanvas
+        ? { doc: null, canvas: JSON.parse(JSON.stringify(canvasRef.current)) as DocCanvas }
+        : { doc: clonarDoc(docRef.current), canvas: null },
+    [],
+  );
+
+  const desfazer = useCallback(() => {
+    const pilha = pilhaDesfazer.current;
+    const alvo = pilha[pilha.length - 1];
+    if (!alvo) return;
+    pilhaDesfazer.current = pilha.slice(0, -1);
+    pilhaRefazer.current = [...pilhaRefazer.current, instantaneoAtual(!!alvo.canvas)].slice(-50);
+    ultimoPasso.current = { rotulo: "", t: 0 };
+    aplicarInstantaneo(alvo);
+    sincronizarPilhas();
+    registrar(autor, "Desfez");
+  }, [aplicarInstantaneo, instantaneoAtual, sincronizarPilhas, registrar, autor]);
+
+  const refazer = useCallback(() => {
+    const pilha = pilhaRefazer.current;
+    const alvo = pilha[pilha.length - 1];
+    if (!alvo) return;
+    pilhaRefazer.current = pilha.slice(0, -1);
+    pilhaDesfazer.current = [...pilhaDesfazer.current, instantaneoAtual(!!alvo.canvas)].slice(-50);
+    ultimoPasso.current = { rotulo: "", t: 0 };
+    aplicarInstantaneo(alvo);
+    sincronizarPilhas();
+    registrar(autor, "Refez");
+  }, [aplicarInstantaneo, instantaneoAtual, sincronizarPilhas, registrar, autor]);
+
+  /* atalhos globais de teclado */
+  useEffect(() => {
+    const emCampo = (t: EventTarget | null) => {
+      const el = t as HTMLElement | null;
+      if (!el) return false;
+      const tag = el.tagName;
+      return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || el.isContentEditable;
+    };
+    const onKey = (ev: KeyboardEvent) => {
+      if (!(ev.metaKey || ev.ctrlKey) || emCampo(ev.target)) return;
+      const k = ev.key.toLowerCase();
+      if (k === "z" && !ev.shiftKey) {
+        ev.preventDefault();
+        desfazer();
+      } else if ((k === "z" && ev.shiftKey) || k === "y") {
+        ev.preventDefault();
+        refazer();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [desfazer, refazer]);
+
 
   const salvarRascunho = useCallback(() => {
     if (!abaAtiva) return;
