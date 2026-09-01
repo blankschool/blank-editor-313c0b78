@@ -447,11 +447,13 @@ function estiloCss(s: EstiloEl | undefined): React.CSSProperties {
 
 function CamadaCanvasView({
   c,
+  cid,
   selecionada,
   onSelecionar,
   onPointerDown,
 }: {
   c: CanvasCamada;
+  cid?: string;
   selecionada?: boolean;
   onSelecionar?: (() => void) | undefined;
   onPointerDown?: ((ev: React.PointerEvent) => void) | undefined;
