@@ -20,6 +20,8 @@ import {
   ArrowDown,
   Type,
   Square,
+  Underline,
+  Strikethrough,
 } from "lucide-react";
 import { useEstudio } from "./EstudioContext";
 import { Slider } from "@/components/ui/slider";
@@ -36,6 +38,9 @@ import {
   novaCamadaImagem,
   novaCamadaTexto,
   removerCamadaCanvas,
+  moverCamadaCanvas,
+  camadaParaPng,
+  baixarArquivo,
   comEstilo,
   paletaPorSistema,
   paletaProjeto,
