@@ -604,19 +604,15 @@ function ImagemCanvasView({
       const dl = girarPonto(dq.x, dq.y, -st.rot);
       const sx = st.modo.includes("e") ? 1 : st.modo.includes("w") ? -1 : 0;
       const sy = st.modo.includes("s") ? 1 : st.modo.includes("n") ? -1 : 0;
-      const canto = sx !== 0 && sy !== 0;
       let w = Math.max(20, st.base.w + sx * dl.x);
       let h = Math.max(20, st.base.h + sy * dl.y);
-      /* cantos escalam proporcional (Shift libera); laterais esticam */
-      if (canto && !ev.shiftKey) {
+      /* a foto só escala proporcional dentro da máscara — nunca estica */
+      {
         const k = Math.max(w / (st.base.w || 1), h / (st.base.h || 1));
         w = (st.base.w || 1) * k;
         h = (st.base.h || 1) * k;
-      } else if (!canto && ev.shiftKey) {
-        const k = sx !== 0 ? w / (st.base.w || 1) : h / (st.base.h || 1);
-        w = (st.base.w || 1) * k;
-        h = (st.base.h || 1) * k;
       }
+
       /* o canto oposto fica parado */
       const c0 = { x: st.base.x + st.base.w / 2, y: st.base.y + st.base.h / 2 };
       const off0 = girarPonto((-sx * st.base.w) / 2, (-sy * st.base.h) / 2, st.rot);
@@ -855,7 +851,7 @@ function ImagemCanvasView({
                 pointerEvents: "none",
               }}
             />
-            {DIRECOES.map((dir) => {
+            {DIRECOES_CANTO.map((dir) => {
               const left = dir.includes("w") ? 0 : dir.includes("e") ? inner.w : inner.w / 2;
               const top = dir.includes("n") ? 0 : dir.includes("s") ? inner.h : inner.h / 2;
               return (
@@ -1304,6 +1300,9 @@ type Direcao = "nw" | "n" | "ne" | "e" | "se" | "s" | "sw" | "w";
 type ModoArraste = "mover" | "girar" | Direcao;
 
 const DIRECOES: Direcao[] = ["nw", "n", "ne", "e", "se", "s", "sw", "w"];
+/** só cantos — usado no ajuste da foto dentro da máscara */
+const DIRECOES_CANTO: Direcao[] = ["nw", "ne", "se", "sw"];
+
 /** ângulo de cada alça, 0° = topo, sentido horário */
 const ANGULO_ALCA: Record<Direcao, number> = {
   n: 0,
