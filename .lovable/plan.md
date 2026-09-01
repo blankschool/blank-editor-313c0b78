@@ -61,7 +61,7 @@ para select/insert/update/delete. Sem acesso anônimo.
   O design deixa de ser gravado lá.
 
 
-## 4. Casco mais vazio
+## 5. Casco mais vazio
 
 Em `src/routes/d.$designId.tsx`, a faixa do workspace passa a ser
 `ResizablePanelGroup` / `ResizablePanel` / `ResizableHandle` já existentes:
