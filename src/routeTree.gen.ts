@@ -14,6 +14,7 @@ import { Route as DDesignIdRouteImport } from './routes/d.$designId'
 import { Route as DDesignIdIndexRouteImport } from './routes/d.$designId.index'
 import { Route as DDesignIdPainelRouteImport } from './routes/d.$designId.$painel'
 import { Route as DDesignIdApresentarRouteImport } from './routes/d.$designId.apresentar'
+import { Route as DDesignIdExportarRouteImport } from './routes/d.$designId.exportar'
 import { Route as DDesignIdEditarIndexRouteImport } from './routes/d.$designId.editar.index'
 import { Route as DDesignIdEditarPainelRouteImport } from './routes/d.$designId.editar.$painel'
 
@@ -42,6 +43,11 @@ const DDesignIdApresentarRoute = DDesignIdApresentarRouteImport.update({
   path: '/apresentar',
   getParentRoute: () => DDesignIdRoute,
 } as any)
+const DDesignIdExportarRoute = DDesignIdExportarRouteImport.update({
+  id: '/exportar',
+  path: '/exportar',
+  getParentRoute: () => DDesignIdRoute,
+} as any)
 const DDesignIdEditarIndexRoute = DDesignIdEditarIndexRouteImport.update({
   id: '/editar/',
   path: '/editar/',
@@ -58,6 +64,7 @@ export interface FileRoutesByFullPath {
   '/d/$designId': typeof DDesignIdRouteWithChildren
   '/d/$designId/$painel': typeof DDesignIdPainelRoute
   '/d/$designId/apresentar': typeof DDesignIdApresentarRoute
+  '/d/$designId/exportar': typeof DDesignIdExportarRoute
   '/d/$designId/': typeof DDesignIdIndexRoute
   '/d/$designId/editar/$painel': typeof DDesignIdEditarPainelRoute
   '/d/$designId/editar/': typeof DDesignIdEditarIndexRoute
@@ -66,6 +73,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/d/$designId/$painel': typeof DDesignIdPainelRoute
   '/d/$designId/apresentar': typeof DDesignIdApresentarRoute
+  '/d/$designId/exportar': typeof DDesignIdExportarRoute
   '/d/$designId': typeof DDesignIdIndexRoute
   '/d/$designId/editar/$painel': typeof DDesignIdEditarPainelRoute
   '/d/$designId/editar': typeof DDesignIdEditarIndexRoute
@@ -76,6 +84,7 @@ export interface FileRoutesById {
   '/d/$designId': typeof DDesignIdRouteWithChildren
   '/d/$designId/$painel': typeof DDesignIdPainelRoute
   '/d/$designId/apresentar': typeof DDesignIdApresentarRoute
+  '/d/$designId/exportar': typeof DDesignIdExportarRoute
   '/d/$designId/': typeof DDesignIdIndexRoute
   '/d/$designId/editar/$painel': typeof DDesignIdEditarPainelRoute
   '/d/$designId/editar/': typeof DDesignIdEditarIndexRoute
@@ -87,6 +96,7 @@ export interface FileRouteTypes {
     | '/d/$designId'
     | '/d/$designId/$painel'
     | '/d/$designId/apresentar'
+    | '/d/$designId/exportar'
     | '/d/$designId/'
     | '/d/$designId/editar/$painel'
     | '/d/$designId/editar/'
@@ -95,6 +105,7 @@ export interface FileRouteTypes {
     | '/'
     | '/d/$designId/$painel'
     | '/d/$designId/apresentar'
+    | '/d/$designId/exportar'
     | '/d/$designId'
     | '/d/$designId/editar/$painel'
     | '/d/$designId/editar'
@@ -104,6 +115,7 @@ export interface FileRouteTypes {
     | '/d/$designId'
     | '/d/$designId/$painel'
     | '/d/$designId/apresentar'
+    | '/d/$designId/exportar'
     | '/d/$designId/'
     | '/d/$designId/editar/$painel'
     | '/d/$designId/editar/'
@@ -151,6 +163,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DDesignIdApresentarRouteImport
       parentRoute: typeof DDesignIdRoute
     }
+    '/d/$designId/exportar': {
+      id: '/d/$designId/exportar'
+      path: '/exportar'
+      fullPath: '/d/$designId/exportar'
+      preLoaderRoute: typeof DDesignIdExportarRouteImport
+      parentRoute: typeof DDesignIdRoute
+    }
     '/d/$designId/editar/': {
       id: '/d/$designId/editar/'
       path: '/editar'
@@ -171,6 +190,7 @@ declare module '@tanstack/react-router' {
 interface DDesignIdRouteChildren {
   DDesignIdPainelRoute: typeof DDesignIdPainelRoute
   DDesignIdApresentarRoute: typeof DDesignIdApresentarRoute
+  DDesignIdExportarRoute: typeof DDesignIdExportarRoute
   DDesignIdIndexRoute: typeof DDesignIdIndexRoute
   DDesignIdEditarPainelRoute: typeof DDesignIdEditarPainelRoute
   DDesignIdEditarIndexRoute: typeof DDesignIdEditarIndexRoute
@@ -179,6 +199,7 @@ interface DDesignIdRouteChildren {
 const DDesignIdRouteChildren: DDesignIdRouteChildren = {
   DDesignIdPainelRoute: DDesignIdPainelRoute,
   DDesignIdApresentarRoute: DDesignIdApresentarRoute,
+  DDesignIdExportarRoute: DDesignIdExportarRoute,
   DDesignIdIndexRoute: DDesignIdIndexRoute,
   DDesignIdEditarPainelRoute: DDesignIdEditarPainelRoute,
   DDesignIdEditarIndexRoute: DDesignIdEditarIndexRoute,
