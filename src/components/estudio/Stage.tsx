@@ -437,7 +437,25 @@ function estiloCss(s: EstiloEl | undefined): React.CSSProperties {
   };
 }
 
-function CamadaCanvasView({ c }: { c: CanvasCamada }) {
+function CamadaCanvasView({
+  c,
+  selecionada,
+  onSelecionar,
+}: {
+  c: CanvasCamada;
+  selecionada?: boolean;
+  onSelecionar?: (() => void) | undefined;
+}) {
+  if (c.oculto) return null;
+  const marca: React.CSSProperties = selecionada
+    ? { outline: "2px solid hsl(var(--accent))", outlineOffset: 0 }
+    : {};
+  const clique = onSelecionar
+    ? (ev: React.MouseEvent) => {
+        ev.stopPropagation();
+        onSelecionar();
+      }
+    : undefined;
   if (c.tipo === "imagem") {
     const inner = c.img ?? { x: 0, y: 0, w: c.w, h: c.h };
     return (
@@ -451,7 +469,9 @@ function CamadaCanvasView({ c }: { c: CanvasCamada }) {
           overflow: "hidden",
           borderRadius: c.raio,
           opacity: c.opacidade,
+          ...marca,
         }}
+        onClick={clique}
       >
         <img
           src={c.src}
@@ -483,7 +503,9 @@ function CamadaCanvasView({ c }: { c: CanvasCamada }) {
           opacity: c.opacidade,
           border: c.borda ? `${c.borda.largura}px solid ${c.borda.cor}` : undefined,
           boxSizing: "border-box",
+          ...marca,
         }}
+        onClick={clique}
       />
     );
   }
@@ -506,7 +528,9 @@ function CamadaCanvasView({ c }: { c: CanvasCamada }) {
         whiteSpace: c.quebra ? "pre-wrap" : "pre",
         fontKerning: "none",
         fontVariantLigatures: "none",
+        ...marca,
       }}
+      onClick={clique}
     >
       {c.partes
         ? c.partes.map((p, i) => (
@@ -519,7 +543,15 @@ function CamadaCanvasView({ c }: { c: CanvasCamada }) {
   );
 }
 
-export function CanvasView({ doc }: { doc: DocCanvas }) {
+export function CanvasView({
+  doc,
+  selecionada = null,
+  onSelecionar,
+}: {
+  doc: DocCanvas;
+  selecionada?: string | null;
+  onSelecionar?: ((paginaId: string, camadaId: string) => void) | undefined;
+}) {
   const paginas = Array.isArray(doc.paginas) ? doc.paginas : [];
   if (!paginas.length) {
     return (
@@ -547,9 +579,17 @@ export function CanvasView({ doc }: { doc: DocCanvas }) {
               textRendering: "geometricPrecision",
             }}
           >
-            {(p.camadas ?? []).map((c, j) => (
-              <CamadaCanvasView key={j} c={c} />
-            ))}
+            {(p.camadas ?? []).map((c, j) => {
+              const cid = idCamadaCanvas(c, j, p.id ?? `p${i + 1}`);
+              return (
+                <CamadaCanvasView
+                  key={cid}
+                  c={c}
+                  selecionada={selecionada === cid}
+                  onSelecionar={onSelecionar ? () => onSelecionar(p.id ?? `p${i + 1}`, cid) : undefined}
+                />
+              );
+            })}
           </div>
         </div>
       ))}
