@@ -45,13 +45,6 @@ export function TopBar() {
 
   return (
     <header className="flex h-11 shrink-0 items-center gap-2 border-b border-border bg-surface px-3">
-      <div className="flex items-center gap-1.5">
-        <span className="grid size-5 place-items-center rounded-[5px] bg-primary text-[10px] font-bold text-primary-foreground">
-          E
-        </span>
-        <span className="text-[13px] font-semibold tracking-tight">Estúdio</span>
-      </div>
-      <span className="text-border">/</span>
       {editando ? (
         <form
           className="flex items-center gap-1"
