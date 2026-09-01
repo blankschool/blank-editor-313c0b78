@@ -136,6 +136,9 @@ export interface CanvasParteTexto {
 
 export interface CanvasCamadaTexto {
   tipo: "texto";
+  id?: string;
+  nome?: string;
+  oculto?: boolean;
   x: number;
   y: number;
   w?: number;
@@ -155,6 +158,9 @@ export interface CanvasCamadaTexto {
 
 export interface CanvasCamadaImagem {
   tipo: "imagem";
+  id?: string;
+  nome?: string;
+  oculto?: boolean;
   x: number;
   y: number;
   w: number;
@@ -168,6 +174,9 @@ export interface CanvasCamadaImagem {
 
 export interface CanvasCamadaForma {
   tipo: "forma";
+  id?: string;
+  nome?: string;
+  oculto?: boolean;
   x: number;
   y: number;
   w: number;
@@ -193,6 +202,29 @@ export interface DocCanvas {
   kind: "canvas";
   nome?: string;
   paginas: CanvasPagina[];
+}
+
+export interface CamadaCanvasInfo {
+  id: string;
+  nome: string;
+  tipo: CanvasCamada["tipo"];
+  oculto: boolean;
+  indice: number;
+}
+
+export function idCamadaCanvas(c: CanvasCamada, i: number, paginaId: string): string {
+  return c.id ?? `${paginaId}-${i + 1}`;
+}
+
+export function camadasDaPaginaCanvas(pagina: CanvasPagina | null | undefined): CamadaCanvasInfo[] {
+  if (!pagina || !Array.isArray(pagina.camadas)) return [];
+  return pagina.camadas.map((c, i) => ({
+    id: idCamadaCanvas(c, i, pagina.id ?? "p"),
+    nome: c.nome ?? (c.tipo === "texto" ? "texto" : c.tipo === "imagem" ? "imagem" : "forma"),
+    tipo: c.tipo,
+    oculto: !!c.oculto,
+    indice: i,
+  }));
 }
 
 export function ehDocCanvas(d: unknown): d is DocCanvas {
