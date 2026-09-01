@@ -501,6 +501,7 @@ function ImagemCanvasView({
   recortando,
   escala,
   onRecorte,
+  onSairRecorte,
 }: {
   c: CanvasCamadaImagem;
   cid?: string | undefined;
@@ -511,7 +512,9 @@ function ImagemCanvasView({
   recortando?: boolean | undefined;
   escala: number;
   onRecorte?: ((img: CaixaImg) => void) | undefined;
+  onSairRecorte?: (() => void) | undefined;
 }) {
+
   const [nat, setNat] = useState<{ w: number; h: number } | null>(null);
   useEffect(() => {
     let vivoAinda = true;
