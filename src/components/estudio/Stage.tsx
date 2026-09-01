@@ -491,6 +491,42 @@ function CamadaCanvasView({
         onSelecionar();
       }
     : undefined;
+  const duplo = onDuploClique
+    ? (ev: React.MouseEvent) => {
+        ev.stopPropagation();
+        onDuploClique();
+      }
+    : undefined;
+  if (c.tipo === "imagem" && !c.src) {
+    return (
+      <div
+        style={{
+          position: "absolute",
+          left: c.x,
+          top: c.y,
+          width: c.w,
+          height: c.h,
+          borderRadius: c.raio,
+          opacity: c.opacidade,
+          border: "2px dashed hsl(var(--border))",
+          background: "hsl(var(--muted) / 0.5)",
+          display: "grid",
+          placeItems: "center",
+          boxSizing: "border-box",
+          ...marca,
+        }}
+        onClick={clique}
+        onDoubleClick={duplo}
+        onPointerDown={onPointerDown}
+        data-camada={cid}
+      >
+        <span style={{ display: "grid", placeItems: "center", gap: 8, color: "hsl(var(--muted-foreground))" }}>
+          <ImagePlus style={{ width: 40, height: 40 }} />
+          <span style={{ fontSize: 18 }}>Clique duas vezes para enviar uma imagem</span>
+        </span>
+      </div>
+    );
+  }
   if (c.tipo === "imagem") {
     const inner = c.img ?? { x: 0, y: 0, w: c.w, h: c.h };
     return (
