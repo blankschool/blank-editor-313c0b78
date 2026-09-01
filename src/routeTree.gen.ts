@@ -14,6 +14,7 @@ import { Route as DDesignIdRouteImport } from './routes/d.$designId'
 import { Route as DDesignIdIndexRouteImport } from './routes/d.$designId.index'
 import { Route as DDesignIdPainelRouteImport } from './routes/d.$designId.$painel'
 import { Route as DDesignIdApresentarRouteImport } from './routes/d.$designId.apresentar'
+import { Route as DDesignIdCompartilharRouteImport } from './routes/d.$designId.compartilhar'
 import { Route as DDesignIdExportarRouteImport } from './routes/d.$designId.exportar'
 import { Route as DDesignIdEditarIndexRouteImport } from './routes/d.$designId.editar.index'
 import { Route as DDesignIdEditarPainelRouteImport } from './routes/d.$designId.editar.$painel'
@@ -43,6 +44,11 @@ const DDesignIdApresentarRoute = DDesignIdApresentarRouteImport.update({
   path: '/apresentar',
   getParentRoute: () => DDesignIdRoute,
 } as any)
+const DDesignIdCompartilharRoute = DDesignIdCompartilharRouteImport.update({
+  id: '/compartilhar',
+  path: '/compartilhar',
+  getParentRoute: () => DDesignIdRoute,
+} as any)
 const DDesignIdExportarRoute = DDesignIdExportarRouteImport.update({
   id: '/exportar',
   path: '/exportar',
@@ -64,6 +70,7 @@ export interface FileRoutesByFullPath {
   '/d/$designId': typeof DDesignIdRouteWithChildren
   '/d/$designId/$painel': typeof DDesignIdPainelRoute
   '/d/$designId/apresentar': typeof DDesignIdApresentarRoute
+  '/d/$designId/compartilhar': typeof DDesignIdCompartilharRoute
   '/d/$designId/exportar': typeof DDesignIdExportarRoute
   '/d/$designId/': typeof DDesignIdIndexRoute
   '/d/$designId/editar/$painel': typeof DDesignIdEditarPainelRoute
@@ -73,6 +80,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/d/$designId/$painel': typeof DDesignIdPainelRoute
   '/d/$designId/apresentar': typeof DDesignIdApresentarRoute
+  '/d/$designId/compartilhar': typeof DDesignIdCompartilharRoute
   '/d/$designId/exportar': typeof DDesignIdExportarRoute
   '/d/$designId': typeof DDesignIdIndexRoute
   '/d/$designId/editar/$painel': typeof DDesignIdEditarPainelRoute
@@ -84,6 +92,7 @@ export interface FileRoutesById {
   '/d/$designId': typeof DDesignIdRouteWithChildren
   '/d/$designId/$painel': typeof DDesignIdPainelRoute
   '/d/$designId/apresentar': typeof DDesignIdApresentarRoute
+  '/d/$designId/compartilhar': typeof DDesignIdCompartilharRoute
   '/d/$designId/exportar': typeof DDesignIdExportarRoute
   '/d/$designId/': typeof DDesignIdIndexRoute
   '/d/$designId/editar/$painel': typeof DDesignIdEditarPainelRoute
@@ -96,6 +105,7 @@ export interface FileRouteTypes {
     | '/d/$designId'
     | '/d/$designId/$painel'
     | '/d/$designId/apresentar'
+    | '/d/$designId/compartilhar'
     | '/d/$designId/exportar'
     | '/d/$designId/'
     | '/d/$designId/editar/$painel'
@@ -105,6 +115,7 @@ export interface FileRouteTypes {
     | '/'
     | '/d/$designId/$painel'
     | '/d/$designId/apresentar'
+    | '/d/$designId/compartilhar'
     | '/d/$designId/exportar'
     | '/d/$designId'
     | '/d/$designId/editar/$painel'
@@ -115,6 +126,7 @@ export interface FileRouteTypes {
     | '/d/$designId'
     | '/d/$designId/$painel'
     | '/d/$designId/apresentar'
+    | '/d/$designId/compartilhar'
     | '/d/$designId/exportar'
     | '/d/$designId/'
     | '/d/$designId/editar/$painel'
@@ -163,6 +175,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DDesignIdApresentarRouteImport
       parentRoute: typeof DDesignIdRoute
     }
+    '/d/$designId/compartilhar': {
+      id: '/d/$designId/compartilhar'
+      path: '/compartilhar'
+      fullPath: '/d/$designId/compartilhar'
+      preLoaderRoute: typeof DDesignIdCompartilharRouteImport
+      parentRoute: typeof DDesignIdRoute
+    }
     '/d/$designId/exportar': {
       id: '/d/$designId/exportar'
       path: '/exportar'
@@ -190,6 +209,7 @@ declare module '@tanstack/react-router' {
 interface DDesignIdRouteChildren {
   DDesignIdPainelRoute: typeof DDesignIdPainelRoute
   DDesignIdApresentarRoute: typeof DDesignIdApresentarRoute
+  DDesignIdCompartilharRoute: typeof DDesignIdCompartilharRoute
   DDesignIdExportarRoute: typeof DDesignIdExportarRoute
   DDesignIdIndexRoute: typeof DDesignIdIndexRoute
   DDesignIdEditarPainelRoute: typeof DDesignIdEditarPainelRoute
@@ -199,6 +219,7 @@ interface DDesignIdRouteChildren {
 const DDesignIdRouteChildren: DDesignIdRouteChildren = {
   DDesignIdPainelRoute: DDesignIdPainelRoute,
   DDesignIdApresentarRoute: DDesignIdApresentarRoute,
+  DDesignIdCompartilharRoute: DDesignIdCompartilharRoute,
   DDesignIdExportarRoute: DDesignIdExportarRoute,
   DDesignIdIndexRoute: DDesignIdIndexRoute,
   DDesignIdEditarPainelRoute: DDesignIdEditarPainelRoute,
