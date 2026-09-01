@@ -848,6 +848,10 @@ export function CanvasView({
   arrastavel = false,
   onGeometria,
   acoes,
+  editando = null,
+  onTextoInput,
+  onSelecaoTexto,
+  onDuploClique,
 }: {
   doc: DocCanvas;
   selecionada?: string | null;
@@ -856,6 +860,10 @@ export function CanvasView({
   arrastavel?: boolean;
   onGeometria?: ((paginaId: string, camadaId: string, geo: Geo, modo: ModoArraste) => void) | undefined;
   acoes?: ((ctx: { paginaId: string; camadaId: string; camada: CanvasCamada }) => React.ReactNode) | undefined;
+  editando?: string | null;
+  onTextoInput?: ((novo: string) => void) | undefined;
+  onSelecaoTexto?: ((sel: { inicio: number; fim: number } | null) => void) | undefined;
+  onDuploClique?: ((paginaId: string, camadaId: string, camada: CanvasCamada) => void) | undefined;
 }) {
   const refPaginas = useRef<HTMLDivElement | null>(null);
   const refBarra = useRef<HTMLDivElement | null>(null);
