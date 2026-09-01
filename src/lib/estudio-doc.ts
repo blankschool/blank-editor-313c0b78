@@ -722,19 +722,29 @@ export async function camadaParaPng(camadaId: string, escala: 1 | 2 = 1): Promis
   const w = Math.max(1, Math.round(no.offsetWidth));
   const h = Math.max(1, Math.round(no.offsetHeight));
 
+  /* rotação da camada: o PNG sai na caixa que envolve a camada girada */
+  const rot = Number(no.dataset["rotacao"] ?? 0) || 0;
+  const rad = (rot * Math.PI) / 180;
+  const cx = Math.abs(Math.cos(rad));
+  const sx = Math.abs(Math.sin(rad));
+  const cw = Math.max(1, Math.round(w * cx + h * sx));
+  const ch = Math.max(1, Math.round(w * sx + h * cx));
+
   const clone = no.cloneNode(true) as HTMLElement;
   inlinar(no, clone);
-  clone.style.position = "static";
-  clone.style.left = "0";
-  clone.style.top = "0";
+  clone.style.position = "absolute";
+  clone.style.left = `${(cw - w) / 2}px`;
+  clone.style.top = `${(ch - h) / 2}px`;
   clone.style.width = `${w}px`;
   clone.style.height = `${h}px`;
   clone.style.outline = "none";
-  clone.style.transform = "none";
+  clone.style.transform = rot ? `rotate(${rot}deg)` : "none";
+  clone.style.transformOrigin = "center center";
 
   const html = new XMLSerializer().serializeToString(clone);
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><foreignObject width="100%" height="100%"><div xmlns="http://www.w3.org/1999/xhtml">${html}</div></foreignObject></svg>`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${cw}" height="${ch}"><foreignObject width="100%" height="100%"><div xmlns="http://www.w3.org/1999/xhtml" style="position:relative;width:${cw}px;height:${ch}px">${html}</div></foreignObject></svg>`;
   const url = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+
 
   const img = new window.Image();
   const carregou = await new Promise<boolean>((resolve) => {
@@ -745,14 +755,27 @@ export async function camadaParaPng(camadaId: string, escala: 1 | 2 = 1): Promis
   if (!carregou) return null;
 
   const canvas = document.createElement("canvas");
-  canvas.width = w * escala;
-  canvas.height = h * escala;
+  canvas.width = cw * escala;
+  canvas.height = ch * escala;
   const ctx = canvas.getContext("2d");
   if (!ctx) return null;
   ctx.scale(escala, escala);
-  ctx.drawImage(img, 0, 0, w, h);
+  ctx.drawImage(img, 0, 0, cw, ch);
   return await new Promise<Blob | null>((resolve) => canvas.toBlob((b) => resolve(b), "image/png"));
 }
+
+/** lê o tamanho real do arquivo de imagem (para enquadrar em cover sem achatar) */
+export function medirImagem(src: string): Promise<{ w: number; h: number }> {
+  return new Promise((resolve) => {
+    if (typeof window === "undefined") return resolve({ w: 0, h: 0 });
+    const im = new window.Image();
+    im.crossOrigin = "anonymous";
+    im.onload = () => resolve({ w: im.naturalWidth, h: im.naturalHeight });
+    im.onerror = () => resolve({ w: 0, h: 0 });
+    im.src = src;
+  });
+}
+
 
 export function ehDocCanvas(d: unknown): d is DocCanvas {
   return (

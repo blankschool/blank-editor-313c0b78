@@ -65,6 +65,9 @@ import {
   substituirTextoPreservandoPartes,
   virarPlaceholderImagem,
   limitarImg,
+  coverImg,
+  containImg,
+  medirImagem,
   type CaixaImg,
 } from "@/lib/estudio-doc";
 import {
@@ -501,6 +504,7 @@ function ImagemCanvasView({
   recortando,
   escala,
   onRecorte,
+  onSairRecorte,
 }: {
   c: CanvasCamadaImagem;
   cid?: string | undefined;
@@ -511,8 +515,24 @@ function ImagemCanvasView({
   recortando?: boolean | undefined;
   escala: number;
   onRecorte?: ((img: CaixaImg) => void) | undefined;
+  onSairRecorte?: (() => void) | undefined;
 }) {
-  const gravado: CaixaImg = c.img ?? { x: 0, y: 0, w: c.w, h: c.h };
+
+  const [nat, setNat] = useState<{ w: number; h: number } | null>(null);
+  useEffect(() => {
+    let vivoAinda = true;
+    if (!c.src) return;
+    void medirImagem(c.src).then((m) => {
+      if (vivoAinda && m.w && m.h) setNat(m);
+    });
+    return () => {
+      vivoAinda = false;
+    };
+  }, [c.src]);
+
+  /* sem enquadramento gravado, usa cover com a proporção real do arquivo */
+  const gravado: CaixaImg =
+    c.img ?? (nat ? coverImg(c.w, c.h, nat.w, nat.h) : { x: 0, y: 0, w: c.w, h: c.h });
   const [vivo, setVivo] = useState<CaixaImg | null>(null);
   const arrasteRef = useRef<{ px: number; py: number; base: CaixaImg } | null>(null);
   const timerZoom = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -521,6 +541,17 @@ function ImagemCanvasView({
   useEffect(() => {
     if (!recortando) setVivo(null);
   }, [recortando]);
+
+  /* Esc sai do modo ajuste */
+  useEffect(() => {
+    if (!recortando) return;
+    const tecla = (ev: KeyboardEvent) => {
+      if (ev.key === "Escape") onSairRecorte?.();
+    };
+    window.addEventListener("keydown", tecla);
+    return () => window.removeEventListener("keydown", tecla);
+  }, [recortando, onSairRecorte]);
+
 
   useEffect(() => {
     if (!recortando) return;
@@ -566,6 +597,32 @@ function ImagemCanvasView({
     if (timerZoom.current) clearTimeout(timerZoom.current);
     timerZoom.current = setTimeout(() => onRecorte?.(novo), 250);
   };
+
+  /* base cover: 100% do slider = foto preenchendo a moldura */
+  const base = nat ? coverImg(c.w, c.h, nat.w, nat.h) : { x: 0, y: 0, w: c.w, h: c.h };
+  const zoomAtual = base.w ? Math.max(1, inner.w / base.w) : 1;
+
+  const definirZoom = (fator: number) => {
+    const f = Math.max(1, fator);
+    const w = base.w * f;
+    const h = base.h * f;
+    const atual = vivo ?? gravado;
+    const fx = atual.w ? (c.w / 2 - atual.x) / atual.w : 0.5;
+    const fy = atual.h ? (c.h / 2 - atual.y) / atual.h : 0.5;
+    const novo = limitarImg({ w, h, x: c.w / 2 - fx * w, y: c.h / 2 - fy * h }, c.w, c.h);
+    setVivo(novo);
+    if (timerZoom.current) clearTimeout(timerZoom.current);
+    timerZoom.current = setTimeout(() => onRecorte?.(novo), 200);
+  };
+
+  const aplicarEnquadramento = (modo: "cover" | "contain") => {
+    if (!nat) return;
+    const novo =
+      modo === "cover" ? coverImg(c.w, c.h, nat.w, nat.h) : containImg(c.w, c.h, nat.w, nat.h);
+    setVivo(novo);
+    onRecorte?.(novo);
+  };
+
 
   const estiloImg: React.CSSProperties = {
     position: "absolute",
@@ -619,6 +676,7 @@ function ImagemCanvasView({
         zoom(Math.exp(-dy * 0.0015));
       }}
       data-camada={cid}
+      data-rotacao={(c as { rotacao?: number }).rotacao || undefined}
       data-recorte={recortando ? "1" : undefined}
     >
       {recortando && <img src={c.src} alt="" style={{ ...estiloImg, opacity: 0.3 }} />}
@@ -634,19 +692,76 @@ function ImagemCanvasView({
         <img src={c.src} alt="" style={estiloImg} />
       </div>
       {recortando && (
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            border: `${2 / (escala || 1)}px solid #fff`,
-            boxShadow: "0 0 0 9999px rgba(0,0,0,0.25)",
-            pointerEvents: "none",
-          }}
-        />
+        <>
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              border: `${2 / (escala || 1)}px solid #fff`,
+              boxShadow: "0 0 0 9999px rgba(0,0,0,0.45)",
+              pointerEvents: "none",
+            }}
+          />
+          <div
+            onPointerDown={(ev) => ev.stopPropagation()}
+            onClick={(ev) => ev.stopPropagation()}
+            style={{
+              position: "absolute",
+              left: "50%",
+              top: c.h,
+              transform: `translate(-50%, ${12 / (escala || 1)}px) scale(${1 / (escala || 1)})`,
+              transformOrigin: "top center",
+              zIndex: 40,
+            }}
+          >
+            <div className="flex items-center gap-2 rounded-xl border border-border bg-card/95 px-2 py-1.5 shadow-lg backdrop-blur">
+              <button
+                className="rounded-md px-2 py-1 text-[11px] hover:bg-secondary"
+                onClick={() => aplicarEnquadramento("cover")}
+              >
+                Preencher
+              </button>
+              <button
+                className="rounded-md px-2 py-1 text-[11px] hover:bg-secondary"
+                onClick={() => aplicarEnquadramento("contain")}
+              >
+                Caber
+              </button>
+              <button
+                className="rounded-md px-2 py-1 text-[11px] hover:bg-secondary"
+                onClick={() => aplicarEnquadramento("cover")}
+              >
+                Redefinir
+              </button>
+              <span className="h-4 w-px bg-border" />
+              <input
+                type="range"
+                min={100}
+                max={400}
+                step={1}
+                value={Math.round(zoomAtual * 100)}
+                onChange={(ev) => definirZoom(Number(ev.target.value) / 100)}
+                className="h-1 w-28 accent-[hsl(var(--accent))]"
+                aria-label="Zoom da imagem"
+              />
+              <span className="w-9 text-right text-[11px] tabular-nums text-muted-foreground">
+                {Math.round(zoomAtual * 100)}%
+              </span>
+              <span className="h-4 w-px bg-border" />
+              <button
+                className="rounded-md bg-primary px-2 py-1 text-[11px] text-primary-foreground"
+                onClick={() => onSairRecorte?.()}
+              >
+                Concluir
+              </button>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );
 }
+
 
 function CamadaCanvasView({
   c,
@@ -661,6 +776,7 @@ function CamadaCanvasView({
   recortando,
   escala = 1,
   onRecorte,
+  onSairRecorte,
 }: {
   c: CanvasCamada;
   cid?: string;
@@ -674,6 +790,7 @@ function CamadaCanvasView({
   recortando?: boolean | undefined;
   escala?: number;
   onRecorte?: ((img: CaixaImg) => void) | undefined;
+  onSairRecorte?: (() => void) | undefined;
 }) {
   if (c.oculto) return null;
   const marca: React.CSSProperties = selecionada
@@ -714,6 +831,7 @@ function CamadaCanvasView({
         onDoubleClick={duplo}
         onPointerDown={onPointerDown}
         data-camada={cid}
+        data-rotacao={(c as { rotacao?: number }).rotacao || undefined}
       >
         <span
           style={{
@@ -741,6 +859,7 @@ function CamadaCanvasView({
         recortando={recortando}
         escala={escala}
         onRecorte={onRecorte}
+        onSairRecorte={onSairRecorte}
       />
     );
   }
@@ -772,6 +891,7 @@ function CamadaCanvasView({
         onDoubleClick={duplo}
         onPointerDown={onPointerDown}
         data-camada={cid}
+        data-rotacao={(c as { rotacao?: number }).rotacao || undefined}
       />
     );
   }
@@ -830,6 +950,7 @@ function CamadaCanvasView({
       onDoubleClick={duplo}
       onPointerDown={onPointerDown}
       data-camada={cid}
+      data-rotacao={(c as { rotacao?: number }).rotacao || undefined}
     >
       {c.partes
         ? c.partes.map((p, i) => (
@@ -915,6 +1036,8 @@ function TextoEditavelPalco({
       spellCheck={false}
       style={estilo}
       data-camada={cid}
+      data-rotacao={(camada as { rotacao?: number }).rotacao || undefined}
+
       onPointerDown={(ev) => ev.stopPropagation()}
       onClick={(ev) => ev.stopPropagation()}
       onInput={() => {
@@ -1223,6 +1346,8 @@ export function CanvasView({
   onDuploClique,
   recortando = null,
   onRecorte,
+  onSairRecorte,
+
 }: {
   doc: DocCanvas;
   selecionada?: string | null;
@@ -1240,6 +1365,7 @@ export function CanvasView({
   onDuploClique?: ((paginaId: string, camadaId: string, camada: CanvasCamada) => void) | undefined;
   recortando?: string | null;
   onRecorte?: ((paginaId: string, camadaId: string, img: CaixaImg) => void) | undefined;
+  onSairRecorte?: (() => void) | undefined;
 }) {
 
   const refPaginas = useRef<HTMLDivElement | null>(null);
@@ -1517,6 +1643,7 @@ export function CanvasView({
                     recortando={recortando === cid}
                     escala={escala}
                     onRecorte={onRecorte ? (img) => onRecorte(pid, cid, img) : undefined}
+                    onSairRecorte={onSairRecorte}
                   />
 
                 );
@@ -1638,13 +1765,16 @@ function CanvasComSelecao({ doc }: { doc: DocCanvas }) {
     if (!alvo) return;
     try {
       const url = await enviarImagemCanvas(file);
+      const nat = await medirImagem(url);
       patchCamada(
         alvo.pid,
         alvo.cid,
         (c) => {
           if (c.tipo !== "imagem") return;
           c.src = url;
-          delete c.img;
+          /* enquadra em cover com a proporção real do arquivo (nunca deforma) */
+          if (nat.w && nat.h) c.img = coverImg(c.w, c.h, nat.w, nat.h);
+          else delete c.img;
         },
         "Trocou a imagem",
       );
@@ -1838,6 +1968,7 @@ function CanvasComSelecao({ doc }: { doc: DocCanvas }) {
             "Ajustou a imagem",
           )
         }
+        onSairRecorte={() => setRecortando(null)}
         onDuploClique={(pid, cid, camada) => {
           e.setPaginaCanvas(pid);
           e.setCamadaCanvas(cid);
