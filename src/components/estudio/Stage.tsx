@@ -512,7 +512,21 @@ function ImagemCanvasView({
   escala: number;
   onRecorte?: ((img: CaixaImg) => void) | undefined;
 }) {
-  const gravado: CaixaImg = c.img ?? { x: 0, y: 0, w: c.w, h: c.h };
+  const [nat, setNat] = useState<{ w: number; h: number } | null>(null);
+  useEffect(() => {
+    let vivoAinda = true;
+    if (!c.src) return;
+    void medirImagem(c.src).then((m) => {
+      if (vivoAinda && m.w && m.h) setNat(m);
+    });
+    return () => {
+      vivoAinda = false;
+    };
+  }, [c.src]);
+
+  /* sem enquadramento gravado, usa cover com a proporção real do arquivo */
+  const gravado: CaixaImg =
+    c.img ?? (nat ? coverImg(c.w, c.h, nat.w, nat.h) : { x: 0, y: 0, w: c.w, h: c.h });
   const [vivo, setVivo] = useState<CaixaImg | null>(null);
   const arrasteRef = useRef<{ px: number; py: number; base: CaixaImg } | null>(null);
   const timerZoom = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -521,6 +535,17 @@ function ImagemCanvasView({
   useEffect(() => {
     if (!recortando) setVivo(null);
   }, [recortando]);
+
+  /* Esc sai do modo ajuste */
+  useEffect(() => {
+    if (!recortando) return;
+    const tecla = (ev: KeyboardEvent) => {
+      if (ev.key === "Escape") onSairRecorte?.();
+    };
+    window.addEventListener("keydown", tecla);
+    return () => window.removeEventListener("keydown", tecla);
+  }, [recortando, onSairRecorte]);
+
 
   useEffect(() => {
     if (!recortando) return;
