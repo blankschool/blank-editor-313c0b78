@@ -1346,6 +1346,8 @@ export function CanvasView({
   onDuploClique,
   recortando = null,
   onRecorte,
+  onSairRecorte,
+
 }: {
   doc: DocCanvas;
   selecionada?: string | null;
