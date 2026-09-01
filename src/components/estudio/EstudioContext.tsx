@@ -15,14 +15,17 @@ import {
   clonarDoc,
   docPadrao,
   ehDocHtml,
+  ehDocCanvas,
   interpretarPedido,
   previewsHtml,
   type DesignDoc,
   type DocHtml,
+  type DocCanvas,
   type ElId,
   type PresetNovo,
 } from "@/lib/estudio-doc";
 import { supabase } from "@/lib/supabase";
+import { canvasAgrum, canvasBarretos } from "@/lib/estudio-canvas-seeds";
 import {
   atualizarComentario,
   atualizarDesign,
@@ -108,6 +111,7 @@ interface EstudioState {
   renomearDesign: (id: string, nome: string) => void;
   novoDesign: (preset?: PresetNovo) => void;
   docHtml: DocHtml | null;
+  docCanvas: DocCanvas | null;
   favoritar: (id: string) => void;
   zoom: number;
   setZoom: (v: number) => void;
@@ -288,7 +292,7 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
     if (remoto.id !== docId) {
       setDocId(remoto.id);
       setDocLocal(
-        remoto.doc && !ehDocHtml(remoto.doc) && Object.keys(remoto.doc).length
+        remoto.doc && !ehDocHtml(remoto.doc) && !ehDocCanvas(remoto.doc) && Object.keys(remoto.doc).length
           ? (remoto.doc as DesignDoc)
           : docPadrao(remoto.nome),
       );
@@ -297,6 +301,7 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
 
   const docRemoto = designQ.data?.doc;
   const docHtml = ehDocHtml(docRemoto) ? docRemoto : null;
+  const docCanvas = ehDocCanvas(docRemoto) ? docRemoto : null;
   const doc = docLocal ?? docPadrao(nomeAtivo);
   const docRef = useRef(doc);
   docRef.current = doc;
@@ -460,7 +465,7 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
   const recarregarDoc = useCallback(() => {
     void qc.invalidateQueries({ queryKey: ["design", abaAtiva] });
     void carregarDesign(abaAtiva).then((r) => {
-      if (r) setDocLocal(r.doc && !ehDocHtml(r.doc) && Object.keys(r.doc).length ? (r.doc as DesignDoc) : docPadrao(r.nome));
+      if (r) setDocLocal(r.doc && !ehDocHtml(r.doc) && !ehDocCanvas(r.doc) && Object.keys(r.doc).length ? (r.doc as DesignDoc) : docPadrao(r.nome));
     });
   }, [abaAtiva, qc]);
 
@@ -561,10 +566,11 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
       return;
     }
     const modelo = preset && preset !== "branco" ? previewsHtml[preset] : null;
+    const docModelo = preset === "agrum" ? canvasAgrum : preset === "barretos" ? canvasBarretos : null;
     void criarDesign(
       projectId,
       modelo ? modelo.nome : undefined,
-      modelo ? { kind: "html" as const, src: modelo.src } : undefined,
+      docModelo ?? (modelo ? { kind: "html" as const, src: modelo.src } : undefined),
     ).then(async (row) => {
       await qc.invalidateQueries({ queryKey: ["designs", user?.id] });
       irParaDesign(row.id);
@@ -963,6 +969,7 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
       apagarComentario,
       apagarMensagem,
       docHtml,
+      docCanvas,
       filtroComentarios,
       setFiltroComentarios,
       comentarioAtivo,
@@ -1045,6 +1052,7 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
       apagarComentario,
       apagarMensagem,
       docHtml,
+      docCanvas,
       filtroComentarios,
 
       comentarioAtivo,

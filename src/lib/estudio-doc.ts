@@ -117,8 +117,6 @@ export interface DocHtml {
   src: string;
 }
 
-export type DocSalvo = DesignDoc | DocHtml;
-
 export function ehDocHtml(d: unknown): d is DocHtml {
   return (
     !!d &&
@@ -128,12 +126,93 @@ export function ehDocHtml(d: unknown): d is DocHtml {
   );
 }
 
+/* --------- documento canvas (páginas 1080x1440, sem edição ainda) --------- */
+
+export interface CanvasParteTexto {
+  texto: string;
+  peso?: number;
+  cor?: string;
+}
+
+export interface CanvasCamadaTexto {
+  tipo: "texto";
+  x: number;
+  y: number;
+  w?: number;
+  h?: number;
+  texto?: string;
+  partes?: CanvasParteTexto[];
+  fonte?: string;
+  peso?: number;
+  tamanho?: number;
+  entrelinha?: number;
+  entreLetras?: number;
+  cor?: string;
+  alinhamento?: "left" | "center" | "right";
+  quebra?: boolean;
+  opacidade?: number;
+}
+
+export interface CanvasCamadaImagem {
+  tipo: "imagem";
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  src: string;
+  img?: { x: number; y: number; w: number; h: number };
+  raio?: number;
+  opacidade?: number;
+  espelhoY?: boolean;
+}
+
+export interface CanvasCamadaForma {
+  tipo: "forma";
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  cor?: string;
+  raio?: number;
+  opacidade?: number;
+  borda?: { largura: number; cor: string };
+}
+
+export type CanvasCamada = CanvasCamadaTexto | CanvasCamadaImagem | CanvasCamadaForma;
+
+export interface CanvasPagina {
+  id: string;
+  nome?: string;
+  largura: number;
+  altura: number;
+  fundo?: string;
+  camadas: CanvasCamada[];
+}
+
+export interface DocCanvas {
+  kind: "canvas";
+  nome?: string;
+  paginas: CanvasPagina[];
+}
+
+export function ehDocCanvas(d: unknown): d is DocCanvas {
+  return (
+    !!d &&
+    typeof d === "object" &&
+    (d as { kind?: unknown }).kind === "canvas" &&
+    Array.isArray((d as { paginas?: unknown }).paginas)
+  );
+}
+
+export type DocSalvo = DesignDoc | DocHtml | DocCanvas;
+
 export const previewsHtml = {
   agrum: { nome: "Agrum Eleição", src: "/previews/agrum-eleicao/index.html" },
   barretos: { nome: "Barretos", src: "/previews/barretos/index.html" },
 } as const;
 
 export type PresetNovo = "branco" | keyof typeof previewsHtml;
+
 
 
 export function comEstilo(doc: DesignDoc, el: ElId, patch: Partial<EstiloEl>): DesignDoc {
