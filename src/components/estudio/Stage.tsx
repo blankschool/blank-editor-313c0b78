@@ -474,6 +474,7 @@ function CamadaCanvasView({
           overflow: "hidden",
           borderRadius: c.raio,
           opacity: c.opacidade,
+          boxShadow: c.sombra ? `${c.sombra.x}px ${c.sombra.y}px ${c.sombra.blur}px ${c.sombra.cor}` : undefined,
           ...marca,
         }}
         onClick={clique}
@@ -507,7 +508,8 @@ function CamadaCanvasView({
           background: c.cor,
           borderRadius: c.raio,
           opacity: c.opacidade,
-          border: c.borda ? `${c.borda.largura}px solid ${c.borda.cor}` : undefined,
+          border: c.borda ? `${c.borda.largura}px ${c.borda.estilo ?? "solid"} ${c.borda.cor}` : undefined,
+          boxShadow: c.sombra ? `${c.sombra.x}px ${c.sombra.y}px ${c.sombra.blur}px ${c.sombra.cor}` : undefined,
           boxSizing: "border-box",
           ...marca,
         }}
@@ -533,6 +535,7 @@ function CamadaCanvasView({
         textAlign: c.alinhamento,
         opacity: c.opacidade,
         whiteSpace: c.quebra ? "pre-wrap" : "pre",
+        textShadow: c.sombra ? `${c.sombra.x}px ${c.sombra.y}px ${c.sombra.blur}px ${c.sombra.cor}` : undefined,
         fontKerning: "none",
         fontVariantLigatures: "none",
         ...marca,
