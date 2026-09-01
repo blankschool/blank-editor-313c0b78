@@ -1608,13 +1608,16 @@ function CanvasComSelecao({ doc }: { doc: DocCanvas }) {
   const escala = (e.zoom / 100) * (larguras[e.viewport] / 1080);
   const podeArrastar = e.ferramenta === "cursor";
   const [editando, setEditando] = useState<string | null>(null);
+  const [recortando, setRecortando] = useState<string | null>(null);
   const [selTexto, setSelTexto] = useState<{ inicio: number; fim: number } | null>(null);
   const inputImg = useRef<HTMLInputElement>(null);
   const alvoUpload = useRef<{ pid: string; cid: string } | null>(null);
 
   useEffect(() => {
     if (editando && e.camadaCanvas !== editando) setEditando(null);
-  }, [e.camadaCanvas, editando]);
+    if (recortando && e.camadaCanvas !== recortando) setRecortando(null);
+  }, [e.camadaCanvas, editando, recortando]);
+
 
   const patchCamada = useCallback(
     (pid: string, cid: string, fn: (c: CanvasCamada) => void, rotulo: string) =>
