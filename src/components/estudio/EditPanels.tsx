@@ -654,7 +654,7 @@ export function PropsPanel() {
           <button
             onClick={() => {
               const v = e.criarVersao("");
-              toast.success(`Versão ${v.rotulo} salva.`);
+              toast.success(`Versão ${v} salva.`);
             }}
             className="h-6 flex-1 rounded bg-primary text-[11px] text-primary-foreground"
           >
