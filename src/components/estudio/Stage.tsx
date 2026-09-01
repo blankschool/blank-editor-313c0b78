@@ -1824,16 +1824,30 @@ function CanvasComSelecao({ doc }: { doc: DocCanvas }) {
             "Editou o texto",
           );
         }}
+        recortando={recortando}
+        onRecorte={(pid, cid, img) =>
+          patchCamada(
+            pid,
+            cid,
+            (c) => {
+              if (c.tipo === "imagem") c.img = img;
+            },
+            "Ajustou a imagem",
+          )
+        }
         onDuploClique={(pid, cid, camada) => {
           e.setPaginaCanvas(pid);
           e.setCamadaCanvas(cid);
           if (camada.tipo === "texto") setEditando(cid);
+          else if (camada.tipo === "imagem" && camada.src) setRecortando(cid);
           else if (camada.tipo === "imagem") abrirUpload(pid, cid);
         }}
         onSelecionar={(pid, cid) => {
           e.setPaginaCanvas(pid);
           e.setCamadaCanvas(cid);
+          if (recortando && recortando !== cid) setRecortando(null);
         }}
+
         acoes={({ paginaId, camadaId, camada }) => (
           <>
             {editando === camadaId && camada.tipo === "texto" ? (
