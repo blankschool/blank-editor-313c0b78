@@ -173,9 +173,13 @@ class Handler(BaseHTTPRequestHandler):
             r = converter(pdf, slug, nome)
             print(f"  ok: design {r['design_id']} — {r['paginas']} páginas", flush=True)
             self._json(200, r)
+        except PdfAchatado as e:
+            print(f"  recusado: {e}", flush=True)
+            self._json(422, {"erro": str(e), "codigo": "achatado"})
         except Exception as e:  # noqa: BLE001
             traceback.print_exc()
             self._json(500, {"erro": str(e)[:500]})
+
 
     def log_message(self, *a) -> None:  # silencia o log padrão
         pass
