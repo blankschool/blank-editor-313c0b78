@@ -88,6 +88,8 @@ function Importar() {
     };
   }, []);
 
+  const [aviso, setAviso] = useState<string | null>(null);
+
   const receber = (f: File | null | undefined) => {
     if (!f) return;
     if (!f.name.toLowerCase().endsWith(".pdf")) {
@@ -96,7 +98,14 @@ function Importar() {
     }
     setArquivo(f);
     setEstado({ fase: "ocioso" });
+    setAviso(null);
     if (!nome) setNome(f.name.replace(/\.pdf$/i, ""));
+    void pareceAchatado(f).then((achatado) => {
+      if (achatado)
+        setAviso(
+          "Este PDF não tem texto embutido — provavelmente foi exportado achatado e vai virar um design de uma imagem só.",
+        );
+    });
   };
 
   const enviar = async () => {
@@ -112,13 +121,26 @@ function Importar() {
         body: fd,
       });
       const j = (await r.json()) as Record<string, unknown>;
-      if (!r.ok) throw new Error(String(j["erro"] ?? `HTTP ${r.status}`));
+      if (!r.ok) {
+        if (j["codigo"] === "achatado") {
+          setEstado({
+            fase: "erro",
+            achatado: true,
+            msg: "Cada página deste PDF é uma imagem única, sem texto nem camadas.",
+          });
+          return;
+        }
+        throw new Error(String(j["erro"] ?? `HTTP ${r.status}`));
+      }
       setEstado({
         fase: "pronto",
         designId: String(j["design_id"]),
         paginas: Number(j["paginas"]),
         camadas: Number(j["camadas"]),
         nome: String(j["nome"]),
+        achatadas: Array.isArray(j["paginas_achatadas"])
+          ? (j["paginas_achatadas"] as number[])
+          : [],
       });
     } catch (e) {
       setEstado({
@@ -127,6 +149,7 @@ function Importar() {
       });
     }
   };
+
 
   const enviando = estado.fase === "enviando";
 
