@@ -7,15 +7,19 @@
  * com um clique (Compartilhar › Baixar › PDF Impressão) e não depende de mais
  * nada.
  *
- * O trabalho roda num serviço à parte (canva/servico.py) porque precisa de
- * Python, fontTools e Chromium — não roda no browser nem numa Edge Function. O
- * app só envia o arquivo e mostra o resultado.
+ * O trabalho roda num serviço à parte (canva/servico.py, hoje em
+ * canva-import.ickanz.easypanel.host) porque precisa de Python e fontTools —
+ * não roda no browser nem numa Edge Function. O app só envia o arquivo e
+ * mostra o resultado.
  */
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { AlertCircle, CheckCircle2, FileUp, Loader2 } from "lucide-react";
 
-const SERVICO = "http://localhost:8790";
+const SERVICO = "https://canva-import.ickanz.easypanel.host";
+// Não é sigilo real (vai no bundle do browser) — só evita que bots
+// genéricos varrendo a internet cheguem no /importar sem querer.
+const SEGREDO_IMPORTACAO = "508d1916d338cd39cc89ab9800a31697c1f8907cf4a350ff";
 
 type Estado =
   | { fase: "ocioso" }
@@ -38,15 +42,21 @@ function Importar() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Vale checar antes: sem o serviço no ar o envio falha com "Failed to fetch",
-  // que não diz a ninguém o que fazer.
+  // que não diz a ninguém o que fazer. Repete enquanto não achar o serviço, já
+  // que ele pode subir (launchd) depois desta página já ter carregado.
   useEffect(() => {
     let vivo = true;
-    fetch(`${SERVICO}/saude`)
-      .then((r) => r.ok)
-      .catch(() => false)
-      .then((ok) => vivo && setServicoNoAr(ok));
+    const checar = () => {
+      fetch(`${SERVICO}/saude`)
+        .then((r) => r.ok)
+        .catch(() => false)
+        .then((ok) => vivo && setServicoNoAr(ok));
+    };
+    checar();
+    const id = window.setInterval(checar, 4000);
     return () => {
       vivo = false;
+      window.clearInterval(id);
     };
   }, []);
 
@@ -68,7 +78,11 @@ function Importar() {
     fd.append("pdf", arquivo);
     fd.append("nome", nome || arquivo.name.replace(/\.pdf$/i, ""));
     try {
-      const r = await fetch(`${SERVICO}/importar`, { method: "POST", body: fd });
+      const r = await fetch(`${SERVICO}/importar`, {
+        method: "POST",
+        headers: { "X-Import-Secret": SEGREDO_IMPORTACAO },
+        body: fd,
+      });
       const j = (await r.json()) as Record<string, unknown>;
       if (!r.ok) throw new Error(String(j["erro"] ?? `HTTP ${r.status}`));
       setEstado({
@@ -102,13 +116,10 @@ function Importar() {
         <div className="flex gap-2 rounded-md border border-border bg-muted/40 p-3 text-[12px]">
           <AlertCircle className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
           <div>
-            <p className="font-medium">O serviço de importação não está rodando.</p>
+            <p className="font-medium">O serviço de importação está indisponível no momento.</p>
             <p className="mt-1 text-muted-foreground">
-              A conversão precisa de Python e fontes, então roda fora do app. Inicie com:
+              Tente de novo em instantes. Se persistir, verifique o serviço na VPS.
             </p>
-            <code className="mt-1.5 block rounded bg-background px-2 py-1 font-mono text-[11px]">
-              cd ~/Downloads/canva &amp;&amp; python3 servico.py
-            </code>
           </div>
         </div>
       )}
