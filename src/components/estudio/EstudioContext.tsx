@@ -534,12 +534,13 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
       empilharDesfazer({ doc: clonarDoc(anterior), canvas: null }, rotulo);
       setDocLocal(novo);
       docRef.current = novo;
+      /* grava sempre: o inspector guarda o ponto de partida só para o Descartar
+         e para o ponto azul — o banco (e a página real) acompanham na hora */
       if (modoEdicaoRef.current) {
         setBaseDoc((b) => b ?? clonarDoc(anterior));
         setSujo(true);
-      } else {
-        agendarSalvar(abaAtiva, novo);
       }
+      agendarSalvar(abaAtiva, novo);
       if (rotulo) registrar(autor, rotulo);
     },
     [abaAtiva, agendarSalvar, registrar, autor, empilharDesfazer],
@@ -559,15 +560,14 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
       if (modoEdicaoRef.current) {
         setBaseCanvas((b) => b ?? (JSON.parse(JSON.stringify(atual)) as DocCanvas));
         setSujo(true);
-      } else {
-        agendarSalvar(abaAtiva, novo as unknown as DesignDoc);
       }
+      agendarSalvar(abaAtiva, novo as unknown as DesignDoc);
       if (rotulo) registrar(autor, rotulo);
     },
     [abaAtiva, agendarSalvar, registrar, autor, empilharDesfazer],
   );
 
-  /* aplica um instantâneo: mesma regra de gravação do rascunho */
+  /* aplica um instantâneo: também vai ao banco (desfazer/refazer gravam) */
   const aplicarInstantaneo = useCallback(
     (snap: Instantaneo) => {
       if (snap.canvas) {
@@ -575,14 +575,14 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
         setCanvasLocal(copia);
         canvasRef.current = copia;
         if (modoEdicaoRef.current) setSujo(true);
-        else if (abaAtiva) agendarSalvar(abaAtiva, copia as unknown as DesignDoc);
+        if (abaAtiva) agendarSalvar(abaAtiva, copia as unknown as DesignDoc);
       }
       if (snap.doc) {
         const copia = clonarDoc(snap.doc);
         setDocLocal(copia);
         docRef.current = copia;
         if (modoEdicaoRef.current) setSujo(true);
-        else if (abaAtiva) agendarSalvar(abaAtiva, copia);
+        if (abaAtiva) agendarSalvar(abaAtiva, copia);
       }
     },
     [abaAtiva, agendarSalvar],
