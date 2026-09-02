@@ -53,6 +53,16 @@ async function embutirUrls(trecho: string, padrao: RegExp): Promise<string> {
   return saida;
 }
 
+/**
+ * O `<foreignObject>` exige XML bem formado: uma tag vazia sem barra (`<img …>`,
+ * `<br>`) faz o SVG inteiro falhar no parse e o PNG sair vazio, sem erro nenhum.
+ */
+function xhtml(markup: string): string {
+  return markup
+    .replace(/<(img|br|hr|input|source)\b([^>]*?)\/?>/g, "<$1$2/>")
+    .replace(/&(?!(?:amp|lt|gt|quot|apos|#\d+|#x[0-9a-fA-F]+);)/g, "&amp;");
+}
+
 async function svgDaPagina(doc: DocCanvas, indice: number): Promise<string | null> {
   const p = doc.paginas[indice];
   if (!p) return null;
