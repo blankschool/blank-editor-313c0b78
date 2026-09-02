@@ -7,6 +7,7 @@ import { sistemas } from "@/lib/estudio-mock";
 import { useEstudio } from "./EstudioContext";
 import { cn } from "@/lib/utils";
 import { baixarArquivo, comEstilo, docParaHtml, docParaPng, paletaPorSistema } from "@/lib/estudio-doc";
+import { indiceDaPagina, paginaCanvasParaPng } from "@/lib/canvas-png";
 import { toast } from "sonner";
 
 const formatos = [
