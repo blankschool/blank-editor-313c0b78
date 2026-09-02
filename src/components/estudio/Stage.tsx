@@ -65,6 +65,7 @@ import {
   substituirTextoPreservandoPartes,
   virarPlaceholderImagem,
   ajustarImgRot,
+  conformarImg,
   coverImg,
   containImg,
   medirImagem,
@@ -549,8 +550,17 @@ function ImagemCanvasView({
   } | null>(null);
   const timerZoom = useRef<ReturnType<typeof setTimeout> | null>(null);
   const caixaRef = useRef<HTMLDivElement | null>(null);
-  const inner = vivo?.img ?? gravado;
   const innerRot = vivo?.rot ?? rotGravada;
+  /* trava de segurança em duas etapas, seja qual for a origem do enquadramento
+     (estado intermediário de `vivo`, valor salvo antigo, documento importado):
+     1) a caixa tem que ter a proporção real do arquivo — senão a foto sai achatada;
+     2) e nunca pode deixar de cobrir a moldura. */
+  const inner = ajustarImgRot(
+    nat ? conformarImg(vivo?.img ?? gravado, nat.w, nat.h, c.w, c.h) : (vivo?.img ?? gravado),
+    innerRot,
+    c.w,
+    c.h,
+  );
   const rotMoldura = c.rotacao ?? 0;
 
   useEffect(() => {
@@ -747,6 +757,10 @@ function ImagemCanvasView({
     transformOrigin: "center center",
     userSelect: "none",
     pointerEvents: "none",
+    /* enquanto o arquivo não foi medido não dá pra saber a proporção real, então a
+       caixa cai no tamanho da moldura — sem isto a foto apareceria achatada nesse
+       intervalo (e o valor achatado pode acabar salvo se a pessoa mexer antes). */
+    ...(nat ? {} : { objectFit: "cover" as const }),
   };
 
   const esc = escala || 1;
@@ -806,7 +820,38 @@ function ImagemCanvasView({
       data-rotacao={(c as { rotacao?: number }).rotacao || undefined}
       data-recorte={recortando ? "1" : undefined}
     >
-      {recortando && <img src={c.src} alt="" style={{ ...estiloImg, opacity: 0.3 }} />}
+      {recortando &&
+        (() => {
+          /* o "fantasma" (prévia do que fica fora da máscara) é limitado a uma margem
+             razoável ao redor da moldura — sem isso, fotos com proporção bem diferente
+             da moldura (ex.: retrato numa moldura bem larga e baixa) podem gerar uma
+             prévia gigantesca, que passa a impressão de imagem distorcida. */
+          const margem = Math.max(c.w, c.h) * 0.6;
+          return (
+            <div
+              style={{
+                position: "absolute",
+                left: -margem,
+                top: -margem,
+                width: c.w + margem * 2,
+                height: c.h + margem * 2,
+                overflow: "hidden",
+                pointerEvents: "none",
+              }}
+            >
+              <img
+                src={c.src}
+                alt=""
+                style={{
+                  ...estiloImg,
+                  left: inner.x + margem,
+                  top: inner.y + margem,
+                  opacity: 0.3,
+                }}
+              />
+            </div>
+          );
+        })()}
       <div
         style={{
           position: "absolute",
@@ -1128,6 +1173,37 @@ function CamadaCanvasView({
       />
     );
   }
+
+  // Desenho vetorial importado: arte com halftone, contorno de título, forma
+  // orgânica. O viewBox usa as coordenadas da página, então o `d` extraído entra
+  // sem translação — espelha pathHtml() em canvas-html.ts.
+  if (c.tipo === "path") {
+    return (
+      <svg
+        viewBox={`${c.x} ${c.y} ${c.w} ${c.h}`}
+        shapeRendering="geometricPrecision"
+        style={{
+          position: "absolute",
+          left: c.x,
+          top: c.y,
+          width: c.w,
+          height: c.h,
+          transform: transformRot(c),
+          opacity: c.opacidade,
+          overflow: "visible",
+          ...marca,
+        }}
+        onClick={clique}
+        onDoubleClick={duplo}
+        onPointerDown={onPointerDown}
+        data-camada={cid}
+        data-rotacao={(c as { rotacao?: number }).rotacao || undefined}
+      >
+        <path d={c.d} fill={c.cor ?? "#000"} fillRule="nonzero" />
+      </svg>
+    );
+  }
+
   const estiloTexto: React.CSSProperties = {
     position: "absolute",
     left: c.x,
@@ -1646,6 +1722,7 @@ export function CanvasView({
     pagina: CanvasPagina;
     atual: Geo;
     centro: { x: number; y: number };
+    tipo: CanvasCamada["tipo"];
   } | null>(null);
 
 
@@ -1701,7 +1778,8 @@ export function CanvasView({
             ? Math.max(8, st.inicio.h + local.y * fator)
             : st.inicio.h;
         const canto = (esq || dir) && (topo || base);
-        if (canto && ev.shiftKey && st.inicio.w > 0 && st.inicio.h > 0) {
+        const travaProporcao = st.tipo === "imagem" ? !ev.shiftKey : ev.shiftKey;
+        if (canto && travaProporcao && st.inicio.w > 0 && st.inicio.h > 0) {
           const k = Math.max(w / st.inicio.w, h / st.inicio.h);
           w = st.inicio.w * k;
           h = st.inicio.h * k;
@@ -1782,6 +1860,7 @@ export function CanvasView({
       pagina,
       atual: inicio,
       centro,
+      tipo: camada.tipo,
     };
     setArraste({ paginaId, camadaId, modo, geo: inicio, guias: { v: [], h: [] } });
   };
@@ -2066,14 +2145,19 @@ function CanvasComSelecao({ doc }: { doc: DocCanvas }) {
             c.y = geo.y;
             if (modo !== "mover") {
               if (c.tipo === "imagem" && c.img && c.w && c.h) {
-                /* reenquadra sem achatar: a foto acompanha o maior fator */
-                const k = Math.max(geo.w / c.w, geo.h / c.h);
-                c.img = ajustarImgRot(
-                  { x: c.img.x * k, y: c.img.y * k, w: c.img.w * k, h: c.img.h * k },
-                  c.imgRot ?? 0,
-                  geo.w,
-                  geo.h,
-                );
+                const kw = geo.w / c.w;
+                const kh = geo.h / c.h;
+                /* resize uniforme (ex.: canto com proporção travada) — a foto acompanha o zoom;
+                   resize de um só eixo (borda) — a foto mantém a escala, só recorta mais/menos */
+                const uniforme = Math.abs(kw - kh) < 0.02 * Math.max(kw, kh);
+                c.img = uniforme
+                  ? ajustarImgRot(
+                      { x: c.img.x * kw, y: c.img.y * kw, w: c.img.w * kw, h: c.img.h * kw },
+                      c.imgRot ?? 0,
+                      geo.w,
+                      geo.h,
+                    )
+                  : ajustarImgRot(c.img, c.imgRot ?? 0, geo.w, geo.h);
               }
               c.w = geo.w;
               if (c.tipo === "texto") {

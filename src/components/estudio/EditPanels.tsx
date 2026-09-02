@@ -187,6 +187,15 @@ function TextPanelCanvas() {
       </Secao>
     );
 
+  if (camada.tipo === "path")
+    return (
+      <Secao titulo={`Desenho · ${nome}`}>
+        <p className="text-[11px] text-muted-foreground">
+          Desenho vetorial importado — sem texto. Use o painel Cor.
+        </p>
+      </Secao>
+    );
+
   const id = e.camadaCanvas!;
   const patch = (fn: (c: CanvasCamadaTexto) => void, rotulo: string) =>
     e.atualizarDocCanvas(

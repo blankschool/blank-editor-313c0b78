@@ -18,6 +18,7 @@ import {
   ehDocCanvas,
   interpretarPedido,
   previewsHtml,
+  carregarTemplate,
   type DesignDoc,
   type DocHtml,
   type DocCanvas,
@@ -25,7 +26,6 @@ import {
   type PresetNovo,
 } from "@/lib/estudio-doc";
 import { supabase } from "@/lib/supabase";
-import { canvasAgrum, canvasBarretos } from "@/lib/estudio-canvas-seeds";
 import {
   atualizarComentario,
   atualizarDesign,
@@ -785,16 +785,20 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
         return;
       }
       const modelo = preset && preset !== "branco" ? previewsHtml[preset] : null;
-      const docModelo =
-        preset === "agrum" ? canvasAgrum : preset === "barretos" ? canvasBarretos : null;
-      void criarDesign(
-        projectId,
-        modelo ? modelo.nome : undefined,
-        docModelo ?? (modelo ? { kind: "html" as const, src: modelo.src } : undefined),
-      ).then(async (row) => {
+      void (async () => {
+        // O documento do template vem do bucket. Se a busca falhar, ainda se
+        // cria o design com o preview HTML — melhor abrir algo do que travar o
+        // botão por causa da rede.
+        const docModelo =
+          preset && preset !== "branco" ? await carregarTemplate(preset) : null;
+        const row = await criarDesign(
+          projectId,
+          modelo ? modelo.nome : undefined,
+          docModelo ?? (modelo ? { kind: "html" as const, src: modelo.src } : undefined),
+        );
         await qc.invalidateQueries({ queryKey: ["designs", user?.id] });
         irParaDesign(row.id);
-      });
+      })();
     },
     [temSessao, projectId, qc, user?.id, irParaDesign],
   );

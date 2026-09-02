@@ -234,7 +234,30 @@ export interface CanvasCamadaForma {
   sombra?: CanvasSombra;
 }
 
-export type CanvasCamada = CanvasCamadaTexto | CanvasCamadaImagem | CanvasCamadaForma;
+/** Desenho vetorial livre: contorno em SVG, coordenadas já em px da página.
+ *  É o que representa arte com halftone, contorno de título e forma orgânica —
+ *  tudo que não cabe num retângulo ou elipse. */
+export interface CanvasCamadaPath {
+  tipo: "path";
+  id?: string;
+  nome?: string;
+  oculto?: boolean;
+  x: number;
+  y: number;
+  rotacao?: number;
+  w: number;
+  h: number;
+  /** o atributo `d` de um <path> SVG */
+  d: string;
+  cor?: string;
+  opacidade?: number;
+}
+
+export type CanvasCamada =
+  | CanvasCamadaTexto
+  | CanvasCamadaImagem
+  | CanvasCamadaForma
+  | CanvasCamadaPath;
 
 export interface CanvasPagina {
   id: string;
@@ -249,6 +272,9 @@ export interface DocCanvas {
   kind: "canvas";
   nome?: string;
   paginas: CanvasPagina[];
+  /** Fontes que o design carrega consigo, extraídas do arquivo de origem.
+   *  Sem isto um design importado renderiza com a fonte de outro. */
+  fontes?: Array<{ familia: string; peso: number; url: string }> | undefined;
 }
 
 export interface CamadaCanvasInfo {
@@ -451,6 +477,42 @@ export function containImg(mw: number, mh: number, natW: number, natH: number): 
   return { x: (mw - w) / 2, y: (mh - h) / 2, w, h };
 }
 
+/**
+ * Garante que a caixa da foto tenha a proporção REAL do arquivo.
+ *
+ * O `<img>` é desenhado exatamente com `img.w × img.h` (sem object-fit), então uma
+ * caixa com proporção diferente da natural achata/estica a foto — e nada corrigia
+ * isso depois: `ajustarImgRot` só escala uniforme, preservando o erro pra sempre.
+ * Casos que produzem uma caixa torta: enquadramento salvo antes de o arquivo ser
+ * medido, e documentos importados de fora.
+ *
+ * Mantém o ponto focal e a escala aparente, e continua cobrindo a moldura.
+ */
+export function conformarImg(
+  img: CaixaImg,
+  natW: number,
+  natH: number,
+  mw: number,
+  mh: number,
+): CaixaImg {
+  if (!natW || !natH || !img.w || !img.h) return img;
+  const propNat = natW / natH;
+  const prop = img.w / img.h;
+  if (Math.abs(prop - propNat) <= 0.005 * propNat) return img;
+
+  /* onde o centro da moldura cai dentro da foto, em fração da caixa */
+  const fx = (mw / 2 - img.x) / img.w;
+  const fy = (mh / 2 - img.y) / img.h;
+  /* escala aparente atual: a maior entre os dois eixos, pra não encolher a foto */
+  const escala = Math.max(img.w / natW, img.h / natH);
+  let w = natW * escala;
+  let h = natH * escala;
+  const k = Math.max(1, mw / w, mh / h);
+  w *= k;
+  h *= k;
+  return { w, h, x: mw / 2 - fx * w, y: mh / 2 - fy * h };
+}
+
 /** impede que sobre espaço vazio quando a foto é maior que a moldura */
 export function limitarImg(img: CaixaImg, mw: number, mh: number): CaixaImg {
   const x = img.w >= mw ? Math.min(0, Math.max(mw - img.w, img.x)) : (mw - img.w) / 2;
@@ -469,14 +531,8 @@ function girar2d(x: number, y: number, graus: number): { x: number; y: number } 
  * Mesma ideia de `limitarImg`, mas ciente da rotação da foto: a caixa girada
  * precisa continuar cobrindo a moldura (escala mínima + posição travada).
  */
-export function ajustarImgRot(
-  img: CaixaImg,
-  rot: number,
-  mw: number,
-  mh: number,
-): CaixaImg {
+export function ajustarImgRot(img: CaixaImg, rot: number, mw: number, mh: number): CaixaImg {
   const r = ((rot % 360) + 360) % 360;
-  if (!r) return limitarImg(img, mw, mh);
   const rad = (r * Math.PI) / 180;
   const co = Math.abs(Math.cos(rad));
   const se = Math.abs(Math.sin(rad));
@@ -498,8 +554,6 @@ export function ajustarImgRot(
   const d = girar2d(ux, uy, r);
   return { w, h, x: mw / 2 + d.x - w / 2, y: mh / 2 + d.y - h / 2 };
 }
-
-
 
 /** ao mudar o tamanho da moldura, reenquadra em cover sem achatar */
 export function reenquadrarImg(
@@ -526,7 +580,6 @@ export function reenquadrarImg(
 export function ehPlaceholderImagem(c: CanvasCamada): boolean {
   return c.tipo === "imagem" && !c.src;
 }
-
 
 /** transforma qualquer camada num placeholder de imagem, preservando caixa e estilo */
 export function virarPlaceholderImagem(c: CanvasCamada): CanvasCamadaImagem {
@@ -790,7 +843,6 @@ export async function camadaParaPng(camadaId: string, escala: 1 | 2 = 1): Promis
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${cw}" height="${ch}"><foreignObject width="100%" height="100%"><div xmlns="http://www.w3.org/1999/xhtml" style="position:relative;width:${cw}px;height:${ch}px">${html}</div></foreignObject></svg>`;
   const url = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 
-
   const img = new window.Image();
   const carregou = await new Promise<boolean>((resolve) => {
     img.onload = () => resolve(true);
@@ -821,7 +873,6 @@ export function medirImagem(src: string): Promise<{ w: number; h: number }> {
   });
 }
 
-
 export function ehDocCanvas(d: unknown): d is DocCanvas {
   return (
     !!d &&
@@ -836,15 +887,40 @@ export type DocSalvo = DesignDoc | DocHtml | DocCanvas;
 const TEMPLATES_BASE =
   "https://sites-blank-editor-supabase.ickanz.easypanel.host/storage/v1/object/public/templates";
 
+/**
+ * Os templates disponíveis no menu "Novo design".
+ *
+ * O documento mora no bucket, não no código: um template importado do Canva
+ * pode ter centenas de kB de vetor (arte com halftone chega a 600 kB num único
+ * path), e isso no bundle seria baixado por todo visitante, mesmo quem nunca
+ * abre o menu. Aqui fica só o endereço — o `doc.json` é buscado na hora de criar.
+ *
+ * Acrescentar um template é uma linha, sem deploy do dado: o importador já
+ * grava `templates/<slug>/doc.json` junto com as imagens e as fontes.
+ */
 export const previewsHtml = {
-  agrum: {
-    nome: "Agrum Eleição",
-    src: `${TEMPLATES_BASE}/agrum-eleicao/index.html`,
+  "ganhar-dinheiro": {
+    nome: "Ganhar Dinheiro",
+    src: `${TEMPLATES_BASE}/ganhar-dinheiro/index.html`,
+    doc: `${TEMPLATES_BASE}/ganhar-dinheiro/doc.json`,
   },
-  barretos: { nome: "Barretos", src: `${TEMPLATES_BASE}/barretos/index.html` },
 } as const;
 
 export type PresetNovo = "branco" | keyof typeof previewsHtml;
+
+/** Busca o DocCanvas de um template no bucket. */
+export async function carregarTemplate(preset: keyof typeof previewsHtml): Promise<DocCanvas | null> {
+  const url = previewsHtml[preset]?.doc;
+  if (!url) return null;
+  try {
+    const r = await fetch(url);
+    if (!r.ok) return null;
+    const d = (await r.json()) as DocCanvas;
+    return d?.kind === "canvas" ? d : null;
+  } catch {
+    return null;
+  }
+}
 
 export function comEstilo(doc: DesignDoc, el: ElId, patch: Partial<EstiloEl>): DesignDoc {
   return { ...doc, estilos: { ...doc.estilos, [el]: { ...(doc.estilos[el] ?? {}), ...patch } } };
