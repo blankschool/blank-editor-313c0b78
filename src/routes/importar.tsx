@@ -239,10 +239,23 @@ function Importar() {
         </p>
       )}
 
+      {aviso && estado.fase === "ocioso" && (
+        <div className="flex gap-2 rounded-md border border-border bg-muted/40 p-3 text-[12px]">
+          <AlertCircle className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+          <div>
+            <p className="font-medium">{aviso}</p>
+            <p className="mt-1 text-muted-foreground">{RECEITA_ACHATADO}</p>
+          </div>
+        </div>
+      )}
+
       {estado.fase === "erro" && (
         <div className="flex gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-[12px]">
           <AlertCircle className="mt-0.5 size-4 shrink-0 text-destructive" />
-          <p>{estado.msg}</p>
+          <div>
+            <p className={estado.achatado ? "font-medium" : undefined}>{estado.msg}</p>
+            {estado.achatado && <p className="mt-1 text-muted-foreground">{RECEITA_ACHATADO}</p>}
+          </div>
         </div>
       )}
 
@@ -258,6 +271,21 @@ function Importar() {
               </p>
             </div>
           </div>
+          {estado.achatadas.length > 0 && (
+            <div className="flex gap-2 rounded-md border border-border bg-muted/40 p-3 text-[12px]">
+              <AlertCircle className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+              <div>
+                <p className="font-medium">
+                  {estado.achatadas.length === 1
+                    ? `A página ${estado.achatadas[0]} veio achatada`
+                    : `As páginas ${estado.achatadas.join(", ")} vieram achatadas`}{" "}
+                  — viraram uma imagem só, sem texto editável.
+                </p>
+                <p className="mt-1 text-muted-foreground">{RECEITA_ACHATADO}</p>
+              </div>
+            </div>
+          )}
+
           <div className="flex gap-2">
             <button
               onClick={() =>
