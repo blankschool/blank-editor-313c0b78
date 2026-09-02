@@ -131,7 +131,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Origin",
                          origem if origem in ORIGENS else ORIGENS[0])
         self.send_header("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "content-type")
+        self.send_header("Access-Control-Allow-Headers", "content-type, x-import-secret")
 
     def _json(self, code: int, corpo: dict) -> None:
         dados = json.dumps(corpo, ensure_ascii=False).encode()
