@@ -139,6 +139,10 @@ function imagemHtml(c: CanvasCamadaImagem): string {
         ["top", px(c.img.y)],
         ["width", px(c.img.w)],
         ["height", px(c.img.h)],
+        /* resets de CSS costumam impor `img { max-width: 100% }`, o que encolheria
+           a foto para a largura da moldura e quebraria o enquadramento gravado */
+        ["max-width", "none"],
+        ["max-height", "none"],
         ["transform", transformada || null],
         ["transform-origin", "center center"],
       ])
