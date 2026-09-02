@@ -366,12 +366,31 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
       if (salvarTimer.current) window.clearTimeout(salvarTimer.current);
       salvarTimer.current = window.setTimeout(() => {
         void salvarDoc(id, novo)
-          .then(() => qc.invalidateQueries({ queryKey: ["designs", user?.id] }))
+          .then(() => {
+            void qc.invalidateQueries({ queryKey: ["designs", user?.id] });
+            /* a página real (/t/{id}) e o preview leem o design gravado */
+            void qc.invalidateQueries({ queryKey: ["design", id] });
+          })
           .catch(() => undefined);
       }, 500);
     },
     [qc, user?.id],
   );
+
+  /** grava agora, sem esperar o debounce */
+  const gravarAgora = useCallback(
+    (id: string, novo: DesignDoc) => {
+      if (salvarTimer.current) window.clearTimeout(salvarTimer.current);
+      return salvarDoc(id, novo)
+        .then(() => {
+          void qc.invalidateQueries({ queryKey: ["designs", user?.id] });
+          void qc.invalidateQueries({ queryKey: ["design", id] });
+        })
+        .catch(() => undefined);
+    },
+    [qc, user?.id],
+  );
+
 
   const versoes = useMemo<VersaoDoc[]>(
     () =>
