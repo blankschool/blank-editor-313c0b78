@@ -748,6 +748,10 @@ function ImagemCanvasView({
     top: inner.y,
     width: inner.w,
     height: inner.h,
+    /* o reset do Tailwind aplica `img { max-width: 100% }`: sem anular isso, a foto
+       é clampada à largura da moldura e o enquadramento sai errado no palco */
+    maxWidth: "none",
+    maxHeight: "none",
     transform: [
       innerRot ? `rotate(${innerRot}deg)` : "",
       c.espelhoY ? "scaleY(-1)" : "",
