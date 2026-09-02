@@ -906,7 +906,7 @@ export const previewsHtml = {
   },
 } as const;
 
-export type PresetNovo = "branco" | keyof typeof previewsHtml;
+export type PresetNovo = "branco" | "agrum" | "barretos" | keyof typeof previewsHtml;
 
 /** Busca o DocCanvas de um template no bucket. */
 export async function carregarTemplate(preset: keyof typeof previewsHtml): Promise<DocCanvas | null> {
