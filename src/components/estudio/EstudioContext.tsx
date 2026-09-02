@@ -665,31 +665,31 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
   const salvarRascunho = useCallback(() => {
     if (!abaAtiva) return;
     const atual = (canvasRef.current ?? docRef.current) as unknown as DesignDoc;
-    void salvarDoc(abaAtiva, atual)
-      .then(() => qc.invalidateQueries({ queryKey: ["designs", user?.id] }))
-      .catch(() => undefined);
+    void gravarAgora(abaAtiva, atual);
     setBaseDoc(null);
     setBaseCanvas(null);
     setSujo(false);
     registrar(autor, "Salvou a edição");
-  }, [abaAtiva, qc, user?.id, registrar, autor]);
+  }, [abaAtiva, gravarAgora, registrar, autor]);
 
   const descartarRascunho = useCallback(() => {
     if (baseCanvas) {
       const copia = JSON.parse(JSON.stringify(baseCanvas)) as DocCanvas;
       setCanvasLocal(copia);
       canvasRef.current = copia;
+      if (abaAtiva) void gravarAgora(abaAtiva, copia as unknown as DesignDoc);
     }
     if (baseDoc) {
       const copia = clonarDoc(baseDoc);
       setDocLocal(copia);
       docRef.current = copia;
+      if (abaAtiva) void gravarAgora(abaAtiva, copia);
     }
     setBaseDoc(null);
     setBaseCanvas(null);
     setSujo(false);
     registrar(autor, "Descartou a edição");
-  }, [baseCanvas, baseDoc, registrar, autor]);
+  }, [baseCanvas, baseDoc, abaAtiva, gravarAgora, registrar, autor]);
 
   const recarregarDoc = useCallback(() => {
     void qc.invalidateQueries({ queryKey: ["design", abaAtiva] });
