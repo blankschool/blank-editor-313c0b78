@@ -73,7 +73,20 @@ def converter(pdf_bytes: bytes, slug: str, nome: str) -> dict:
             raise RuntimeError(f"{etapa}: {(r.stderr or r.stdout)[-600:]}")
 
     model = json.loads((trab / "model.json").read_text(encoding="utf-8"))
-    doc = para_doccanvas(model, slug, nome)
+
+    # O extrator marca as paginas que o Canva exportou como foto da tela.
+    # Se TODAS vierem assim, gravar o design so entregaria uma camada de
+    # imagem — melhor recusar e dizer como reexportar.
+    achatadas = [p["n"] for p in model["pages"] if p.get("flat")]
+    if achatadas and len(achatadas) == len(model["pages"]):
+        raise PdfAchatado(
+            "Este PDF foi exportado achatado: cada pagina e uma imagem unica, "
+            "sem texto nem camadas.")
+
+    # metricas de fonte: sem elas o texto perde familia, peso e a altura da
+    # caixa (o topo sai do ascender). O mergefonts ja rodou acima.
+    met = metricas_das_fontes(trab)
+    doc = para_doccanvas(model, slug, nome, met)
 
     enviados = 0
     for p in sorted((trab / "assets").glob("*")):
@@ -83,6 +96,12 @@ def converter(pdf_bytes: bytes, slug: str, nome: str) -> dict:
     for p in sorted((trab / "fonts").glob("*.woff2")):
         if subir(f"{slug}/fonts/{p.name}", p.read_bytes(), TIPOS[".woff2"]) in (200, 201):
             enviados += 1
+
+    # doc.json + manifesto: e o que faz o template aparecer no menu
+    # "Novo design" do app sem mexer em codigo.
+    subir(f"{slug}/doc.json", json.dumps(doc, ensure_ascii=False).encode(),
+          TIPOS[".json"])
+    atualizarCatalogo(slug, nome)
 
     proj = sql("select id, owner from public.projects order by criado_em limit 1")
     if not proj:
@@ -98,9 +117,12 @@ def converter(pdf_bytes: bytes, slug: str, nome: str) -> dict:
         "paginas": len(doc["paginas"]),
         "camadas": sum(len(p["camadas"]) for p in doc["paginas"]),
         "arquivos": enviados,
+        "paginas_achatadas": achatadas,
+        "fontes": len(doc.get("fontes") or []),
         "slug": slug,
         "nome": nome,
     }
+
 
 
 class Handler(BaseHTTPRequestHandler):
