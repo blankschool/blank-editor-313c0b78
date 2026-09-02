@@ -70,7 +70,7 @@ async function svgDaPagina(doc: DocCanvas, indice: number): Promise<string | nul
   const h = Math.max(1, Math.round(p.altura || 1440));
 
   const [corpo, faces] = await Promise.all([
-    embutirUrls(paginaHtml(p), /src="([^"]+)"/g),
+    embutirUrls(xhtml(paginaHtml(p)), /src="([^"]+)"/g),
     embutirUrls(facesDe(doc), /url\('([^']+)'\)/g),
   ]);
 
@@ -80,7 +80,7 @@ async function svgDaPagina(doc: DocCanvas, indice: number): Promise<string | nul
     `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}">` +
     `<foreignObject width="100%" height="100%">` +
     `<div xmlns="http://www.w3.org/1999/xhtml" style="width:${w}px;height:${h}px">` +
-    `<style>${estilo}</style>${corpo}</div>` +
+    `<style><![CDATA[${estilo}]]></style>${corpo}</div>` +
     `</foreignObject></svg>`
   );
 }
