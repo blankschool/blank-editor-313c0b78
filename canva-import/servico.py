@@ -34,7 +34,15 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from importar import PIPELINE, TIPOS, VENV, lit, para_doccanvas, sql, subir  # noqa: E402
+from importar import (  # noqa: E402
+    PIPELINE, TIPOS, VENV, atualizarCatalogo, lit, metricas_das_fontes,
+    para_doccanvas, sql, subir,
+)
+
+
+class PdfAchatado(RuntimeError):
+    """O PDF veio como foto da pagina: nao ha camadas para extrair."""
+
 
 HERE = Path(__file__).parent
 # O app roda em 8080/8081 conforme a porta livre; o navegador exige CORS
