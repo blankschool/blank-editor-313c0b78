@@ -36,6 +36,7 @@ export function LibrarySidebar() {
     abrirDesign,
     duplicarDesign,
     novoDesign,
+    catalogoTemplates,
     excluirDesign,
     favoritar,
     abaAtiva,
@@ -167,12 +168,15 @@ export function LibrarySidebar() {
             <DropdownMenuItem onSelect={() => novoDesign("branco")} className="text-[12px]">
               Em branco
             </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => novoDesign("agrum")} className="text-[12px]">
-              Agrum Eleição
-            </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => novoDesign("barretos")} className="text-[12px]">
-              Barretos
-            </DropdownMenuItem>
+            {catalogoTemplates.map((t) => (
+              <DropdownMenuItem
+                key={t.slug}
+                onSelect={() => novoDesign(t.slug)}
+                className="text-[12px]"
+              >
+                {t.nome}
+              </DropdownMenuItem>
+            ))}
           </DropdownMenuContent>
         </DropdownMenu>
 

@@ -29,6 +29,9 @@ dist-ssr
 __pycache__/
 *.pyc
 
+# Pasta de trabalho temporária de cada import do canva-import/ (PDF, model.json, assets extraídos)
+canva-import/import-*/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

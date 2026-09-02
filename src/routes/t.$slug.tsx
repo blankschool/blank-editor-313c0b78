@@ -16,15 +16,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { canvasParaHtml } from "@/lib/canvas-html";
-import { canvasAgrum, canvasBarretos } from "@/lib/estudio-canvas-seeds";
+import { carregarTemplate } from "@/lib/estudio-doc";
 import type { DocCanvas } from "@/lib/estudio-doc";
-
-/** Enquanto os templates moram no código. O passo seguinte é ler de
- *  `intel.art_templates`, e aí este mapa sai. */
-const TEMPLATES: Record<string, DocCanvas> = {
-  barretos: canvasBarretos,
-  "agrum-eleicao": canvasAgrum,
-};
 
 /** id de design (uuid) tambem serve como slug: /t/<uuid> abre o design gravado */
 const EH_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -38,7 +31,20 @@ export const Route = createFileRoute("/t/$slug")({
 
 function PreviewTemplate() {
   const { slug } = Route.useParams();
+  const [doBucket, setDoBucket] = useState<DocCanvas | null>(null);
   const [doBanco, setDoBanco] = useState<DocCanvas | null>(null);
+
+  // Slug de template: busca o doc.json no bucket (templates/<slug>/doc.json).
+  useEffect(() => {
+    if (EH_UUID.test(slug)) return;
+    let vivo = true;
+    void carregarTemplate(slug).then((d) => {
+      if (vivo && d) setDoBucket(d);
+    });
+    return () => {
+      vivo = false;
+    };
+  }, [slug]);
 
   // Um uuid no lugar do slug carrega o design gravado. E o que permite conferir
   // um design importado com a mesma regua do template — mesmo gerador, mesmo
@@ -60,7 +66,7 @@ function PreviewTemplate() {
     };
   }, [slug]);
 
-  const doc = TEMPLATES[slug] ?? doBanco ?? undefined;
+  const doc = doBucket ?? doBanco ?? undefined;
 
   const html = useMemo(
     () => (doc ? canvasParaHtml(doc, { titulo: doc.nome ?? slug }) : ""),
@@ -74,7 +80,7 @@ function PreviewTemplate() {
           Template <code className="font-mono">{slug}</code> não encontrado.
         </p>
         <p className="text-xs text-muted-foreground">
-          Disponíveis: {Object.keys(TEMPLATES).join(", ")}
+          Confira o slug ou o id do design.
         </p>
         <Link to="/biblioteca" className="text-xs underline">
           Voltar para a biblioteca

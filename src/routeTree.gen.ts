@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as BibliotecaRouteImport } from './routes/biblioteca'
 import { Route as DesignSystemRouteImport } from './routes/design-system'
 import { Route as ImportarRouteImport } from './routes/importar'
+import { Route as ReproRouteImport } from './routes/repro'
 import { Route as DDesignIdRouteImport } from './routes/d.$designId'
 import { Route as TSlugRouteImport } from './routes/t.$slug'
 import { Route as DDesignIdIndexRouteImport } from './routes/d.$designId.index'
@@ -41,6 +42,11 @@ const DesignSystemRoute = DesignSystemRouteImport.update({
 const ImportarRoute = ImportarRouteImport.update({
   id: '/importar',
   path: '/importar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReproRoute = ReproRouteImport.update({
+  id: '/repro',
+  path: '/repro',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DDesignIdRoute = DDesignIdRouteImport.update({
@@ -94,6 +100,7 @@ export interface FileRoutesByFullPath {
   '/biblioteca': typeof BibliotecaRoute
   '/design-system': typeof DesignSystemRoute
   '/importar': typeof ImportarRoute
+  '/repro': typeof ReproRoute
   '/d/$designId': typeof DDesignIdRouteWithChildren
   '/t/$slug': typeof TSlugRoute
   '/d/$designId/$painel': typeof DDesignIdPainelRoute
@@ -109,6 +116,7 @@ export interface FileRoutesByTo {
   '/biblioteca': typeof BibliotecaRoute
   '/design-system': typeof DesignSystemRoute
   '/importar': typeof ImportarRoute
+  '/repro': typeof ReproRoute
   '/t/$slug': typeof TSlugRoute
   '/d/$designId/$painel': typeof DDesignIdPainelRoute
   '/d/$designId/apresentar': typeof DDesignIdApresentarRoute
@@ -124,6 +132,7 @@ export interface FileRoutesById {
   '/biblioteca': typeof BibliotecaRoute
   '/design-system': typeof DesignSystemRoute
   '/importar': typeof ImportarRoute
+  '/repro': typeof ReproRoute
   '/d/$designId': typeof DDesignIdRouteWithChildren
   '/t/$slug': typeof TSlugRoute
   '/d/$designId/$painel': typeof DDesignIdPainelRoute
@@ -141,6 +150,7 @@ export interface FileRouteTypes {
     | '/biblioteca'
     | '/design-system'
     | '/importar'
+    | '/repro'
     | '/d/$designId'
     | '/t/$slug'
     | '/d/$designId/$painel'
@@ -156,6 +166,7 @@ export interface FileRouteTypes {
     | '/biblioteca'
     | '/design-system'
     | '/importar'
+    | '/repro'
     | '/t/$slug'
     | '/d/$designId/$painel'
     | '/d/$designId/apresentar'
@@ -170,6 +181,7 @@ export interface FileRouteTypes {
     | '/biblioteca'
     | '/design-system'
     | '/importar'
+    | '/repro'
     | '/d/$designId'
     | '/t/$slug'
     | '/d/$designId/$painel'
@@ -186,6 +198,7 @@ export interface RootRouteChildren {
   BibliotecaRoute: typeof BibliotecaRoute
   DesignSystemRoute: typeof DesignSystemRoute
   ImportarRoute: typeof ImportarRoute
+  ReproRoute: typeof ReproRoute
   DDesignIdRoute: typeof DDesignIdRouteWithChildren
   TSlugRoute: typeof TSlugRoute
 }
@@ -218,6 +231,13 @@ declare module '@tanstack/react-router' {
       path: '/importar'
       fullPath: '/importar'
       preLoaderRoute: typeof ImportarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/repro': {
+      id: '/repro'
+      path: '/repro'
+      fullPath: '/repro'
+      preLoaderRoute: typeof ReproRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/d/$designId': {
@@ -315,6 +335,7 @@ const rootRouteChildren: RootRouteChildren = {
   BibliotecaRoute: BibliotecaRoute,
   DesignSystemRoute: DesignSystemRoute,
   ImportarRoute: ImportarRoute,
+  ReproRoute: ReproRoute,
   DDesignIdRoute: DDesignIdRouteWithChildren,
   TSlugRoute: TSlugRoute,
 }

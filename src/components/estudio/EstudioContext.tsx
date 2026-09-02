@@ -17,16 +17,17 @@ import {
   ehDocHtml,
   ehDocCanvas,
   interpretarPedido,
-  previewsHtml,
+  carregarCatalogoTemplates,
   carregarTemplate,
+  docCanvasBranco,
   type DesignDoc,
   type DocHtml,
   type DocCanvas,
   type ElId,
   type PresetNovo,
+  type TemplateCatalogo,
 } from "@/lib/estudio-doc";
 import { supabase } from "@/lib/supabase";
-import { canvasAgrum, canvasBarretos } from "@/lib/estudio-canvas-seeds";
 import {
   atualizarComentario,
   atualizarDesign,
@@ -105,6 +106,7 @@ interface EstudioState {
   excluirDesign: (id: string) => void;
   renomearDesign: (id: string, nome: string) => void;
   novoDesign: (preset?: PresetNovo) => void;
+  catalogoTemplates: TemplateCatalogo[];
   docHtml: DocHtml | null;
   docCanvas: DocCanvas | null;
   paginaCanvas: string | null;
@@ -258,6 +260,13 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
     enabled: temSessao,
   });
   const projectId = projetoQ.data?.id ?? "";
+
+  const templatesQ = useQuery({
+    queryKey: ["templates-catalogo"],
+    queryFn: carregarCatalogoTemplates,
+    staleTime: 60_000,
+  });
+  const catalogoTemplates = templatesQ.data ?? [];
 
   /* ---------- dados ---------- */
   const designsQ = useQuery({
@@ -693,16 +702,35 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
   }, [baseCanvas, baseDoc, abaAtiva, gravarAgora, registrar, autor]);
 
   const recarregarDoc = useCallback(() => {
-    void qc.invalidateQueries({ queryKey: ["design", abaAtiva] });
-    void carregarDesign(abaAtiva).then((r) => {
-      if (r)
-        setDocLocal(
-          r.doc && !ehDocHtml(r.doc) && !ehDocCanvas(r.doc) && Object.keys(r.doc).length
-            ? (r.doc as DesignDoc)
-            : docPadrao(r.nome),
-        );
-    });
-  }, [abaAtiva, qc]);
+    if (!abaAtiva) return;
+    void carregarDesign(abaAtiva)
+      .then((r) => {
+        if (!r) return;
+        qc.setQueryData(["design", abaAtiva], r);
+        if (ehDocCanvas(r.doc)) {
+          const copia = clonarDoc(r.doc);
+          setCanvasLocal(copia);
+          canvasRef.current = copia;
+          setDocLocal(null);
+        } else {
+          setCanvasLocal(null);
+          canvasRef.current = null;
+          const copia =
+            r.doc && !ehDocHtml(r.doc) && Object.keys(r.doc).length
+              ? clonarDoc(r.doc as DesignDoc)
+              : docPadrao(r.nome);
+          setDocLocal(copia);
+          docRef.current = copia;
+        }
+        setPaginaCanvas(null);
+        setCamadaCanvas(null);
+        setBaseDoc(null);
+        setBaseCanvas(null);
+        setSujo(false);
+        limparPilhas();
+      })
+      .catch(() => undefined);
+  }, [abaAtiva, qc, limparPilhas]);
 
   const criarVersao = useCallback(
     (rotulo: string, quem = autor) => {
@@ -804,31 +832,24 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
         setPedirLogin(true);
         return;
       }
-      const semente =
-        preset === "agrum" ? canvasAgrum : preset === "barretos" ? canvasBarretos : null;
-      const modelo =
-        preset && preset !== "branco" && preset in previewsHtml
-          ? previewsHtml[preset as keyof typeof previewsHtml]
-          : null;
+      const modelo = preset && preset !== "branco"
+        ? catalogoTemplates.find((t) => t.slug === preset)
+        : null;
       void (async () => {
-        // O documento do template vem do bucket. Se a busca falhar, ainda se
-        // cria o design com o preview HTML — melhor abrir algo do que travar o
-        // botão por causa da rede.
-        const docModelo = semente
-          ? (JSON.parse(JSON.stringify(canvasAgrum === semente ? canvasAgrum : canvasBarretos)) as DocCanvas)
-          : modelo
-            ? await carregarTemplate(preset as keyof typeof previewsHtml)
-            : null;
+        // O documento do template vem do bucket. Se a busca falhar (rede, ou
+        // template removido do catálogo), ainda se cria um canvas em branco —
+        // melhor abrir algo do que travar o botão.
+        const docModelo = modelo ? await carregarTemplate(modelo.slug) : null;
         const row = await criarDesign(
           projectId,
-          semente ? (semente.nome ?? undefined) : modelo ? modelo.nome : undefined,
-          docModelo ?? (modelo ? { kind: "html" as const, src: modelo.src } : undefined),
+          modelo?.nome,
+          docModelo ?? docCanvasBranco(),
         );
         await qc.invalidateQueries({ queryKey: ["designs", user?.id] });
         irParaDesign(row.id);
       })();
     },
-    [temSessao, projectId, qc, user?.id, irParaDesign],
+    [temSessao, projectId, qc, user?.id, irParaDesign, catalogoTemplates],
   );
 
   const duplicarDesign = useCallback(
@@ -1228,6 +1249,7 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
       excluirDesign,
       renomearDesign,
       novoDesign,
+      catalogoTemplates,
       favoritar,
       zoom,
       setZoom,
@@ -1330,6 +1352,7 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
       excluirDesign,
       renomearDesign,
       novoDesign,
+      catalogoTemplates,
       favoritar,
       zoom,
       viewport,

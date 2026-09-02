@@ -277,6 +277,14 @@ export interface DocCanvas {
   fontes?: Array<{ familia: string; peso: number; url: string }> | undefined;
 }
 
+/** Design em branco de verdade: uma página vazia, sem blocos nem texto pré-preenchido. */
+export function docCanvasBranco(): DocCanvas {
+  return {
+    kind: "canvas",
+    paginas: [{ id: "p1", largura: 1080, altura: 1440, camadas: [] }],
+  };
+}
+
 export interface CamadaCanvasInfo {
   id: string;
   nome: string;
@@ -511,6 +519,23 @@ export function conformarImg(
   w *= k;
   h *= k;
   return { w, h, x: mw / 2 - fx * w, y: mh / 2 - fy * h };
+}
+
+/**
+ * Corrige um enquadramento salvo e garante que ele cubra a moldura, inclusive
+ * quando a foto está girada. É a fronteira única entre dados importados e o
+ * formato seguro usado pelo editor.
+ */
+export function normalizarEnquadramentoImg(
+  img: CaixaImg | undefined,
+  natW: number,
+  natH: number,
+  mw: number,
+  mh: number,
+  rot = 0,
+): CaixaImg {
+  const base = img ?? coverImg(mw, mh, natW, natH);
+  return ajustarImgRot(conformarImg(base, natW, natH, mw, mh), rot, mw, mh);
 }
 
 /** impede que sobre espaço vazio quando a foto é maior que a moldura */
@@ -887,33 +912,42 @@ export type DocSalvo = DesignDoc | DocHtml | DocCanvas;
 const TEMPLATES_BASE =
   "https://sites-blank-editor-supabase.ickanz.easypanel.host/storage/v1/object/public/templates";
 
+export interface TemplateCatalogo {
+  slug: string;
+  nome: string;
+}
+
 /**
  * Os templates disponíveis no menu "Novo design".
  *
- * O documento mora no bucket, não no código: um template importado do Canva
- * pode ter centenas de kB de vetor (arte com halftone chega a 600 kB num único
- * path), e isso no bundle seria baixado por todo visitante, mesmo quem nunca
- * abre o menu. Aqui fica só o endereço — o `doc.json` é buscado na hora de criar.
- *
- * Acrescentar um template é uma linha, sem deploy do dado: o importador já
- * grava `templates/<slug>/doc.json` junto com as imagens e as fontes.
+ * O catálogo mora no bucket (`templates/manifest.json`), não no código: o
+ * backend de importação (`canva-import/`) escreve uma linha ali toda vez que
+ * termina um import com sucesso — assim um template novo aparece no menu
+ * sozinho, sem precisar mexer no código do app a cada import (era assim
+ * antes, com uma lista fixa aqui que ficava desatualizada).
  */
-export const previewsHtml = {
-  "ganhar-dinheiro": {
-    nome: "Ganhar Dinheiro",
-    src: `${TEMPLATES_BASE}/ganhar-dinheiro/index.html`,
-    doc: `${TEMPLATES_BASE}/ganhar-dinheiro/doc.json`,
-  },
-} as const;
-
-export type PresetNovo = "branco" | "agrum" | "barretos" | keyof typeof previewsHtml;
-
-/** Busca o DocCanvas de um template no bucket. */
-export async function carregarTemplate(preset: keyof typeof previewsHtml): Promise<DocCanvas | null> {
-  const url = previewsHtml[preset]?.doc;
-  if (!url) return null;
+export async function carregarCatalogoTemplates(): Promise<TemplateCatalogo[]> {
   try {
-    const r = await fetch(url);
+    const r = await fetch(`${TEMPLATES_BASE}/manifest.json`, { cache: "no-store" });
+    if (!r.ok) return [];
+    const lista: unknown = await r.json();
+    return Array.isArray(lista)
+      ? lista.filter((t): t is TemplateCatalogo => {
+          const o = t as { slug?: unknown; nome?: unknown } | null;
+          return !!o && typeof o.slug === "string" && typeof o.nome === "string";
+        })
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+export type PresetNovo = string;
+
+/** Busca o DocCanvas de um template no bucket, pelo slug. */
+export async function carregarTemplate(slug: string): Promise<DocCanvas | null> {
+  try {
+    const r = await fetch(`${TEMPLATES_BASE}/${slug}/doc.json`);
     if (!r.ok) return null;
     const d = (await r.json()) as DocCanvas;
     return d?.kind === "canvas" ? d : null;

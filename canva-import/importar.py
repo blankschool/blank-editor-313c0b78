@@ -72,17 +72,46 @@ def lit(v) -> str:
     return "null" if v is None else "'" + str(v).replace("'", "''") + "'"
 
 
-def subir(caminho: str, dados: bytes, mime: str) -> int:
+def subir(caminho: str, dados: bytes, mime: str, cache: str = CACHE) -> int:
     req = urllib.request.Request(
         f"{BASE}/storage/v1/object/{BUCKET}/{caminho}", data=dados, method="POST",
         headers={"apikey": chave(), "Authorization": f"Bearer {chave()}",
-                 "content-type": mime, "cache-control": CACHE, "x-upsert": "true"})
+                 "content-type": mime, "cache-control": cache, "x-upsert": "true"})
     try:
         with urllib.request.urlopen(req, timeout=300) as r:
             return r.status
     except urllib.error.HTTPError as e:
         print(f"      {e.code}: {e.read().decode()[:120]}")
         return e.code
+
+
+def baixar_publico(caminho: str) -> bytes | None:
+    """GET num objeto publico do bucket. None se nao existir (400/404)."""
+    try:
+        with urllib.request.urlopen(
+            f"{BASE}/storage/v1/object/public/{BUCKET}/{caminho}", timeout=30
+        ) as r:
+            return r.read()
+    except urllib.error.HTTPError:
+        return None
+
+
+def atualizarCatalogo(slug: str, nome: str) -> None:
+    """Mantem templates/manifest.json com um item por template pronto (com doc.json).
+
+    E o catalogo que o app le pra montar o menu "Novo design" — sem isto,
+    cada template novo exigiria mexer no codigo do app (era assim antes: uma
+    lista fixa em estudio-doc.ts, que ficava pra tras a cada import).
+    cache "no-cache" de proposito: o app precisa ver o template novo na hora
+    seguinte que abrir o menu, nao daqui a um ano (o cache-control padrao do
+    bucket).
+    """
+    dados = baixar_publico("manifest.json")
+    catalogo = json.loads(dados) if dados else []
+    catalogo = [t for t in catalogo if t.get("slug") != slug]
+    catalogo.append({"slug": slug, "nome": nome})
+    subir("manifest.json", json.dumps(catalogo, ensure_ascii=False).encode(),
+          "application/json; charset=utf-8", cache="no-cache")
 
 
 # ----------------------------------------------------- model.json -> DocCanvas
@@ -318,9 +347,10 @@ def main() -> int:
 
     # O doc tambem vai para o bucket: e assim que o app oferece o template no
     # menu "Novo design" sem carregar 600 KB de vetor no bundle.
-    subir(f"{slug}/doc.json",
+    subir(f"{a.slug}/doc.json",
           json.dumps(doc, ensure_ascii=False).encode(),
           "application/json; charset=utf-8")
+    atualizarCatalogo(a.slug, nome)
 
     print("[5/5] gravando o design")
     proj = sql("select id, owner from public.projects order by criado_em limit 1")
