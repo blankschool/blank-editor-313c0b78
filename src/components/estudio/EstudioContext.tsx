@@ -26,6 +26,7 @@ import {
   type PresetNovo,
 } from "@/lib/estudio-doc";
 import { supabase } from "@/lib/supabase";
+import { canvasAgrum, canvasBarretos } from "@/lib/estudio-canvas-seeds";
 import {
   atualizarComentario,
   atualizarDesign,
@@ -366,12 +367,31 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
       if (salvarTimer.current) window.clearTimeout(salvarTimer.current);
       salvarTimer.current = window.setTimeout(() => {
         void salvarDoc(id, novo)
-          .then(() => qc.invalidateQueries({ queryKey: ["designs", user?.id] }))
+          .then(() => {
+            void qc.invalidateQueries({ queryKey: ["designs", user?.id] });
+            /* a página real (/t/{id}) e o preview leem o design gravado */
+            void qc.invalidateQueries({ queryKey: ["design", id] });
+          })
           .catch(() => undefined);
       }, 500);
     },
     [qc, user?.id],
   );
+
+  /** grava agora, sem esperar o debounce */
+  const gravarAgora = useCallback(
+    (id: string, novo: DesignDoc) => {
+      if (salvarTimer.current) window.clearTimeout(salvarTimer.current);
+      return salvarDoc(id, novo)
+        .then(() => {
+          void qc.invalidateQueries({ queryKey: ["designs", user?.id] });
+          void qc.invalidateQueries({ queryKey: ["design", id] });
+        })
+        .catch(() => undefined);
+    },
+    [qc, user?.id],
+  );
+
 
   const versoes = useMemo<VersaoDoc[]>(
     () =>
@@ -534,12 +554,13 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
       empilharDesfazer({ doc: clonarDoc(anterior), canvas: null }, rotulo);
       setDocLocal(novo);
       docRef.current = novo;
+      /* grava sempre: o inspector guarda o ponto de partida só para o Descartar
+         e para o ponto azul — o banco (e a página real) acompanham na hora */
       if (modoEdicaoRef.current) {
         setBaseDoc((b) => b ?? clonarDoc(anterior));
         setSujo(true);
-      } else {
-        agendarSalvar(abaAtiva, novo);
       }
+      agendarSalvar(abaAtiva, novo);
       if (rotulo) registrar(autor, rotulo);
     },
     [abaAtiva, agendarSalvar, registrar, autor, empilharDesfazer],
@@ -559,15 +580,14 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
       if (modoEdicaoRef.current) {
         setBaseCanvas((b) => b ?? (JSON.parse(JSON.stringify(atual)) as DocCanvas));
         setSujo(true);
-      } else {
-        agendarSalvar(abaAtiva, novo as unknown as DesignDoc);
       }
+      agendarSalvar(abaAtiva, novo as unknown as DesignDoc);
       if (rotulo) registrar(autor, rotulo);
     },
     [abaAtiva, agendarSalvar, registrar, autor, empilharDesfazer],
   );
 
-  /* aplica um instantâneo: mesma regra de gravação do rascunho */
+  /* aplica um instantâneo: também vai ao banco (desfazer/refazer gravam) */
   const aplicarInstantaneo = useCallback(
     (snap: Instantaneo) => {
       if (snap.canvas) {
@@ -575,14 +595,14 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
         setCanvasLocal(copia);
         canvasRef.current = copia;
         if (modoEdicaoRef.current) setSujo(true);
-        else if (abaAtiva) agendarSalvar(abaAtiva, copia as unknown as DesignDoc);
+        if (abaAtiva) agendarSalvar(abaAtiva, copia as unknown as DesignDoc);
       }
       if (snap.doc) {
         const copia = clonarDoc(snap.doc);
         setDocLocal(copia);
         docRef.current = copia;
         if (modoEdicaoRef.current) setSujo(true);
-        else if (abaAtiva) agendarSalvar(abaAtiva, copia);
+        if (abaAtiva) agendarSalvar(abaAtiva, copia);
       }
     },
     [abaAtiva, agendarSalvar],
@@ -646,31 +666,31 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
   const salvarRascunho = useCallback(() => {
     if (!abaAtiva) return;
     const atual = (canvasRef.current ?? docRef.current) as unknown as DesignDoc;
-    void salvarDoc(abaAtiva, atual)
-      .then(() => qc.invalidateQueries({ queryKey: ["designs", user?.id] }))
-      .catch(() => undefined);
+    void gravarAgora(abaAtiva, atual);
     setBaseDoc(null);
     setBaseCanvas(null);
     setSujo(false);
     registrar(autor, "Salvou a edição");
-  }, [abaAtiva, qc, user?.id, registrar, autor]);
+  }, [abaAtiva, gravarAgora, registrar, autor]);
 
   const descartarRascunho = useCallback(() => {
     if (baseCanvas) {
       const copia = JSON.parse(JSON.stringify(baseCanvas)) as DocCanvas;
       setCanvasLocal(copia);
       canvasRef.current = copia;
+      if (abaAtiva) void gravarAgora(abaAtiva, copia as unknown as DesignDoc);
     }
     if (baseDoc) {
       const copia = clonarDoc(baseDoc);
       setDocLocal(copia);
       docRef.current = copia;
+      if (abaAtiva) void gravarAgora(abaAtiva, copia);
     }
     setBaseDoc(null);
     setBaseCanvas(null);
     setSujo(false);
     registrar(autor, "Descartou a edição");
-  }, [baseCanvas, baseDoc, registrar, autor]);
+  }, [baseCanvas, baseDoc, abaAtiva, gravarAgora, registrar, autor]);
 
   const recarregarDoc = useCallback(() => {
     void qc.invalidateQueries({ queryKey: ["design", abaAtiva] });
@@ -784,16 +804,24 @@ export function EstudioProvider({ children }: { children: ReactNode }) {
         setPedirLogin(true);
         return;
       }
-      const modelo = preset && preset !== "branco" ? previewsHtml[preset] : null;
+      const semente =
+        preset === "agrum" ? canvasAgrum : preset === "barretos" ? canvasBarretos : null;
+      const modelo =
+        preset && preset !== "branco" && preset in previewsHtml
+          ? previewsHtml[preset as keyof typeof previewsHtml]
+          : null;
       void (async () => {
         // O documento do template vem do bucket. Se a busca falhar, ainda se
         // cria o design com o preview HTML — melhor abrir algo do que travar o
         // botão por causa da rede.
-        const docModelo =
-          preset && preset !== "branco" ? await carregarTemplate(preset) : null;
+        const docModelo = semente
+          ? (JSON.parse(JSON.stringify(canvasAgrum === semente ? canvasAgrum : canvasBarretos)) as DocCanvas)
+          : modelo
+            ? await carregarTemplate(preset as keyof typeof previewsHtml)
+            : null;
         const row = await criarDesign(
           projectId,
-          modelo ? modelo.nome : undefined,
+          semente ? (semente.nome ?? undefined) : modelo ? modelo.nome : undefined,
           docModelo ?? (modelo ? { kind: "html" as const, src: modelo.src } : undefined),
         );
         await qc.invalidateQueries({ queryKey: ["designs", user?.id] });

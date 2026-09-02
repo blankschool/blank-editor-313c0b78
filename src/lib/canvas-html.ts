@@ -289,7 +289,7 @@ export function paginaHtml(p: CanvasPagina): string {
  * e — porque a métrica vertical muda junto — na posição errada. Cada design
  * importado traz as suas em `doc.fontes`.
  */
-function facesDe(doc: DocCanvas): string {
+export function facesDe(doc: DocCanvas): string {
   const fontes = doc.fontes?.length ? doc.fontes : FONTES_PADRAO;
   return fontes
     .map(

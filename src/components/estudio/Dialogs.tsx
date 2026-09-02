@@ -7,6 +7,7 @@ import { sistemas } from "@/lib/estudio-mock";
 import { useEstudio } from "./EstudioContext";
 import { cn } from "@/lib/utils";
 import { baixarArquivo, comEstilo, docParaHtml, docParaPng, paletaPorSistema } from "@/lib/estudio-doc";
+import { indiceDaPagina, paginaCanvasParaPng } from "@/lib/canvas-png";
 import { toast } from "sonner";
 
 const formatos = [
@@ -30,7 +31,24 @@ export function ExportDialog({ open, onOpenChange }: { open: boolean; onOpenChan
   const exportar = async () => {
     setOcupado(true);
     try {
-      if (formato === "png") {
+      if (formato === "png" && e.docCanvas) {
+        /* doc canvas: o PNG sai do próprio canvas (rotação, recorte da foto e
+           máscara inclusos), nunca do desenho do documento de fluxo */
+        const doc = e.docCanvas;
+        const indices =
+          escopo === "todas"
+            ? doc.paginas.map((_, i) => i)
+            : [indiceDaPagina(doc, e.paginaCanvas)];
+        let saiu = 0;
+        for (const i of indices) {
+          const blob = await paginaCanvasParaPng(doc, i, escala);
+          if (!blob) continue;
+          const sufixo = indices.length > 1 ? `-${String(i + 1).padStart(2, "0")}` : "";
+          baixarArquivo(`${e.nomeAtivo}${sufixo}.png`, blob, "image/png");
+          saiu += 1;
+        }
+        if (!saiu) throw new Error("canvas indisponível");
+      } else if (formato === "png") {
         const blob = await docParaPng(e.doc, e.nomeAtivo, largura, escala);
         if (!blob) throw new Error("canvas indisponível");
         baixarArquivo(`${e.nomeAtivo}.png`, blob, "image/png");
