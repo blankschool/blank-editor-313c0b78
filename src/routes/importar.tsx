@@ -24,8 +24,36 @@ const SEGREDO_IMPORTACAO = "508d1916d338cd39cc89ab9800a31697c1f8907cf4a350ff";
 type Estado =
   | { fase: "ocioso" }
   | { fase: "enviando" }
-  | { fase: "erro"; msg: string }
-  | { fase: "pronto"; designId: string; paginas: number; camadas: number; nome: string };
+  | { fase: "erro"; msg: string; achatado?: boolean }
+  | {
+      fase: "pronto";
+      designId: string;
+      paginas: number;
+      camadas: number;
+      nome: string;
+      achatadas: number[];
+    };
+
+/**
+ * O PDF achatado (uma foto da tela, sem texto vetorial) é o que faz a
+ * importação sair com uma camada só. Dá para descobrir sem serviço nenhum:
+ * um PDF com texto embutido traz `/FontFile` no corpo. Sem isso, não há o que
+ * separar — melhor avisar antes de gastar um minuto de conversão.
+ */
+async function pareceAchatado(f: File): Promise<boolean> {
+  try {
+    const txt = new TextDecoder("latin1").decode(await f.arrayBuffer());
+    return !/\/FontFile\d?\b/.test(txt);
+  } catch {
+    return false;
+  }
+}
+
+const RECEITA_ACHATADO =
+  "No Canva: Compartilhar › Baixar › escolha PDF para impressão (não PDF Padrão) " +
+  "e desmarque “Achatar PDF”. Se o design usa efeitos/filtros em texto, remova-os " +
+  "antes de exportar — o Canva rasteriza a página quando não consegue manter o texto.";
+
 
 export const Route = createFileRoute("/importar")({
   head: () => ({ meta: [{ title: "Importar do Canva — Estúdio" }] }),
