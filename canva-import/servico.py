@@ -34,7 +34,15 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from importar import PIPELINE, TIPOS, VENV, lit, para_doccanvas, sql, subir  # noqa: E402
+from importar import (  # noqa: E402
+    PIPELINE, TIPOS, VENV, atualizarCatalogo, lit, metricas_das_fontes,
+    para_doccanvas, sql, subir,
+)
+
+
+class PdfAchatado(RuntimeError):
+    """O PDF veio como foto da pagina: nao ha camadas para extrair."""
+
 
 HERE = Path(__file__).parent
 # O app roda em 8080/8081 conforme a porta livre; o navegador exige CORS
@@ -65,7 +73,20 @@ def converter(pdf_bytes: bytes, slug: str, nome: str) -> dict:
             raise RuntimeError(f"{etapa}: {(r.stderr or r.stdout)[-600:]}")
 
     model = json.loads((trab / "model.json").read_text(encoding="utf-8"))
-    doc = para_doccanvas(model, slug, nome)
+
+    # O extrator marca as paginas que o Canva exportou como foto da tela.
+    # Se TODAS vierem assim, gravar o design so entregaria uma camada de
+    # imagem — melhor recusar e dizer como reexportar.
+    achatadas = [p["n"] for p in model["pages"] if p.get("flat")]
+    if achatadas and len(achatadas) == len(model["pages"]):
+        raise PdfAchatado(
+            "Este PDF foi exportado achatado: cada pagina e uma imagem unica, "
+            "sem texto nem camadas.")
+
+    # metricas de fonte: sem elas o texto perde familia, peso e a altura da
+    # caixa (o topo sai do ascender). O mergefonts ja rodou acima.
+    met = metricas_das_fontes(trab)
+    doc = para_doccanvas(model, slug, nome, met)
 
     enviados = 0
     for p in sorted((trab / "assets").glob("*")):
@@ -75,6 +96,12 @@ def converter(pdf_bytes: bytes, slug: str, nome: str) -> dict:
     for p in sorted((trab / "fonts").glob("*.woff2")):
         if subir(f"{slug}/fonts/{p.name}", p.read_bytes(), TIPOS[".woff2"]) in (200, 201):
             enviados += 1
+
+    # doc.json + manifesto: e o que faz o template aparecer no menu
+    # "Novo design" do app sem mexer em codigo.
+    subir(f"{slug}/doc.json", json.dumps(doc, ensure_ascii=False).encode(),
+          TIPOS[".json"])
+    atualizarCatalogo(slug, nome)
 
     proj = sql("select id, owner from public.projects order by criado_em limit 1")
     if not proj:
@@ -90,9 +117,12 @@ def converter(pdf_bytes: bytes, slug: str, nome: str) -> dict:
         "paginas": len(doc["paginas"]),
         "camadas": sum(len(p["camadas"]) for p in doc["paginas"]),
         "arquivos": enviados,
+        "paginas_achatadas": achatadas,
+        "fontes": len(doc.get("fontes") or []),
         "slug": slug,
         "nome": nome,
     }
+
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -101,7 +131,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Origin",
                          origem if origem in ORIGENS else ORIGENS[0])
         self.send_header("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "content-type")
+        self.send_header("Access-Control-Allow-Headers", "content-type, x-import-secret")
 
     def _json(self, code: int, corpo: dict) -> None:
         dados = json.dumps(corpo, ensure_ascii=False).encode()
@@ -143,9 +173,13 @@ class Handler(BaseHTTPRequestHandler):
             r = converter(pdf, slug, nome)
             print(f"  ok: design {r['design_id']} — {r['paginas']} páginas", flush=True)
             self._json(200, r)
+        except PdfAchatado as e:
+            print(f"  recusado: {e}", flush=True)
+            self._json(422, {"erro": str(e), "codigo": "achatado"})
         except Exception as e:  # noqa: BLE001
             traceback.print_exc()
             self._json(500, {"erro": str(e)[:500]})
+
 
     def log_message(self, *a) -> None:  # silencia o log padrão
         pass

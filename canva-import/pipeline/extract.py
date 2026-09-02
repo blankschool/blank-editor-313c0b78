@@ -228,11 +228,23 @@ def main():
                                text="".join(c[1] for c in chunks),
                                chunks=chunks))
 
-        pages_out.append(dict(n=pi, w=W, h=H, bg=bg, layers=layers))
         ntxt = sum(1 for l in layers if l["t"] == "text")
         nimg = sum(1 for l in layers if l["t"] == "image")
+        # Pagina achatada: o Canva exportou uma foto da tela inteira em vez do
+        # conteudo. Sem texto e com uma unica imagem cobrindo a pagina nao ha
+        # nada para separar em camadas — quem chama precisa saber disso, senao
+        # entrega um design de uma camada so e parece bug do extrator.
+        cobre = [l for l in layers if l["t"] == "image"
+                 and l["rect"][2] >= W * 0.9 and l["rect"][3] >= H * 0.9]
+        flat = ntxt == 0 and len(cobre) == 1 and len(layers) <= 2
+        pag = dict(n=pi, w=W, h=H, bg=bg, layers=layers)
+        if flat:
+            pag["flat"] = True
+        pages_out.append(pag)
         print(f"  pagina {pi:2d}: {len(layers):2d} camadas "
-              f"({nimg} imagem, {ntxt} texto)  bg {bg}")
+              f"({nimg} imagem, {ntxt} texto)  bg {bg}"
+              f"{'  [ACHATADA]' if flat else ''}")
+
 
     (HERE / "model.json").write_text(
         json.dumps(dict(pages=pages_out), ensure_ascii=False, indent=1),

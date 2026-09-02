@@ -24,8 +24,36 @@ const SEGREDO_IMPORTACAO = "508d1916d338cd39cc89ab9800a31697c1f8907cf4a350ff";
 type Estado =
   | { fase: "ocioso" }
   | { fase: "enviando" }
-  | { fase: "erro"; msg: string }
-  | { fase: "pronto"; designId: string; paginas: number; camadas: number; nome: string };
+  | { fase: "erro"; msg: string; achatado?: boolean }
+  | {
+      fase: "pronto";
+      designId: string;
+      paginas: number;
+      camadas: number;
+      nome: string;
+      achatadas: number[];
+    };
+
+/**
+ * O PDF achatado (uma foto da tela, sem texto vetorial) é o que faz a
+ * importação sair com uma camada só. Dá para descobrir sem serviço nenhum:
+ * um PDF com texto embutido traz `/FontFile` no corpo. Sem isso, não há o que
+ * separar — melhor avisar antes de gastar um minuto de conversão.
+ */
+async function pareceAchatado(f: File): Promise<boolean> {
+  try {
+    const txt = new TextDecoder("latin1").decode(await f.arrayBuffer());
+    return !/\/FontFile\d?\b/.test(txt);
+  } catch {
+    return false;
+  }
+}
+
+const RECEITA_ACHATADO =
+  "No Canva: Compartilhar › Baixar › escolha PDF para impressão (não PDF Padrão) " +
+  "e desmarque “Achatar PDF”. Se o design usa efeitos/filtros em texto, remova-os " +
+  "antes de exportar — o Canva rasteriza a página quando não consegue manter o texto.";
+
 
 export const Route = createFileRoute("/importar")({
   head: () => ({ meta: [{ title: "Importar do Canva — Estúdio" }] }),
@@ -60,6 +88,8 @@ function Importar() {
     };
   }, []);
 
+  const [aviso, setAviso] = useState<string | null>(null);
+
   const receber = (f: File | null | undefined) => {
     if (!f) return;
     if (!f.name.toLowerCase().endsWith(".pdf")) {
@@ -68,7 +98,14 @@ function Importar() {
     }
     setArquivo(f);
     setEstado({ fase: "ocioso" });
+    setAviso(null);
     if (!nome) setNome(f.name.replace(/\.pdf$/i, ""));
+    void pareceAchatado(f).then((achatado) => {
+      if (achatado)
+        setAviso(
+          "Este PDF não tem texto embutido — provavelmente foi exportado achatado e vai virar um design de uma imagem só.",
+        );
+    });
   };
 
   const enviar = async () => {
@@ -84,13 +121,26 @@ function Importar() {
         body: fd,
       });
       const j = (await r.json()) as Record<string, unknown>;
-      if (!r.ok) throw new Error(String(j["erro"] ?? `HTTP ${r.status}`));
+      if (!r.ok) {
+        if (j["codigo"] === "achatado") {
+          setEstado({
+            fase: "erro",
+            achatado: true,
+            msg: "Cada página deste PDF é uma imagem única, sem texto nem camadas.",
+          });
+          return;
+        }
+        throw new Error(String(j["erro"] ?? `HTTP ${r.status}`));
+      }
       setEstado({
         fase: "pronto",
         designId: String(j["design_id"]),
         paginas: Number(j["paginas"]),
         camadas: Number(j["camadas"]),
         nome: String(j["nome"]),
+        achatadas: Array.isArray(j["paginas_achatadas"])
+          ? (j["paginas_achatadas"] as number[])
+          : [],
       });
     } catch (e) {
       setEstado({
@@ -99,6 +149,7 @@ function Importar() {
       });
     }
   };
+
 
   const enviando = estado.fase === "enviando";
 
@@ -188,10 +239,23 @@ function Importar() {
         </p>
       )}
 
+      {aviso && estado.fase === "ocioso" && (
+        <div className="flex gap-2 rounded-md border border-border bg-muted/40 p-3 text-[12px]">
+          <AlertCircle className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+          <div>
+            <p className="font-medium">{aviso}</p>
+            <p className="mt-1 text-muted-foreground">{RECEITA_ACHATADO}</p>
+          </div>
+        </div>
+      )}
+
       {estado.fase === "erro" && (
         <div className="flex gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-[12px]">
           <AlertCircle className="mt-0.5 size-4 shrink-0 text-destructive" />
-          <p>{estado.msg}</p>
+          <div>
+            <p className={estado.achatado ? "font-medium" : undefined}>{estado.msg}</p>
+            {estado.achatado && <p className="mt-1 text-muted-foreground">{RECEITA_ACHATADO}</p>}
+          </div>
         </div>
       )}
 
@@ -207,6 +271,21 @@ function Importar() {
               </p>
             </div>
           </div>
+          {estado.achatadas.length > 0 && (
+            <div className="flex gap-2 rounded-md border border-border bg-muted/40 p-3 text-[12px]">
+              <AlertCircle className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+              <div>
+                <p className="font-medium">
+                  {estado.achatadas.length === 1
+                    ? `A página ${estado.achatadas[0]} veio achatada`
+                    : `As páginas ${estado.achatadas.join(", ")} vieram achatadas`}{" "}
+                  — viraram uma imagem só, sem texto editável.
+                </p>
+                <p className="mt-1 text-muted-foreground">{RECEITA_ACHATADO}</p>
+              </div>
+            </div>
+          )}
+
           <div className="flex gap-2">
             <button
               onClick={() =>
