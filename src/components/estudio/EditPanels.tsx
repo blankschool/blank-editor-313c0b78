@@ -24,6 +24,8 @@ import {
   Strikethrough,
   ImagePlus,
   Loader2,
+  Check,
+  ChevronsUpDown,
 } from "lucide-react";
 import { useEstudio } from "./EstudioContext";
 import { Slider } from "@/components/ui/slider";
@@ -53,6 +55,7 @@ import {
   estiloDoTrecho,
   substituirTextoPreservandoPartes,
   virarPlaceholderImagem,
+  fontesDisponiveisCanvas,
   type CanvasParteTexto,
   type CanvasCamada,
   type CanvasCamadaForma,
@@ -81,6 +84,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 
 function Secao({
   titulo,
@@ -131,6 +143,104 @@ function Campo({
 
 const inputCls =
   "h-6 w-24 rounded border border-border bg-card px-1.5 text-[11px] outline-none focus:ring-1 focus:ring-ring";
+
+interface OpcaoFonte {
+  valor: string;
+  rotulo: string;
+}
+
+const fontesFluxo: OpcaoFonte[] = [
+  { valor: "ui-sans-serif", rotulo: "Söhne" },
+  { valor: "Inter, sans-serif", rotulo: "Inter" },
+  { valor: "Georgia, serif", rotulo: "Tiempos" },
+  { valor: "ui-monospace, monospace", rotulo: "Mono" },
+];
+
+function FontePicker({
+  valor,
+  opcoes,
+  herdavel = false,
+  onChange,
+}: {
+  valor: string;
+  opcoes: OpcaoFonte[];
+  herdavel?: boolean;
+  onChange: (valor: string) => void;
+}) {
+  const [aberto, setAberto] = useState(false);
+  const selecionada = opcoes.find((opcao) => opcao.valor === valor);
+  const texto = (selecionada?.rotulo ?? valor) || (herdavel ? "Herdada" : "Selecionar");
+
+  return (
+    <Popover open={aberto} onOpenChange={setAberto}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          role="combobox"
+          aria-label="Fonte"
+          aria-expanded={aberto}
+          className={cn(inputCls, "flex items-center justify-between gap-1 text-left")}
+          title={texto}
+        >
+          <span
+            className="min-w-0 flex-1 truncate"
+            style={valor ? { fontFamily: valor } : undefined}
+          >
+            {texto}
+          </span>
+          <ChevronsUpDown className="size-3 shrink-0 text-muted-foreground" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-56 p-0" align="end">
+        <Command>
+          <CommandInput aria-label="Buscar fonte" placeholder="Buscar fonte..." />
+          <CommandList className="max-h-52">
+            <CommandEmpty>Nenhuma fonte encontrada.</CommandEmpty>
+            <CommandGroup heading="Fontes do design">
+              {herdavel && (
+                <CommandItem
+                  value="Herdada"
+                  onSelect={() => {
+                    onChange("");
+                    setAberto(false);
+                  }}
+                >
+                  <Check className={cn("size-3", valor ? "opacity-0" : "opacity-100")} />
+                  Herdada
+                </CommandItem>
+              )}
+              {opcoes.map((opcao) => (
+                <CommandItem
+                  key={opcao.valor}
+                  value={`${opcao.rotulo} ${opcao.valor}`}
+                  onSelect={() => {
+                    onChange(opcao.valor);
+                    setAberto(false);
+                  }}
+                  style={{ fontFamily: opcao.valor }}
+                >
+                  <Check
+                    className={cn("size-3", opcao.valor === valor ? "opacity-100" : "opacity-0")}
+                  />
+                  <span className="truncate">{opcao.rotulo}</span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function CampoFonte(props: React.ComponentProps<typeof FontePicker>) {
+  return (
+    <div className="flex items-center justify-between gap-2 text-[11px]">
+      <span className="text-muted-foreground">Fonte</span>
+      <FontePicker {...props} />
+    </div>
+  );
+}
 
 function useAlvo(): ElId {
   const e = useEstudio();
@@ -239,20 +349,20 @@ function TextPanelCanvas() {
         </div>
       </Secao>
       <Secao titulo="Tipografia">
-        <Campo rotulo="Fonte">
-          <input
-            className={inputCls}
-            value={camada.fonte ?? ""}
-            placeholder="herdada"
-            onChange={(ev) => {
-              const v = ev.target.value;
-              patch((c) => {
-                if (v) c.fonte = v;
-                else delete c.fonte;
-              }, "");
-            }}
-          />
-        </Campo>
+        <CampoFonte
+          valor={camada.fonte ?? ""}
+          opcoes={fontesDisponiveisCanvas(e.docCanvas, camada.fonte).map((fonte) => ({
+            valor: fonte,
+            rotulo: fonte,
+          }))}
+          herdavel
+          onChange={(valor) =>
+            patch((c) => {
+              if (valor) c.fonte = valor;
+              else delete c.fonte;
+            }, "Trocou a fonte")
+          }
+        />
         <Campo rotulo="Peso">
           <input
             type="number"
@@ -366,18 +476,11 @@ function TextPanelFluxo() {
         </div>
       </Secao>
       <Secao titulo="Tipografia">
-        <Campo rotulo="Fonte">
-          <select
-            className={inputCls}
-            value={s.fonte ?? "ui-sans-serif"}
-            onChange={(ev) => setEstilo({ fonte: ev.target.value }, "Trocou a fonte")}
-          >
-            <option value="ui-sans-serif">Söhne</option>
-            <option value="Inter, sans-serif">Inter</option>
-            <option value="Georgia, serif">Tiempos</option>
-            <option value="ui-monospace, monospace">Mono</option>
-          </select>
-        </Campo>
+        <CampoFonte
+          valor={s.fonte ?? "ui-sans-serif"}
+          opcoes={fontesFluxo}
+          onChange={(fonte) => setEstilo({ fonte }, "Trocou a fonte")}
+        />
         <Campo rotulo="Peso">
           <select
             className={inputCls}
@@ -1237,21 +1340,21 @@ function SelecaoCanvasPanel({ modo = "simples" }: { modo?: "simples" | "pro" }) 
               "fundo",
             ])}
           >
-            <Campo rotulo="Fonte">
-              <input
-                className={inputCls}
-                value={camada.fonte ?? ""}
-                placeholder="herdada"
-                onChange={(ev) => {
-                  const v = ev.target.value;
-                  patch((c) => {
-                    const t = c as CanvasCamadaTexto;
-                    if (v) t.fonte = v;
-                    else delete t.fonte;
-                  }, "");
-                }}
-              />
-            </Campo>
+            <CampoFonte
+              valor={camada.fonte ?? ""}
+              opcoes={fontesDisponiveisCanvas(e.docCanvas, camada.fonte).map((fonte) => ({
+                valor: fonte,
+                rotulo: fonte,
+              }))}
+              herdavel
+              onChange={(valor) =>
+                patch((c) => {
+                  const t = c as CanvasCamadaTexto;
+                  if (valor) t.fonte = valor;
+                  else delete t.fonte;
+                }, "Trocou a fonte")
+              }
+            />
             <Campo rotulo="Tamanho">
               {num(camada.tamanho, (c, n) => void ((c as CanvasCamadaTexto).tamanho = n))}
             </Campo>

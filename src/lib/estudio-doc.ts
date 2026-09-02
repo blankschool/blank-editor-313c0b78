@@ -285,6 +285,38 @@ export function docCanvasBranco(): DocCanvas {
   };
 }
 
+/** Famílias que podem ser escolhidas no editor para este documento.
+ *
+ * A seleção atual vem primeiro para nunca sumir do seletor. Depois entram as
+ * fontes carregadas pelo arquivo e as já usadas nas camadas de texto. Um mesmo
+ * arquivo costuma declarar uma família várias vezes (um item por peso), por
+ * isso a lista é deduplicada sem perder a ordem original. */
+export function fontesDisponiveisCanvas(
+  doc: DocCanvas | null | undefined,
+  atual?: string,
+): string[] {
+  const familias: string[] = [];
+  const vistas = new Set<string>();
+  const adicionar = (familia?: string) => {
+    const limpa = familia?.trim();
+    if (!limpa) return;
+    const chave = limpa.toLocaleLowerCase("pt-BR");
+    if (vistas.has(chave)) return;
+    vistas.add(chave);
+    familias.push(limpa);
+  };
+
+  adicionar(atual);
+  doc?.fontes?.forEach((fonte) => adicionar(fonte.familia));
+  doc?.paginas?.forEach((pagina) =>
+    pagina.camadas?.forEach((camada) => {
+      if (camada.tipo === "texto") adicionar(camada.fonte);
+    }),
+  );
+
+  return familias;
+}
+
 export interface CamadaCanvasInfo {
   id: string;
   nome: string;

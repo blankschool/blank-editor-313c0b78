@@ -65,7 +65,7 @@ import {
   substituirTextoPreservandoPartes,
   virarPlaceholderImagem,
   ajustarImgRot,
-  conformarImg,
+  normalizarEnquadramentoImg,
   coverImg,
   containImg,
   medirImagem,
@@ -78,6 +78,7 @@ import {
   textoDoElemento,
 } from "@/lib/texto-rico";
 import { enviarImagemCanvas } from "@/lib/estudio-db";
+import { facesDe } from "@/lib/canvas-html";
 import { toast } from "sonner";
 
 export const larguras = { mobile: 340, tablet: 620, desktop: 880 } as const;
@@ -539,6 +540,8 @@ function ImagemCanvasView({
     c.img ?? (nat ? coverImg(c.w, c.h, nat.w, nat.h) : { x: 0, y: 0, w: c.w, h: c.h });
   const rotGravada = c.imgRot ?? 0;
   const [vivo, setVivo] = useState<{ img: CaixaImg; rot: number } | null>(null);
+  const vivoRef = useRef(vivo);
+  vivoRef.current = vivo;
   const arrasteRef = useRef<{
     modo: ModoArraste;
     px: number;
@@ -555,13 +558,29 @@ function ImagemCanvasView({
      (estado intermediário de `vivo`, valor salvo antigo, documento importado):
      1) a caixa tem que ter a proporção real do arquivo — senão a foto sai achatada;
      2) e nunca pode deixar de cobrir a moldura. */
-  const inner = ajustarImgRot(
-    nat ? conformarImg(vivo?.img ?? gravado, nat.w, nat.h, c.w, c.h) : (vivo?.img ?? gravado),
-    innerRot,
-    c.w,
-    c.h,
-  );
+  const inner = nat
+    ? normalizarEnquadramentoImg(vivo?.img ?? gravado, nat.w, nat.h, c.w, c.h, innerRot)
+    : ajustarImgRot(vivo?.img ?? gravado, innerRot, c.w, c.h);
   const rotMoldura = c.rotacao ?? 0;
+
+  /* Documentos importados podem trazer `img` com a proporção errada. Não basta
+     corrigir só a renderização: persiste a caixa normalizada para que resize,
+     zoom, exportação e a próxima abertura partam do mesmo valor correto. */
+  useEffect(() => {
+    if (!nat || !c.img) return;
+    const corrigido = normalizarEnquadramentoImg(
+      c.img,
+      nat.w,
+      nat.h,
+      c.w,
+      c.h,
+      rotGravada,
+    );
+    const mudou = (Object.keys(corrigido) as Array<keyof CaixaImg>).some(
+      (chave) => Math.abs(corrigido[chave] - c.img![chave]) > 0.01,
+    );
+    if (mudou) onRecorte?.(corrigido, rotGravada);
+  }, [nat, c.img, c.w, c.h, rotGravada, onRecorte]);
 
   useEffect(() => {
     if (!recortando) setVivo(null);
@@ -642,10 +661,8 @@ function ImagemCanvasView({
     const soltar = () => {
       if (!arrasteRef.current) return;
       arrasteRef.current = null;
-      setVivo((v) => {
-        if (v) onRecorte?.(v.img, v.rot);
-        return v;
-      });
+      const atual = vivoRef.current;
+      if (atual) onRecorte?.(atual.img, atual.rot);
     };
     window.addEventListener("pointermove", mover);
     window.addEventListener("pointerup", soltar);
@@ -824,38 +841,6 @@ function ImagemCanvasView({
       data-rotacao={(c as { rotacao?: number }).rotacao || undefined}
       data-recorte={recortando ? "1" : undefined}
     >
-      {recortando &&
-        (() => {
-          /* o "fantasma" (prévia do que fica fora da máscara) é limitado a uma margem
-             razoável ao redor da moldura — sem isso, fotos com proporção bem diferente
-             da moldura (ex.: retrato numa moldura bem larga e baixa) podem gerar uma
-             prévia gigantesca, que passa a impressão de imagem distorcida. */
-          const margem = Math.max(c.w, c.h) * 0.6;
-          return (
-            <div
-              style={{
-                position: "absolute",
-                left: -margem,
-                top: -margem,
-                width: c.w + margem * 2,
-                height: c.h + margem * 2,
-                overflow: "hidden",
-                pointerEvents: "none",
-              }}
-            >
-              <img
-                src={c.src}
-                alt=""
-                style={{
-                  ...estiloImg,
-                  left: inner.x + margem,
-                  top: inner.y + margem,
-                  opacity: 0.3,
-                }}
-              />
-            </div>
-          );
-        })()}
       <div
         style={{
           position: "absolute",
@@ -865,7 +850,7 @@ function ImagemCanvasView({
             c.raio !== undefined ? Math.min(c.raio, Math.min(c.w, c.h) / 2) : undefined,
         }}
       >
-        <img src={c.src} alt="" style={estiloImg} />
+        <img src={c.src} alt="" style={estiloImg} data-imagem-recorte="principal" />
       </div>
       {recortando && (
         <>
@@ -874,6 +859,8 @@ function ImagemCanvasView({
               position: "absolute",
               inset: 0,
               border: `${2 / esc}px solid #fff`,
+              borderRadius:
+                c.raio !== undefined ? Math.min(c.raio, Math.min(c.w, c.h) / 2) : undefined,
               boxShadow: "0 0 0 9999px rgba(0,0,0,0.45)",
               pointerEvents: "none",
             }}
@@ -1879,6 +1866,7 @@ export function CanvasView({
   }
   return (
     <div ref={refPaginas} className="flex flex-col items-center gap-10">
+      <style>{facesDe(doc)}</style>
       {paginas.map((p, i) => {
         const pid = p.id ?? `p${i + 1}`;
         const selNaPagina = (p.camadas ?? []).find(
